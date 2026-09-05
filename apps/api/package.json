@@ -9,6 +9,9 @@
     "test": "vitest run",
     "db:seed": "tsx prisma/seed.ts"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^5.18.0",
     "@ventry/shared": "*",

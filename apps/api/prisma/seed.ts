@@ -7,30 +7,34 @@ interface SeedEnv {
   adminPassword: string;
 }
 
+const SEED_LOCK_KEY = 727100; // arbitrary fixed advisory-lock id, unique to this script
+
 export async function seed(env: SeedEnv): Promise<{ tenantId: string; userId: string }> {
-  const existing = await prisma.user.findUnique({ where: { email: env.adminEmail } });
-  if (existing) {
-    return { tenantId: existing.tenantId, userId: existing.id };
+  await prisma.$executeRaw`SELECT pg_advisory_lock(${SEED_LOCK_KEY})`;
+  try {
+    const existing = await prisma.user.findUnique({ where: { email: env.adminEmail } });
+    if (existing) {
+      return { tenantId: existing.tenantId, userId: existing.id };
+    }
+
+    const existingTenant = await prisma.tenant.findFirst({ where: { name: env.tenantName } });
+    const tenant = existingTenant ?? (await prisma.tenant.create({ data: { name: env.tenantName } }));
+
+    const user = await prisma.user.create({
+      data: {
+        tenantId: tenant.id,
+        email: env.adminEmail,
+        passwordHash: await hashPassword(env.adminPassword),
+        firstName: 'Admin',
+        lastName: env.tenantName,
+        role: 'ADMIN',
+      },
+    });
+
+    return { tenantId: tenant.id, userId: user.id };
+  } finally {
+    await prisma.$executeRaw`SELECT pg_advisory_unlock(${SEED_LOCK_KEY})`;
   }
-
-  const tenant = await prisma.tenant.upsert({
-    where: { id: (await prisma.tenant.findFirst({ where: { name: env.tenantName } }))?.id ?? '00000000-0000-0000-0000-000000000000' },
-    update: {},
-    create: { name: env.tenantName },
-  });
-
-  const user = await prisma.user.create({
-    data: {
-      tenantId: tenant.id,
-      email: env.adminEmail,
-      passwordHash: await hashPassword(env.adminPassword),
-      firstName: 'Admin',
-      lastName: env.tenantName,
-      role: 'ADMIN',
-    },
-  });
-
-  return { tenantId: tenant.id, userId: user.id };
 }
 
 async function main() {
@@ -45,5 +49,10 @@ async function main() {
 }
 
 if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')) {
-  main().finally(() => prisma.$disconnect());
+  main()
+    .catch((err) => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
 }

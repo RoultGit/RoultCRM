@@ -24,4 +24,31 @@ describe('seed', () => {
     const count = await prisma.user.count({ where: { email: env.adminEmail } });
     expect(count).toBe(1);
   });
+
+  it('handles concurrent calls safely with advisory lock', async () => {
+    const concurrentEnv = { tenantName: 'Concurrent Test Co', adminEmail: 'concurrent-admin@test.com', adminPassword: 'secret123' };
+
+    // Clean up any previous test data
+    await prisma.user.deleteMany({ where: { email: concurrentEnv.adminEmail } });
+    await prisma.tenant.deleteMany({ where: { name: concurrentEnv.tenantName } });
+
+    // Fire two seed calls concurrently on unseeded tenant
+    const [result1, result2] = await Promise.all([seed(concurrentEnv), seed(concurrentEnv)]);
+
+    // Both should succeed and return the same ids
+    expect(result1.tenantId).toBe(result2.tenantId);
+    expect(result1.userId).toBe(result2.userId);
+
+    // Verify exactly one tenant row exists
+    const tenantCount = await prisma.tenant.count({ where: { name: concurrentEnv.tenantName } });
+    expect(tenantCount).toBe(1);
+
+    // Verify exactly one user row exists
+    const userCount = await prisma.user.count({ where: { email: concurrentEnv.adminEmail } });
+    expect(userCount).toBe(1);
+
+    // Clean up
+    await prisma.user.deleteMany({ where: { email: concurrentEnv.adminEmail } });
+    await prisma.tenant.deleteMany({ where: { name: concurrentEnv.tenantName } });
+  });
 });
