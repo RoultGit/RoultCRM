@@ -9,11 +9,18 @@ export const AuthRepository = {
     return prisma.refreshToken.create({ data: { tenantId, userId, tokenHash, expiresAt } });
   },
 
-  findActiveRefreshToken(tokenHash: string) {
-    return prisma.refreshToken.findFirst({
+  // Atomically consumes a refresh token: the conditional WHERE (revokedAt: null)
+  // means only one concurrent caller's UPDATE can match and flip the row, closing
+  // the check-then-revoke TOCTOU race. Callers must branch on the returned count.
+  consumeRefreshToken(tokenHash: string) {
+    return prisma.refreshToken.updateMany({
       where: { tokenHash, revokedAt: null, expiresAt: { gt: new Date() } },
-      include: { user: true },
+      data: { revokedAt: new Date() },
     });
+  },
+
+  findByTokenHash(tokenHash: string) {
+    return prisma.refreshToken.findUnique({ where: { tokenHash }, include: { user: true } });
   },
 
   revokeRefreshToken(tokenHash: string) {
