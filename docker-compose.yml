@@ -1,0 +1,9 @@
+services:
+  db-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ventry
+      POSTGRES_PASSWORD: ventry
+      POSTGRES_DB: ventry_test
+    ports:
+      - "55432:5432"
