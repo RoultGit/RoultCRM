@@ -50,6 +50,7 @@ model User {
 
 model RefreshToken {
   id         String    @id @default(uuid())
+  tenantId   String
   userId     String
   user       User      @relation(fields: [userId], references: [id])
   tokenHash  String    @unique
@@ -59,6 +60,7 @@ model RefreshToken {
   createdAt  DateTime  @default(now())
 
   @@index([userId])
+  @@index([tenantId])
 }
 
 model AuditLog {
