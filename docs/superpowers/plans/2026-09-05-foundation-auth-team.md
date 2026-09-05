@@ -78,9 +78,11 @@ node_modules/
 dist/
 build/
 .env
-.env.test
+.env.local
 *.local
 ```
+
+Note: `.env.test` is deliberately NOT ignored — it holds only fake, non-secret local test credentials (a throwaway Dockerized Postgres user/password, fake JWT secrets) and must be committed so a fresh clone can run the test suite. Only real per-developer secrets (`.env`, `.env.local`) are ignored.
 
 - [ ] **Step 4: `.env.example`**
 
@@ -338,6 +340,7 @@ model User {
 
 model RefreshToken {
   id         String    @id @default(uuid())
+  tenantId   String
   userId     String
   user       User      @relation(fields: [userId], references: [id])
   tokenHash  String    @unique
@@ -347,6 +350,7 @@ model RefreshToken {
   createdAt  DateTime  @default(now())
 
   @@index([userId])
+  @@index([tenantId])
 }
 
 model AuditLog {
@@ -709,8 +713,8 @@ export const AuthRepository = {
     return prisma.user.findUnique({ where: { email } });
   },
 
-  storeRefreshToken(userId: string, tokenHash: string, expiresAt: Date) {
-    return prisma.refreshToken.create({ data: { userId, tokenHash, expiresAt } });
+  storeRefreshToken(tenantId: string, userId: string, tokenHash: string, expiresAt: Date) {
+    return prisma.refreshToken.create({ data: { tenantId, userId, tokenHash, expiresAt } });
   },
 
   findActiveRefreshToken(tokenHash: string) {
@@ -733,7 +737,7 @@ export const AuthRepository = {
 
 `apps/api/src/modules/auth/auth.service.ts`:
 ```typescript
-import { hashPassword as _unused, verifyPassword } from '../../lib/password.js';
+import { verifyPassword } from '../../lib/password.js';
 import { signAccessToken, generateRefreshToken, hashRefreshToken } from '../../lib/tokens.js';
 import { UnauthorizedError } from '../../lib/errors.js';
 import { AuthRepository } from './auth.repository.js';
@@ -748,7 +752,7 @@ interface TokenPair {
 async function issueTokens(user: { id: string; tenantId: string; role: 'ADMIN' | 'VENDEDOR' }): Promise<TokenPair> {
   const accessToken = signAccessToken({ userId: user.id, tenantId: user.tenantId, role: user.role });
   const { token, tokenHash } = generateRefreshToken();
-  await AuthRepository.storeRefreshToken(user.id, tokenHash, new Date(Date.now() + REFRESH_TOKEN_TTL_MS));
+  await AuthRepository.storeRefreshToken(user.tenantId, user.id, tokenHash, new Date(Date.now() + REFRESH_TOKEN_TTL_MS));
   return { accessToken, refreshToken: token };
 }
 
