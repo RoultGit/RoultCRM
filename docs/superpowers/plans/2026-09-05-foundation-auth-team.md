@@ -1155,30 +1155,36 @@ interface SeedEnv {
   adminPassword: string;
 }
 
+const SEED_LOCK_KEY = 727100; // arbitrary fixed Postgres advisory-lock id, unique to this script
+
 export async function seed(env: SeedEnv): Promise<{ tenantId: string; userId: string }> {
-  const existing = await prisma.user.findUnique({ where: { email: env.adminEmail } });
-  if (existing) {
-    return { tenantId: existing.tenantId, userId: existing.id };
+  // Serializes concurrent invocations (e.g. two rolling-deploy replicas running the seed
+  // at once) so the find-or-create below can't race and create a duplicate Tenant.
+  await prisma.$executeRaw`SELECT pg_advisory_lock(${SEED_LOCK_KEY})`;
+  try {
+    const existing = await prisma.user.findUnique({ where: { email: env.adminEmail } });
+    if (existing) {
+      return { tenantId: existing.tenantId, userId: existing.id };
+    }
+
+    const existingTenant = await prisma.tenant.findFirst({ where: { name: env.tenantName } });
+    const tenant = existingTenant ?? (await prisma.tenant.create({ data: { name: env.tenantName } }));
+
+    const user = await prisma.user.create({
+      data: {
+        tenantId: tenant.id,
+        email: env.adminEmail,
+        passwordHash: await hashPassword(env.adminPassword),
+        firstName: 'Admin',
+        lastName: env.tenantName,
+        role: 'ADMIN',
+      },
+    });
+
+    return { tenantId: tenant.id, userId: user.id };
+  } finally {
+    await prisma.$executeRaw`SELECT pg_advisory_unlock(${SEED_LOCK_KEY})`;
   }
-
-  const tenant = await prisma.tenant.upsert({
-    where: { id: (await prisma.tenant.findFirst({ where: { name: env.tenantName } }))?.id ?? '00000000-0000-0000-0000-000000000000' },
-    update: {},
-    create: { name: env.tenantName },
-  });
-
-  const user = await prisma.user.create({
-    data: {
-      tenantId: tenant.id,
-      email: env.adminEmail,
-      passwordHash: await hashPassword(env.adminPassword),
-      firstName: 'Admin',
-      lastName: env.tenantName,
-      role: 'ADMIN',
-    },
-  });
-
-  return { tenantId: tenant.id, userId: user.id };
 }
 
 async function main() {
@@ -1193,15 +1199,26 @@ async function main() {
 }
 
 if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')) {
-  main().finally(() => prisma.$disconnect());
+  main()
+    .catch((err) => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
 }
 ```
 
-- [ ] **Step 4: Add the `db:seed` script**
+- [ ] **Step 4: Add the `db:seed` script and `prisma.seed` config**
 
-Modify `apps/api/package.json` scripts:
+Modify `apps/api/package.json` — add to `scripts`:
 ```json
 "db:seed": "tsx prisma/seed.ts"
+```
+And add this top-level field (a sibling of `"scripts"`, `"dependencies"`, etc., not nested inside them) so Prisma's own CLI (`prisma db seed`, and `prisma migrate reset`'s auto-seed step) can find the same command:
+```json
+"prisma": {
+  "seed": "tsx prisma/seed.ts"
+}
 ```
 
 - [ ] **Step 5: Run to verify pass**
