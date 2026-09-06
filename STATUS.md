@@ -20,24 +20,27 @@ Stack: monorepo npm workspaces — `apps/api` (Node/Express/TS/Prisma), `apps/we
 - **3 bugs reales de seguridad/concurrencia encontrados y corregidos** durante el proceso de revisión (race condition en refresh tokens, timing leak de enumeración de usuarios en login, race condition en el seed script que podía duplicar tenants).
 - **Verificación manual en navegador: PASÓ.** Login, crear/desactivar vendedor, y el flujo de refresh-token confirmados funcionando end-to-end sin errores.
 
-**Ahora mismo:** revisión final de todo el branch (19 commits, modelo más capaz) — se interrumpió 2 veces por rate-limit de la sesión (resetea 1:30am America/Lima). Pendiente reintentar tras el reset.
+**Ahora mismo (al momento del `/clear`):** hay un subagente de revisión final corriendo en background (revisando los 19 commits del branch contra `docs/superpowers/plans/2026-09-05-foundation-auth-team.md`). El diff ya está generado en `.superpowers/sdd/2026-09-05-foundation-auth-team/review-1932504..fcb1407.diff` — no hace falta regenerarlo. Ese subagente puede terminar y notificar, o puede que la notificación no llegue útilmente después de un `/clear` (no hay forma de garantizarlo). **Acción inmediata al retomar:**
+1. Correr `ListAgents` — si aparece un agente vivo relacionado a "Final whole-branch review", esperar su resultado o mandarle un mensaje para consultarlo.
+2. Si no aparece ningún agente vivo, simplemente volver a despachar la revisión final desde cero: usar el diff ya generado (`review-1932504..fcb1407.diff`) y el prompt de revisión que está en el ledger de Plan 1 (buscar la última entrada "Final whole-branch review dispatched" en `.superpowers/sdd/2026-09-05-foundation-auth-team/progress.md` — tiene el prompt completo usado). Usar modelo `sonnet` (opus dio rate-limit 2 veces en esta sesión).
+3. Tras la revisión: aplicar hallazgos (una sola ronda de fix + re-review si hay Critical/Important), luego `superpowers:finishing-a-development-branch` para mergear a `master`.
 
 ## Qué falta para terminar el goal
 
-1. Terminar la revisión final del branch y aplicar hallazgos (si hay).
+1. Terminar la revisión final del branch y aplicar hallazgos (si hay) — ver "Acción inmediata" arriba.
 2. Mergear el branch (`superpowers:finishing-a-development-branch`) a `master`.
-3. **Plan 2** — Leads, Empresas, Contactos, Deduplicación (por escribir).
+3. **Plan 2** — Leads, Empresas, Contactos, Deduplicación (por escribir, usando `superpowers:brainstorming`/`writing-plans` igual que Plan 1).
 4. **Plan 3** — Deals, Pipeline, Asignación de vendedor, Actividades, Tareas/próximo paso (por escribir).
 5. **Plan 4** — Búsqueda global, Filtros, Import/Export, Dashboard operativo, Auditoría (por escribir).
 6. Testing end-to-end final del MVP F1 completo.
 
-## Cómo retomar
+## Cómo retomar tras `/clear`
 
-Si esta sesión se corta, cualquier sesión nueva puede:
-- Leer este archivo para el panorama general.
-- Leer el ledger de Plan 1 si necesita el detalle de qué se decidió y por qué.
-- Si `master` todavía no tiene el merge de Plan 1: continuar en este worktree con `superpowers:subagent-driven-development`.
-- Si Plan 1 ya está mergeado a `master`: este worktree ya se puede borrar; iniciar Plan 2 desde `master`.
+1. Leer este archivo (`STATUS.md`) para el panorama general — no hace falta releer el spec ni el PDF de nuevo, ya están reflejados aquí y en el plan.
+2. Seguir la "Acción inmediata" de arriba para la revisión final pendiente.
+3. Si se necesita el detalle de qué se decidió y por qué en cada tarea de Plan 1 (por ejemplo para Plan 2, que reutiliza el mismo patrón de tenant-scoping): leer `.superpowers/sdd/2026-09-05-foundation-auth-team/progress.md`.
+4. El modo sigue siendo autónomo salvo que el usuario diga lo contrario: no pedir confirmaciones rutinarias, solo detenerse ante un bloqueo real (credenciales, decisión de negocio no cubierta).
+5. El loop autónomo (`/loop`) fue detenido explícitamente a pedido del usuario antes de este `/clear` — si se quiere retomar el trabajo autónomo continuo, hay que volver a invocar `/loop` con el objetivo.
 
 ## Modo de trabajo
 
