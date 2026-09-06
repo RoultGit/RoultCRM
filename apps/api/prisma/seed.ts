@@ -10,31 +10,36 @@ interface SeedEnv {
 const SEED_LOCK_KEY = 727100; // arbitrary fixed advisory-lock id, unique to this script
 
 export async function seed(env: SeedEnv): Promise<{ tenantId: string; userId: string }> {
-  await prisma.$executeRaw`SELECT pg_advisory_lock(${SEED_LOCK_KEY})`;
-  try {
-    const existing = await prisma.user.findUnique({ where: { email: env.adminEmail } });
-    if (existing) {
-      return { tenantId: existing.tenantId, userId: existing.id };
+  // ponytail: $transaction pins the whole callback to one physical connection,
+  // so the session-scoped advisory lock actually guards the queries it wraps
+  // even behind a transaction-pooling proxy (e.g. PgBouncer).
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_lock(${SEED_LOCK_KEY})`;
+    try {
+      const existing = await tx.user.findUnique({ where: { email: env.adminEmail } });
+      if (existing) {
+        return { tenantId: existing.tenantId, userId: existing.id };
+      }
+
+      const existingTenant = await tx.tenant.findFirst({ where: { name: env.tenantName } });
+      const tenant = existingTenant ?? (await tx.tenant.create({ data: { name: env.tenantName } }));
+
+      const user = await tx.user.create({
+        data: {
+          tenantId: tenant.id,
+          email: env.adminEmail,
+          passwordHash: await hashPassword(env.adminPassword),
+          firstName: 'Admin',
+          lastName: env.tenantName,
+          role: 'ADMIN',
+        },
+      });
+
+      return { tenantId: tenant.id, userId: user.id };
+    } finally {
+      await tx.$executeRaw`SELECT pg_advisory_unlock(${SEED_LOCK_KEY})`;
     }
-
-    const existingTenant = await prisma.tenant.findFirst({ where: { name: env.tenantName } });
-    const tenant = existingTenant ?? (await prisma.tenant.create({ data: { name: env.tenantName } }));
-
-    const user = await prisma.user.create({
-      data: {
-        tenantId: tenant.id,
-        email: env.adminEmail,
-        passwordHash: await hashPassword(env.adminPassword),
-        firstName: 'Admin',
-        lastName: env.tenantName,
-        role: 'ADMIN',
-      },
-    });
-
-    return { tenantId: tenant.id, userId: user.id };
-  } finally {
-    await prisma.$executeRaw`SELECT pg_advisory_unlock(${SEED_LOCK_KEY})`;
-  }
+  });
 }
 
 async function main() {
