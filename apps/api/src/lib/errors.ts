@@ -1,7 +1,9 @@
 export class AppError extends Error {
-  constructor(message: string, public statusCode: number) {
+  details?: unknown;
+  constructor(message: string, public statusCode: number, details?: unknown) {
     super(message);
     this.name = new.target.name;
+    this.details = details;
   }
 }
 
@@ -26,5 +28,11 @@ export class ForbiddenError extends AppError {
 export class ValidationError extends AppError {
   constructor(message = 'Validation failed') {
     super(message, 400);
+  }
+}
+
+export class DuplicateError extends AppError {
+  constructor(duplicate: unknown, message = 'Possible duplicate found') {
+    super(message, 409, { duplicate });
   }
 }
