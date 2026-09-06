@@ -3,6 +3,7 @@ import { AppShell } from '../components/layout/AppShell.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TeamPage } from '../pages/TeamPage.js';
 import { CompaniesPage } from '../pages/CompaniesPage.js';
+import { ContactsPage } from '../pages/ContactsPage.js';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -13,6 +14,7 @@ export const router = createBrowserRouter([
       { index: true, element: <div>Dashboard (próximamente)</div> },
       { path: 'team', element: <TeamPage /> },
       { path: 'companies', element: <CompaniesPage /> },
+      { path: 'contacts', element: <ContactsPage /> },
     ],
   },
 ]);
