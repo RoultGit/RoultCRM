@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,15 +11,24 @@ const formSchema = createUserSchema.omit({ role: true });
 type FormValues = z.infer<typeof formSchema>;
 
 export function CreateVendedorDialog() {
+  const [open, setOpen] = useState(false);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(formSchema) });
   const createUser = useCreateUser();
 
   const onSubmit = (data: FormValues) => {
-    createUser.mutate({ ...data, role: 'VENDEDOR' }, { onSuccess: () => reset() });
+    createUser.mutate(
+      { ...data, role: 'VENDEDOR' },
+      {
+        onSuccess: () => {
+          reset();
+          setOpen(false);
+        },
+      }
+    );
   };
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
         <Button>Agregar vendedor</Button>
       </Dialog.Trigger>
@@ -35,6 +45,9 @@ export function CreateVendedorDialog() {
             {Object.values(errors).map((err, i) => (
               <p key={i} className="text-xs text-red-600">{err?.message as string}</p>
             ))}
+            {createUser.isError && (
+              <p className="text-xs text-red-600">No se pudo crear el vendedor. Verifica que el correo no esté ya registrado.</p>
+            )}
             <Button type="submit" className="w-full" disabled={createUser.isPending}>
               {createUser.isPending ? 'Creando…' : 'Crear vendedor'}
             </Button>

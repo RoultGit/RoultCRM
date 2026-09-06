@@ -33,6 +33,7 @@ export function TeamPage() {
         <Button
           variant="outline"
           size="sm"
+          disabled={setStatus.isPending && setStatus.variables?.id === row.original.id}
           onClick={() =>
             setStatus.mutate({ id: row.original.id, status: row.original.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })
           }
@@ -51,6 +52,9 @@ export function TeamPage() {
         <h1 className="text-xl font-semibold">Vendedores</h1>
         <CreateVendedorDialog />
       </div>
+      {setStatus.isError && (
+        <p className="mb-4 text-sm text-red-600">No se pudo actualizar el estado del vendedor. Intenta de nuevo.</p>
+      )}
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>
