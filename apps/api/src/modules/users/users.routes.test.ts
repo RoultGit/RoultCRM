@@ -58,4 +58,55 @@ describe('/users routes', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
   });
+
+  it('lets an ADMIN update a user', async () => {
+    const created = await request(app)
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'patch@test.com', password: 'secret123', firstName: 'Pat', lastName: 'Ch', role: 'VENDEDOR' });
+    const res = await request(app)
+      .patch(`/users/${created.body.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ firstName: 'Patricia', phone: '555-9999' });
+    expect(res.status).toBe(200);
+    expect(res.body.firstName).toBe('Patricia');
+    expect(res.body.phone).toBe('555-9999');
+  });
+
+  it('rejects a VENDEDOR trying to update a user', async () => {
+    const created = await request(app)
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'patch2@test.com', password: 'secret123', firstName: 'Pat', lastName: 'Ch', role: 'VENDEDOR' });
+    const res = await request(app)
+      .patch(`/users/${created.body.id}`)
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .send({ firstName: 'Nope' });
+    expect(res.status).toBe(403);
+  });
+
+  it('lets an ADMIN deactivate a user via status route', async () => {
+    const created = await request(app)
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'status@test.com', password: 'secret123', firstName: 'Stat', lastName: 'Us', role: 'VENDEDOR' });
+    const res = await request(app)
+      .patch(`/users/${created.body.id}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'INACTIVE' });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('INACTIVE');
+  });
+
+  it('rejects a VENDEDOR trying to change a user status', async () => {
+    const created = await request(app)
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'status2@test.com', password: 'secret123', firstName: 'Stat', lastName: 'Us', role: 'VENDEDOR' });
+    const res = await request(app)
+      .patch(`/users/${created.body.id}/status`)
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .send({ status: 'INACTIVE' });
+    expect(res.status).toBe(403);
+  });
 });

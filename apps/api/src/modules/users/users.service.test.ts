@@ -54,4 +54,20 @@ describe('UsersService', () => {
     const user = await UsersService.create(otherTenantId, { email: 'd@test.com', password: 'secret123', firstName: 'D', lastName: 'D', role: 'VENDEDOR' });
     await expect(UsersService.setStatus(tenantId, user.id, 'INACTIVE')).rejects.toThrow(NotFoundError);
   });
+
+  it('update changes the given fields', async () => {
+    const user = await UsersService.create(tenantId, { email: 'e@test.com', password: 'secret123', firstName: 'E', lastName: 'E', role: 'VENDEDOR' });
+    const updated = await UsersService.update(tenantId, user.id, { firstName: 'Eduardo', phone: '555-1234' });
+    expect(updated.firstName).toBe('Eduardo');
+    expect(updated.phone).toBe('555-1234');
+    const list = await UsersService.list(tenantId);
+    const persisted = list.find((u) => u.id === user.id);
+    expect(persisted?.firstName).toBe('Eduardo');
+    expect(persisted?.phone).toBe('555-1234');
+  });
+
+  it('throws NotFoundError when calling update() on a user from another tenant', async () => {
+    const user = await UsersService.create(otherTenantId, { email: 'f@test.com', password: 'secret123', firstName: 'F', lastName: 'F', role: 'VENDEDOR' });
+    await expect(UsersService.update(tenantId, user.id, { firstName: 'Hacked' })).rejects.toThrow(NotFoundError);
+  });
 });
