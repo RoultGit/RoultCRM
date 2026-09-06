@@ -77,3 +77,78 @@ model AuditLog {
 
   @@index([tenantId, entityType, entityId])
 }
+
+enum Line {
+  WEB
+  SOFTWARE
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  UNQUALIFIED
+  LOST
+}
+
+model Company {
+  id             String   @id @default(uuid())
+  tenantId       String
+  name           String
+  line           Line
+  city           String?
+  source         String?
+  whatsapp       String?
+  email          String?
+  assignedUserId String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  contacts           Contact[]
+  convertedFromLeads Lead[]    @relation("LeadConvertedCompany")
+
+  @@index([tenantId])
+}
+
+model Contact {
+  id         String   @id @default(uuid())
+  tenantId   String
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id])
+  name       String
+  position   String?
+  phone      String?
+  whatsapp   String?
+  email      String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([companyId])
+}
+
+model Lead {
+  id                 String     @id @default(uuid())
+  tenantId           String
+  businessName       String
+  contactName        String
+  phone              String?
+  whatsapp           String?
+  email              String?
+  line               Line
+  source             String?
+  assignedUserId     String?
+  status             LeadStatus @default(NEW)
+  notes              String?
+  convertedCompanyId String?
+  convertedCompany   Company?   @relation("LeadConvertedCompany", fields: [convertedCompanyId], references: [id])
+  convertedAt        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
