@@ -23,8 +23,8 @@ export const CompaniesRepository = {
     });
   },
 
-  create(data: Prisma.CompanyUncheckedCreateInput) {
-    return prisma.company.create({ data });
+  create(data: Prisma.CompanyUncheckedCreateInput, client: Prisma.TransactionClient = prisma) {
+    return client.company.create({ data });
   },
 
   updateByIdAndTenant(id: string, tenantId: string, data: Prisma.CompanyUpdateInput) {

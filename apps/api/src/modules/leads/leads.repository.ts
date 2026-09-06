@@ -22,9 +22,9 @@ export const LeadsRepository = {
     return prisma.lead.updateMany({ where: { id, tenantId }, data: { status } });
   },
 
-  markConverted(id: string, tenantId: string, companyId: string) {
-    return prisma.lead.updateMany({
-      where: { id, tenantId },
+  markConverted(id: string, tenantId: string, companyId: string, client: Prisma.TransactionClient = prisma) {
+    return client.lead.updateMany({
+      where: { id, tenantId, status: { not: 'CONVERTED' } },
       data: { status: 'CONVERTED', convertedCompanyId: companyId, convertedAt: new Date() },
     });
   },

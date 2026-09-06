@@ -7,6 +7,7 @@ import { toDTO as companyToDTO } from '../companies/companies.service.js';
 import { ContactsRepository } from '../contacts/contacts.repository.js';
 import { toDTO as contactToDTO } from '../contacts/contacts.service.js';
 import { NotFoundError, ValidationError, DuplicateError } from '../../lib/errors.js';
+import { prisma } from '../../lib/prisma.js';
 
 export function toDTO(lead: Lead): LeadDTO {
   return {
@@ -85,28 +86,43 @@ export const LeadsService = {
       if (duplicateCompany) throw new DuplicateError(companyToDTO(duplicateCompany));
     }
 
-    const company = await CompaniesRepository.create({
-      tenantId,
-      name: lead.businessName,
-      line: lead.line,
-      whatsapp: lead.whatsapp,
-      email: lead.email,
-      source: lead.source,
-      assignedUserId: lead.assignedUserId,
+    // Wrapped in a transaction so the three writes commit or roll back together, and the final
+    // markConverted's `status: { not: 'CONVERTED' }` guard makes double-conversion impossible even
+    // if two convert requests for the same lead race each other: whichever transaction commits
+    // second finds 0 rows to update and rolls back its own Company/Contact inserts too.
+    const { company, contact } = await prisma.$transaction(async (tx) => {
+      const company = await CompaniesRepository.create(
+        {
+          tenantId,
+          name: lead.businessName,
+          line: lead.line,
+          whatsapp: lead.whatsapp,
+          email: lead.email,
+          source: lead.source,
+          assignedUserId: lead.assignedUserId,
+        },
+        tx
+      );
+
+      const contact = await ContactsRepository.create(
+        {
+          tenantId,
+          companyId: company.id,
+          name: lead.contactName,
+          phone: lead.phone,
+          whatsapp: lead.whatsapp,
+          email: lead.email,
+        },
+        tx
+      );
+
+      const claimed = await LeadsRepository.markConverted(id, tenantId, company.id, tx);
+      if (claimed.count === 0) throw new ValidationError('Lead is already converted');
+
+      return { company, contact };
     });
 
-    const contact = await ContactsRepository.create({
-      tenantId,
-      companyId: company.id,
-      name: lead.contactName,
-      phone: lead.phone,
-      whatsapp: lead.whatsapp,
-      email: lead.email,
-    });
-
-    await LeadsRepository.markConverted(id, tenantId, company.id);
     const updatedLead = await LeadsRepository.findByIdAndTenant(id, tenantId);
-
     return { lead: toDTO(updatedLead!), company: companyToDTO(company), contact: contactToDTO(contact) };
   },
 };

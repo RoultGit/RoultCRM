@@ -29,8 +29,8 @@ export const ContactsRepository = {
     });
   },
 
-  create(data: Prisma.ContactUncheckedCreateInput) {
-    return prisma.contact.create({ data, ...withCompanyName });
+  create(data: Prisma.ContactUncheckedCreateInput, client: Prisma.TransactionClient = prisma) {
+    return client.contact.create({ data, ...withCompanyName });
   },
 
   updateByIdAndTenant(id: string, tenantId: string, data: Prisma.ContactUpdateInput) {
