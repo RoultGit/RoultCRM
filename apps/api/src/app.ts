@@ -2,6 +2,7 @@ import express, { type Express, type ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { authRouter } from './modules/auth/auth.routes.js';
+import { usersRouter } from './modules/users/users.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -15,6 +16,7 @@ export function createApp(): Express {
   });
 
   app.use('/auth', authRouter);
+  app.use('/users', usersRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     if (err instanceof AppError) {
