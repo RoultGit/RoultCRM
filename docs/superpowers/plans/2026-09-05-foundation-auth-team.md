@@ -2202,15 +2202,24 @@ const formSchema = createUserSchema.omit({ role: true });
 type FormValues = z.infer<typeof formSchema>;
 
 export function CreateVendedorDialog() {
+  const [open, setOpen] = useState(false);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(formSchema) });
   const createUser = useCreateUser();
 
   const onSubmit = (data: FormValues) => {
-    createUser.mutate({ ...data, role: 'VENDEDOR' }, { onSuccess: () => reset() });
+    createUser.mutate(
+      { ...data, role: 'VENDEDOR' },
+      {
+        onSuccess: () => {
+          reset();
+          setOpen(false);
+        },
+      }
+    );
   };
 
   return (
-    <Dialog.Root>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
         <Button>Agregar vendedor</Button>
       </Dialog.Trigger>
@@ -2227,6 +2236,9 @@ export function CreateVendedorDialog() {
             {Object.values(errors).map((err, i) => (
               <p key={i} className="text-xs text-red-600">{err?.message as string}</p>
             ))}
+            {createUser.isError && (
+              <p className="text-xs text-red-600">No se pudo crear el vendedor. Verifica que el correo no esté ya registrado.</p>
+            )}
             <Button type="submit" className="w-full" disabled={createUser.isPending}>
               {createUser.isPending ? 'Creando…' : 'Crear vendedor'}
             </Button>
@@ -2237,6 +2249,8 @@ export function CreateVendedorDialog() {
   );
 }
 ```
+
+Add `useState` to the existing `react` import at the top of the file (`import { useState } from 'react';`).
 
 - [ ] **Step 6: Team page with table**
 
@@ -2277,6 +2291,7 @@ export function TeamPage() {
         <Button
           variant="outline"
           size="sm"
+          disabled={setStatus.isPending && setStatus.variables?.id === row.original.id}
           onClick={() =>
             setStatus.mutate({ id: row.original.id, status: row.original.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })
           }
@@ -2295,6 +2310,9 @@ export function TeamPage() {
         <h1 className="text-xl font-semibold">Vendedores</h1>
         <CreateVendedorDialog />
       </div>
+      {setStatus.isError && (
+        <p className="mb-4 text-sm text-red-600">No se pudo actualizar el estado del vendedor. Intenta de nuevo.</p>
+      )}
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>
