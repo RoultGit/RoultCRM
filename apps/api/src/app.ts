@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { companiesRouter } from './modules/companies/companies.routes.js';
+import { contactsRouter } from './modules/contacts/contacts.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -19,6 +20,7 @@ export function createApp(): Express {
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);
   app.use('/companies', companiesRouter);
+  app.use('/contacts', contactsRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     if (err instanceof AppError) {
