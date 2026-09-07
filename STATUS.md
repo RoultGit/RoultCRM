@@ -37,10 +37,26 @@ Todo el trabajo vive en el worktree `.claude/worktrees/ventry-plan1-foundation`,
   - **Sin guard de ruta**: entrar a cualquier página sin sesión pintaba todo vacío en silencio en vez de mandar al login. Era un pendiente de Plan 1.
   - **El tablero scrolleaba la página entera de costado** en vez de su propio strip (faltaba `min-w-0` en el `<main>` del AppShell), así que durante un arrastre la página se movía debajo del cursor y el deal caía varias columnas más allá. Además la detección de colisión ahora va por cursor (`pointerWithin`) y no por el rectángulo de la card, y la card arrastrada usa `DragOverlay`.
 
+**Plan 4 — Búsqueda, Filtros, Import/Export, Dashboard y Auditoría: ✅ COMPLETO.**
+- Plan: `docs/superpowers/plans/2026-09-06-busqueda-filtros-import-dashboard.md` (11 tareas)
+- Entregado: búsqueda global con ⌘K en la topbar; filtros en Leads/Empresas/Deals/Vendedores; exportación CSV que respeta los filtros; importación CSV con vista previa; dashboard operativo; auditoría (el modelo `AuditLog` existía desde Plan 1 y nunca se escribía).
+- Verde: `npm run build` limpio, 157 tests de API + 15 de web.
+- **Dos authorization bypass encontrados por revisión y corregidos:**
+  1. Los filtros ponían `...owner` y `...filters` como dos spreads en el mismo objeto: `?assignedUserId=<otro>` **pisaba** el scoping y un vendedor leía la cartera de un colega. Ahora van en `AND`.
+  2. La importación de contactos no validaba que `companyId` fuera del tenant: importar con el id de una empresa ajena creaba un contacto que aparecía en tu lista mostrando el nombre de la empresa de otro tenant. Reproducido en vivo por el revisor.
+- Otros arreglos: inyección de fórmulas en CSV (`=cmd|...` en un nombre de empresa se ejecutaba al abrir el Excel); la detección de duplicados de leads releía toda la tabla una vez por fila; `express.json()` rechazaba con un 500 opaco un archivo del tamaño que la propia API declara soportar; se quitó la FK de `AuditLog.userId` (un log histórico no debe depender de que la fila del usuario exista) que además hacía la suite intermitente.
+
+## Decisiones de alcance tomadas en Plan 4
+
+- **"Deals ganados"** no tiene etapa propia en el pipeline: se definió ganado = el cliente ya pagó (`ADELANTO` en adelante). Vive en `DEAL_STAGE_GROUPS` en `@ventry/shared`, cambiarlo es una línea.
+- **MRR queda fuera**: no hay modelo de ingreso recurrente en el MVP, no hay nada que sumar.
+- **Import/export solo CSV**, no Excel.
+- **No se importan Deals ni Vendedores**: un deal necesita resolver su empresa por nombre y un vendedor necesita credenciales.
+
 ## Qué falta para terminar el goal
 
-1. **Plan 4** — Búsqueda global, Filtros, Import/Export, Dashboard operativo, Auditoría (por escribir).
-2. Testing end-to-end final del MVP F1 completo.
+1. Testing end-to-end final del MVP F1 completo (los 4 planes juntos).
+2. Ajustes de diseño que el usuario quiere revisar.
 
 ## Cómo retomar
 
