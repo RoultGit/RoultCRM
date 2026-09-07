@@ -3,8 +3,8 @@ import type { z } from 'zod';
 import type { Contact } from '@prisma/client';
 import { ContactsRepository } from './contacts.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
-import { NotFoundError, DuplicateError } from '../../lib/errors.js';
-import { ownerFilter, type Actor } from '../../lib/scope.js';
+import { AppError, NotFoundError, DuplicateError } from '../../lib/errors.js';
+import { ownerFilter, canSee, type Actor } from '../../lib/scope.js';
 
 type ContactWithCompany = Contact & { company: { name: string } };
 
@@ -44,7 +44,16 @@ export const ContactsService = {
         phone: input.phone,
         whatsapp: input.whatsapp,
       });
-      if (duplicate) throw new DuplicateError(toDTO(duplicate));
+      // Un contacto hereda la visibilidad de su empresa: si el actor no puede ver esa empresa,
+      // se le avisa del choque sin devolverle el contacto ajeno.
+      if (duplicate) {
+        throw canSee(actor, duplicate.company)
+          ? new DuplicateError(toDTO(duplicate))
+          : new AppError(
+              'Ya existe un contacto parecido en una empresa de otro vendedor. Pedile a un administrador que te la asigne.',
+              409
+            );
+      }
     }
 
     const contact = await ContactsRepository.create({

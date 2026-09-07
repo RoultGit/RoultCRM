@@ -161,4 +161,52 @@ describe('/companies routes', () => {
     const listAdmin = await request(app).get('/companies').set('Authorization', `Bearer ${token}`);
     expect(listAdmin.body.map((c: { id: string }) => c.id)).toContain(created.body.id);
   });
+  it('does not leak another vendedor’s company through the duplicate warning', async () => {
+    const sellerA = signAccessToken({ userId: sellerAId, tenantId, role: 'VENDEDOR' });
+    const sellerB = signAccessToken({ userId: sellerBId, tenantId, role: 'VENDEDOR' });
+    await request(app)
+      .post('/companies')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ name: 'Cliente Secreto SAC', line: 'WEB', email: 'secreto@cliente.pe', notes: 'paga tarde' });
+
+    // B sondea con el nombre para que el 409 le devuelva la ficha de A.
+    const res = await request(app)
+      .post('/companies')
+      .set('Authorization', `Bearer ${sellerB}`)
+      .send({ name: 'Cliente Secreto SAC', line: 'WEB' });
+    expect(res.status).toBe(409);
+    expect(res.body.details).toBeUndefined();
+    expect(JSON.stringify(res.body)).not.toContain('secreto@cliente.pe');
+    expect(JSON.stringify(res.body)).not.toContain('paga tarde');
+    expect(JSON.stringify(res.body)).not.toContain(sellerAId);
+  });
+
+  it('still shows a vendedor their own duplicate in full', async () => {
+    const sellerA = signAccessToken({ userId: sellerAId, tenantId, role: 'VENDEDOR' });
+    await request(app)
+      .post('/companies')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ name: 'Propia SAC', line: 'WEB' });
+
+    const res = await request(app)
+      .post('/companies')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ name: 'Propia SAC', line: 'WEB' });
+    expect(res.status).toBe(409);
+    expect(res.body.details.duplicate.name).toBe('Propia SAC');
+  });
+
+  it('refuses to let a vendedor reassign a company', async () => {
+    const sellerA = signAccessToken({ userId: sellerAId, tenantId, role: 'VENDEDOR' });
+    const created = await request(app)
+      .post('/companies')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ name: 'Propia SAC', line: 'WEB' });
+
+    const res = await request(app)
+      .patch(`/companies/${created.body.id}`)
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ assignedUserId: sellerBId });
+    expect(res.status).toBe(403);
+  });
 });

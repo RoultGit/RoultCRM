@@ -87,4 +87,78 @@ describe('/contacts routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.position).toBe('Gerente');
   });
+  // Contactos es el único módulo donde el filtro de dueño es una consulta relacional (por la
+  // empresa) en vez de un campo plano, así que es el que más necesita cobertura propia.
+  it('hides the contacts of another vendedor’s company', async () => {
+    const sellerA = signAccessToken({ userId: 'seller-a', tenantId, role: 'VENDEDOR' });
+    const sellerB = signAccessToken({ userId: 'seller-b', tenantId, role: 'VENDEDOR' });
+    const companyOfA = await prisma.company.create({
+      data: { tenantId, name: 'Empresa de A', line: 'WEB', assignedUserId: 'seller-a' },
+    });
+
+    const created = await request(app)
+      .post('/contacts')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ companyId: companyOfA.id, name: 'Contacto de A' });
+    expect(created.status).toBe(201);
+
+    const listB = await request(app).get('/contacts').set('Authorization', `Bearer ${sellerB}`);
+    expect(listB.body.map((c: { id: string }) => c.id)).not.toContain(created.body.id);
+
+    const listA = await request(app).get('/contacts').set('Authorization', `Bearer ${sellerA}`);
+    expect(listA.body.map((c: { id: string }) => c.id)).toContain(created.body.id);
+
+    const patchB = await request(app)
+      .patch(`/contacts/${created.body.id}`)
+      .set('Authorization', `Bearer ${sellerB}`)
+      .send({ position: 'Gerente' });
+    expect(patchB.status).toBe(404);
+
+    await prisma.contact.deleteMany({ where: { companyId: companyOfA.id } });
+    await prisma.company.delete({ where: { id: companyOfA.id } });
+  });
+
+  it('refuses to hang a contact off another vendedor’s company', async () => {
+    const sellerB = signAccessToken({ userId: 'seller-b', tenantId, role: 'VENDEDOR' });
+    const companyOfA = await prisma.company.create({
+      data: { tenantId, name: 'Empresa de A', line: 'WEB', assignedUserId: 'seller-a' },
+    });
+
+    const res = await request(app)
+      .post('/contacts')
+      .set('Authorization', `Bearer ${sellerB}`)
+      .send({ companyId: companyOfA.id, name: 'Colado' });
+    expect(res.status).toBe(404);
+
+    await prisma.company.delete({ where: { id: companyOfA.id } });
+  });
+
+  it('does not leak another vendedor’s contact through the duplicate warning', async () => {
+    const sellerA = signAccessToken({ userId: 'seller-a', tenantId, role: 'VENDEDOR' });
+    const sellerB = signAccessToken({ userId: 'seller-b', tenantId, role: 'VENDEDOR' });
+    const companyOfA = await prisma.company.create({
+      data: { tenantId, name: 'Empresa de A', line: 'WEB', assignedUserId: 'seller-a' },
+    });
+    const companyOfB = await prisma.company.create({
+      data: { tenantId, name: 'Empresa de B', line: 'WEB', assignedUserId: 'seller-b' },
+    });
+    await request(app)
+      .post('/contacts')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ companyId: companyOfA.id, name: 'Secreto', email: 'secreto@a.pe', phone: '999888777' });
+
+    // B adivina el teléfono y busca que el 409 le devuelva el contacto de A.
+    const res = await request(app)
+      .post('/contacts')
+      .set('Authorization', `Bearer ${sellerB}`)
+      .send({ companyId: companyOfB.id, name: 'Sondeo', phone: '999888777' });
+    expect(res.status).toBe(409);
+    expect(res.body.details).toBeUndefined();
+    expect(JSON.stringify(res.body)).not.toContain('secreto@a.pe');
+    expect(JSON.stringify(res.body)).not.toContain('Secreto');
+
+    await prisma.contact.deleteMany({ where: { tenantId } });
+    await prisma.company.delete({ where: { id: companyOfA.id } });
+    await prisma.company.delete({ where: { id: companyOfB.id } });
+  });
 });

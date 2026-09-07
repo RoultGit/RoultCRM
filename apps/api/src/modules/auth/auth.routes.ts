@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { AuthService } from './auth.service.js';
 import { ValidationError } from '../../lib/errors.js';
+import { UsersService } from '../users/users.service.js';
+import { requireAuth } from '../../middleware/auth.js';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -48,6 +50,15 @@ authRouter.post('/logout', async (req, res, next) => {
     if (token) await AuthService.logout(token);
     res.clearCookie(REFRESH_COOKIE);
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// requireAuth va en la ruta y no en el router entero: /login y /refresh tienen que seguir públicas.
+authRouter.get('/me', requireAuth, async (req, res, next) => {
+  try {
+    res.json(await UsersService.me(req.user!));
   } catch (err) {
     next(err);
   }

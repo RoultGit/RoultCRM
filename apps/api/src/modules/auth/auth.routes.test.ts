@@ -51,4 +51,17 @@ describe('POST /auth/login', () => {
     const res = await request(app).post('/auth/login').send({ email: 'not-an-email' });
     expect(res.status).toBe(400);
   });
+  it('returns the logged-in user from /auth/me', async () => {
+    const login = await request(app).post('/auth/login').send({ email: 'route@test.com', password: 'secret123' });
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe('route@test.com');
+    expect(res.body.role).toBe('ADMIN');
+    expect(res.body.passwordHash).toBeUndefined();
+  });
+
+  it('rejects /auth/me without a token', async () => {
+    const res = await request(app).get('/auth/me');
+    expect(res.status).toBe(401);
+  });
 });

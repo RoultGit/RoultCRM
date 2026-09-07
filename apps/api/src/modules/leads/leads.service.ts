@@ -2,12 +2,13 @@ import type { LeadDTO, CompanyDTO, ContactDTO, createLeadSchema, updateLeadSchem
 import type { z } from 'zod';
 import type { Lead } from '@prisma/client';
 import { LeadsRepository } from './leads.repository.js';
+import { UsersRepository } from '../users/users.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
 import { toDTO as companyToDTO } from '../companies/companies.service.js';
 import { ContactsRepository } from '../contacts/contacts.repository.js';
 import { toDTO as contactToDTO } from '../contacts/contacts.service.js';
-import { NotFoundError, ValidationError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
-import { ownerFilter, defaultAssignee, type Actor } from '../../lib/scope.js';
+import { AppError, NotFoundError, ValidationError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
+import { ownerFilter, defaultAssignee, canSee, type Actor } from '../../lib/scope.js';
 import { prisma } from '../../lib/prisma.js';
 
 export function toDTO(lead: Lead): LeadDTO {
@@ -30,6 +31,12 @@ export function toDTO(lead: Lead): LeadDTO {
   };
 }
 
+async function assertAssignedUserValid(tenantId: string, assignedUserId?: string) {
+  if (!assignedUserId) return;
+  const user = await UsersRepository.findByIdAndTenant(assignedUserId, tenantId);
+  if (!user) throw new NotFoundError('Assigned user not found');
+}
+
 export const LeadsService = {
   async list(actor: Actor): Promise<LeadDTO[]> {
     const leads = await LeadsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor));
@@ -37,6 +44,11 @@ export const LeadsService = {
   },
 
   async create(actor: Actor, input: z.infer<typeof createLeadSchema>): Promise<LeadDTO> {
+    const assignedUserId = defaultAssignee(actor, input.assignedUserId);
+    // Solo se valida lo que vino del request. El id del propio actor sale de un JWT firmado de un
+    // usuario real, chequearlo contra la base es redundante; y para un VENDEDOR el assignedUserId
+    // del body se descarta antes de llegar acá, así que tampoco hay nada que validar.
+    if (actor.role === 'ADMIN') await assertAssignedUserValid(actor.tenantId, input.assignedUserId);
     const lead = await LeadsRepository.create({
       tenantId: actor.tenantId,
       businessName: input.businessName,
@@ -46,7 +58,7 @@ export const LeadsService = {
       email: input.email,
       line: input.line,
       source: input.source,
-      assignedUserId: defaultAssignee(actor, input.assignedUserId),
+      assignedUserId,
       notes: input.notes,
     });
     return toDTO(lead);
@@ -58,6 +70,7 @@ export const LeadsService = {
     if (input.assignedUserId !== undefined && actor.role !== 'ADMIN') {
       throw new ForbiddenError('Solo un administrador puede reasignar un lead');
     }
+    await assertAssignedUserValid(actor.tenantId, input.assignedUserId);
     await LeadsRepository.updateByIdAndTenant(id, actor.tenantId, input);
     const updated = await LeadsRepository.findByIdAndTenant(id, actor.tenantId);
     return toDTO(updated!);
@@ -88,7 +101,14 @@ export const LeadsService = {
         email: lead.email ?? undefined,
         whatsapp: lead.whatsapp ?? undefined,
       });
-      if (duplicateCompany) throw new DuplicateError(companyToDTO(duplicateCompany));
+      if (duplicateCompany) {
+        throw canSee(actor, duplicateCompany)
+          ? new DuplicateError(companyToDTO(duplicateCompany))
+          : new AppError(
+              'Ya existe una empresa parecida asignada a otro vendedor. Pedile a un administrador que te la asigne.',
+              409
+            );
+      }
     }
 
     // Wrapped in a transaction so the three writes commit or roll back together, and the final

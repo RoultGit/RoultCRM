@@ -5,7 +5,7 @@ import { hashPassword } from '../../lib/password.js';
 import { NotFoundError } from '../../lib/errors.js';
 import type { User } from '@prisma/client';
 
-function toDTO(user: User): UserDTO {
+export function toDTO(user: User): UserDTO {
   return {
     id: user.id,
     email: user.email,
@@ -20,6 +20,12 @@ function toDTO(user: User): UserDTO {
 }
 
 export const UsersService = {
+  async me(actor: { userId: string; tenantId: string }): Promise<UserDTO> {
+    const user = await UsersRepository.findByIdAndTenant(actor.userId, actor.tenantId);
+    if (!user) throw new NotFoundError('User not found');
+    return toDTO(user);
+  },
+
   async list(tenantId: string): Promise<UserDTO[]> {
     const users = await UsersRepository.findManyByTenant(tenantId);
     return users.map(toDTO);

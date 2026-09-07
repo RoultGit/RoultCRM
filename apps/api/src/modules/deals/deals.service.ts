@@ -46,7 +46,10 @@ export const DealsService = {
     if (!company) throw new NotFoundError('Company not found');
 
     const assignedUserId = defaultAssignee(actor, input.assignedUserId);
-    await assertUserInTenant(actor.tenantId, assignedUserId);
+    // Solo se valida lo que vino del request. El id del propio actor sale de un JWT firmado de un
+    // usuario real, chequearlo contra la base es redundante; y para un VENDEDOR el assignedUserId
+    // del body se descarta antes de llegar acá, así que tampoco hay nada que validar.
+    if (actor.role === 'ADMIN') await assertUserInTenant(actor.tenantId, input.assignedUserId);
     await assertUserInTenant(actor.tenantId, input.nextStepOwnerId);
 
     const deal = await DealsRepository.create({

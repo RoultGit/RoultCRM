@@ -15,5 +15,9 @@ envContent.split('\n').forEach((line) => {
 export default defineConfig({
   test: {
     environment: 'node',
+    // Todos los archivos comparten el mismo Postgres de pruebas, y User.email es único a nivel
+    // global (no por tenant). Corriéndolos en paralelo se pisan entre sí y la suite falla de
+    // forma intermitente sin que haya nada roto en el código.
+    fileParallelism: false,
   },
 });

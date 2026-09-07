@@ -3,6 +3,9 @@ import type { Prisma } from '@prisma/client';
 
 const withCompanyName = { include: { company: { select: { name: true } } } } as const;
 
+// La visibilidad de un contacto la decide el dueño de su empresa, no el contacto en sí.
+const withCompanyOwner = { include: { company: { select: { name: true, assignedUserId: true } } } } as const;
+
 export const ContactsRepository = {
   findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}) {
     return prisma.contact.findMany({
@@ -32,7 +35,7 @@ export const ContactsRepository = {
     if (criteria.whatsapp) or.push({ whatsapp: criteria.whatsapp });
     return prisma.contact.findFirst({
       where: { tenantId, OR: or, ...(excludeId ? { id: { not: excludeId } } : {}) },
-      ...withCompanyName,
+      ...withCompanyOwner,
     });
   },
 
