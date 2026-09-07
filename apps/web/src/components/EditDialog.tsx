@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useForm, type DefaultValues, type FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,7 +9,9 @@ import { useUsers } from '../hooks/useUsers.js';
 export interface EditField {
   key: string;
   label: string;
-  type?: 'text' | 'email' | 'date' | 'textarea';
+  // 'time' usa el <input type="time"> nativo: el navegador ya da el formato de 24h, el teclado
+  // correcto en móvil y devuelve exactamente el "HH:mm" que espera el schema.
+  type?: 'text' | 'email' | 'date' | 'time' | 'textarea';
   /** `vendedores` se llena solo con los usuarios del tenant. */
   options?: { value: string; label: string }[] | 'vendedores';
   /** Un select obligatorio (Línea, Moneda) no debe ofrecer la opción vacía. */
@@ -27,6 +29,7 @@ export function EditDialog<T extends FieldValues>({
   isPending,
   isError,
   onSubmit,
+  trigger,
 }: {
   title: string;
   fields: EditField[];
@@ -36,6 +39,9 @@ export function EditDialog<T extends FieldValues>({
   isPending?: boolean;
   isError?: boolean;
   onSubmit: (data: T, close: () => void) => void;
+  /** Botón que abre el diálogo. Por defecto un "Editar" de contorno; en las cards del tablero se
+   *  reemplaza por un ícono, porque diez botones iguales apilados tapan el contenido. */
+  trigger?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const { data: users } = useUsers();
@@ -55,9 +61,11 @@ export function EditDialog<T extends FieldValues>({
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <Button variant="outline" size="sm">
-          Editar
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" size="sm">
+            Editar
+          </Button>
+        )}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/30" />

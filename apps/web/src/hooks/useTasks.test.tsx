@@ -12,7 +12,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('useTasks', () => {
   it('fetches the task list', async () => {
     vi.spyOn(apiClient, 'get').mockResolvedValue({
-      data: [{ id: '1', title: 'Llamar a ABC SAC', done: false }],
+      data: [{ id: '1', title: 'Llamar a ABC SAC', status: 'TODO' }],
     });
     const { result } = renderHook(() => useTasks(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

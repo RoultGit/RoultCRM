@@ -1,16 +1,5 @@
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Users,
-  Building2,
-  Contact,
-  Handshake,
-  ListChecks,
-  CalendarClock,
-  History,
-  Upload,
-  LogOut,
-} from 'lucide-react';
+import { Building2, CalendarClock, CalendarDays, Contact, Handshake, History, LayoutDashboard, ListChecks, LogOut, Upload, Users } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
 import { useSession, useLogout } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
@@ -23,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/contacts', label: 'Contactos', icon: Contact },
   { to: '/team', label: 'Vendedores', icon: Users },
   { to: '/tasks', label: 'Tareas', icon: CalendarClock },
+  { to: '/calendar', label: 'Calendario', icon: CalendarDays },
 ];
 // ponytail: sin entrada de Configuración hasta que haya algo que configurar. Un link que lleva a
 // un 404 es peor que no tener el link.

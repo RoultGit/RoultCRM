@@ -16,6 +16,7 @@ export interface CreateTaskInput {
   description?: string;
   ownerId?: string;
   dueDate: string;
+  dueTime?: string;
 }
 
 export function useCreateTask() {
@@ -29,8 +30,32 @@ export function useCreateTask() {
 export function useUpdateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...input }: { id: string; done?: boolean } & Partial<CreateTaskInput>) =>
+    mutationFn: async ({ id, ...input }: { id: string } & Partial<CreateTaskInput>) =>
       (await apiClient.patch<TaskDTO>(`/tasks/${id}`, input)).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: TASKS_KEY }),
+  });
+}
+
+// Mover una tarea de columna es el gesto más repetido del tablero, así que se pinta antes de que
+// conteste el servidor. Mismo criterio (y misma trampa) que el pipeline de deals: setQueriesData
+// hace match por prefijo, y se escribe la caché ANTES del cancelQueries para no meter un await de
+// red delante del repintado.
+export function useSetTaskStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: TaskDTO['status'] }) =>
+      (await apiClient.patch<TaskDTO>(`/tasks/${id}/status`, { status })).data,
+    onMutate: async ({ id, status }) => {
+      const previous = queryClient.getQueriesData<TaskDTO[]>({ queryKey: TASKS_KEY });
+      queryClient.setQueriesData<TaskDTO[]>({ queryKey: TASKS_KEY }, (tasks) =>
+        tasks?.map((task) => (task.id === id ? { ...task, status } : task))
+      );
+      await queryClient.cancelQueries({ queryKey: TASKS_KEY });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: TASKS_KEY }),
   });
 }

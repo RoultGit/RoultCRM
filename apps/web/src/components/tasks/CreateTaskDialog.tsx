@@ -44,12 +44,22 @@ export function CreateTaskDialog() {
               placeholder="¿Qué hay que hacer?"
               {...register('title')}
             />
-            <input
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-              type="date"
-              title="Fecha límite"
-              {...register('dueDate')}
-            />
+            <div className="flex gap-2">
+              <input
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                type="date"
+                title="Fecha límite"
+                {...register('dueDate')}
+              />
+              {/* La hora es opcional: sin ella la tarea es de todo el día y el calendario la ubica
+                  en la fila de arriba en vez de a una hora concreta. */}
+              <input
+                className="w-36 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                type="time"
+                title="Hora (opcional)"
+                {...register('dueTime')}
+              />
+            </div>
             <textarea
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
               rows={2}
