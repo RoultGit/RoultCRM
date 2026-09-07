@@ -1,10 +1,11 @@
 import type { CompanyDTO, createCompanySchema, updateCompanySchema } from '@ventry/shared';
 import type { z } from 'zod';
-import type { Company } from '@prisma/client';
+import type { Company, Prisma } from '@prisma/client';
 import { CompaniesRepository, type CompanyFilters } from './companies.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { AppError, NotFoundError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
 import { ownerFilter, defaultAssignee, canSee, type Actor } from '../../lib/scope.js';
+import { recordAudit } from '../../lib/audit.js';
 
 export function toDTO(company: Company): CompanyDTO {
   return {
@@ -72,6 +73,7 @@ export const CompaniesService = {
       assignedUserId,
       notes: input.notes,
     });
+    await recordAudit(actor, { action: 'CREATE', entityType: 'COMPANY', entityId: company.id, after: toDTO(company) as unknown as Prisma.InputJsonValue });
     return toDTO(company);
   },
 
@@ -85,6 +87,13 @@ export const CompaniesService = {
     await assertAssignedUserValid(tenantId, input.assignedUserId);
     await CompaniesRepository.updateByIdAndTenant(id, tenantId, input);
     const updated = await CompaniesRepository.findByIdAndTenant(id, tenantId);
+    await recordAudit(actor, {
+      action: 'UPDATE',
+      entityType: 'COMPANY',
+      entityId: id,
+      before: toDTO(existing) as unknown as Prisma.InputJsonValue,
+      after: toDTO(updated!) as unknown as Prisma.InputJsonValue,
+    });
     return toDTO(updated!);
   },
 };

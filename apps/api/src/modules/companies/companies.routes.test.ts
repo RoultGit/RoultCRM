@@ -44,6 +44,7 @@ describe('/companies routes', () => {
 
   afterAll(async () => {
     await prisma.company.deleteMany({ where: { tenantId } });
+    await prisma.auditLog.deleteMany({ where: { tenantId } });
     await prisma.user.deleteMany({ where: { tenantId } });
     await prisma.tenant.delete({ where: { id: tenantId } });
     await prisma.$disconnect();

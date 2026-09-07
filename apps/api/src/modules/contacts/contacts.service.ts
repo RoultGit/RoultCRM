@@ -1,10 +1,11 @@
 import type { ContactDTO, createContactSchema, updateContactSchema } from '@ventry/shared';
 import type { z } from 'zod';
-import type { Contact } from '@prisma/client';
+import type { Contact, Prisma } from '@prisma/client';
 import { ContactsRepository } from './contacts.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
 import { AppError, NotFoundError, DuplicateError } from '../../lib/errors.js';
 import { ownerFilter, canSee, type Actor } from '../../lib/scope.js';
+import { recordAudit } from '../../lib/audit.js';
 
 type ContactWithCompany = Contact & { company: { name: string } };
 
@@ -66,6 +67,7 @@ export const ContactsService = {
       email: input.email,
       notes: input.notes,
     });
+    await recordAudit(actor, { action: 'CREATE', entityType: 'CONTACT', entityId: contact.id, after: toDTO(contact) as unknown as Prisma.InputJsonValue });
     return toDTO(contact);
   },
 
@@ -75,6 +77,13 @@ export const ContactsService = {
     if (!existing) throw new NotFoundError('Contact not found');
     await ContactsRepository.updateByIdAndTenant(id, tenantId, input);
     const updated = await ContactsRepository.findByIdAndTenant(id, tenantId);
+    await recordAudit(actor, {
+      action: 'UPDATE',
+      entityType: 'CONTACT',
+      entityId: id,
+      before: toDTO(existing) as unknown as Prisma.InputJsonValue,
+      after: toDTO(updated!) as unknown as Prisma.InputJsonValue,
+    });
     return toDTO(updated!);
   },
 };

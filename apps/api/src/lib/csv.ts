@@ -5,9 +5,17 @@ export interface CsvColumn<T> {
 
 // Serializar CSV bien son quince líneas y no vale una dependencia. Parsearlo es otra historia — eso
 // pasa en el navegador con papaparse, porque comillas y saltos de línea embebidos sí tienen filo.
+// Excel y Sheets ejecutan como fórmula cualquier celda que arranque con = + - @ o un tabulador.
+// Todo lo que se exporta acá lo escribió un usuario en un formulario, así que un nombre de empresa
+// como `=cmd|'/c calc'!A0` termina corriendo en la máquina de quien abra el archivo. Anteponer un
+// apóstrofo es la mitigación estándar: Excel lo consume al mostrar y la celda queda como texto.
+function neutralizeFormula(text: string): string {
+  return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+}
+
 function escape(value: unknown): string {
   if (value === null || value === undefined) return '';
-  const text = String(value);
+  const text = neutralizeFormula(String(value));
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

@@ -1,11 +1,12 @@
 import type { DealDTO, createDealSchema, updateDealSchema, setDealStageSchema } from '@ventry/shared';
 import type { z } from 'zod';
-import type { Deal } from '@prisma/client';
+import type { Deal, Prisma } from '@prisma/client';
 import { DealsRepository, type DealFilters } from './deals.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { NotFoundError, ForbiddenError } from '../../lib/errors.js';
 import { ownerFilter, defaultAssignee, type Actor } from '../../lib/scope.js';
+import { recordAudit } from '../../lib/audit.js';
 
 type DealWithCompany = Deal & { company: { name: string } };
 
@@ -64,6 +65,7 @@ export const DealsService = {
       nextStepOwnerId: input.nextStepOwnerId,
       nextStepDate: input.nextStepDate ? new Date(input.nextStepDate) : undefined,
     });
+    await recordAudit(actor, { action: 'CREATE', entityType: 'DEAL', entityId: deal.id, after: toDTO(deal) as unknown as Prisma.InputJsonValue });
     return toDTO(deal);
   },
 
@@ -89,6 +91,13 @@ export const DealsService = {
       ...(input.nextStepDate !== undefined ? { nextStepDate: new Date(input.nextStepDate) } : {}),
     });
     const updated = await DealsRepository.findByIdAndTenant(id, actor.tenantId);
+    await recordAudit(actor, {
+      action: 'UPDATE',
+      entityType: 'DEAL',
+      entityId: id,
+      before: toDTO(existing) as unknown as Prisma.InputJsonValue,
+      after: toDTO(updated!) as unknown as Prisma.InputJsonValue,
+    });
     return toDTO(updated!);
   },
 
@@ -103,6 +112,13 @@ export const DealsService = {
       lostReason: input.stage === 'PERDIDO' ? input.lostReason! : null,
     });
     const updated = await DealsRepository.findByIdAndTenant(id, actor.tenantId);
+    await recordAudit(actor, {
+      action: 'STAGE_CHANGE',
+      entityType: 'DEAL',
+      entityId: id,
+      before: { stage: existing.stage, lostReason: existing.lostReason },
+      after: { stage: input.stage, lostReason: input.stage === 'PERDIDO' ? input.lostReason! : null },
+    });
     return toDTO(updated!);
   },
 
@@ -123,6 +139,13 @@ export const DealsService = {
         previousUserId: existing.assignedUserId,
         newUserId: assignedUserId ?? null,
         changedById: actor.userId,
+      });
+      await recordAudit(actor, {
+        action: 'ASSIGN',
+        entityType: 'DEAL',
+        entityId: id,
+        before: { assignedUserId: existing.assignedUserId },
+        after: { assignedUserId: assignedUserId ?? null },
       });
     }
 

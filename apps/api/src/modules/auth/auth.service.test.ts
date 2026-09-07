@@ -14,6 +14,7 @@ describe('AuthService', () => {
 
   afterAll(async () => {
     await prisma.refreshToken.deleteMany({ where: { user: { tenantId } } });
+    await prisma.auditLog.deleteMany({ where: { tenantId } });
     await prisma.user.deleteMany({ where: { tenantId } });
     await prisma.tenant.delete({ where: { id: tenantId } });
     await prisma.$disconnect();
@@ -21,6 +22,7 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     await prisma.refreshToken.deleteMany({ where: { user: { tenantId } } });
+    await prisma.auditLog.deleteMany({ where: { tenantId } });
     await prisma.user.deleteMany({ where: { tenantId } });
     await prisma.user.create({
       data: {

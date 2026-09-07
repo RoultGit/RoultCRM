@@ -1,6 +1,6 @@
 import type { LeadDTO, CompanyDTO, ContactDTO, createLeadSchema, updateLeadSchema, setLeadStatusSchema } from '@ventry/shared';
 import type { z } from 'zod';
-import type { Lead } from '@prisma/client';
+import type { Lead, Prisma } from '@prisma/client';
 import { LeadsRepository, type LeadFilters } from './leads.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
@@ -9,6 +9,7 @@ import { ContactsRepository } from '../contacts/contacts.repository.js';
 import { toDTO as contactToDTO } from '../contacts/contacts.service.js';
 import { AppError, NotFoundError, ValidationError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
 import { ownerFilter, defaultAssignee, canSee, type Actor } from '../../lib/scope.js';
+import { recordAudit } from '../../lib/audit.js';
 import { prisma } from '../../lib/prisma.js';
 
 export function toDTO(lead: Lead): LeadDTO {
@@ -61,6 +62,7 @@ export const LeadsService = {
       assignedUserId,
       notes: input.notes,
     });
+    await recordAudit(actor, { action: 'CREATE', entityType: 'LEAD', entityId: lead.id, after: toDTO(lead) as unknown as Prisma.InputJsonValue });
     return toDTO(lead);
   },
 
@@ -73,6 +75,13 @@ export const LeadsService = {
     await assertAssignedUserValid(actor.tenantId, input.assignedUserId);
     await LeadsRepository.updateByIdAndTenant(id, actor.tenantId, input);
     const updated = await LeadsRepository.findByIdAndTenant(id, actor.tenantId);
+    await recordAudit(actor, {
+      action: 'UPDATE',
+      entityType: 'LEAD',
+      entityId: id,
+      before: toDTO(existing) as unknown as Prisma.InputJsonValue,
+      after: toDTO(updated!) as unknown as Prisma.InputJsonValue,
+    });
     return toDTO(updated!);
   },
 
@@ -82,6 +91,13 @@ export const LeadsService = {
     if (existing.status === 'CONVERTED') throw new ValidationError('Cannot change the status of a converted lead');
     await LeadsRepository.updateStatus(id, actor.tenantId, status);
     const updated = await LeadsRepository.findByIdAndTenant(id, actor.tenantId);
+    await recordAudit(actor, {
+      action: 'STATUS_CHANGE',
+      entityType: 'LEAD',
+      entityId: id,
+      before: { status: existing.status },
+      after: { status },
+    });
     return toDTO(updated!);
   },
 
@@ -148,6 +164,12 @@ export const LeadsService = {
     });
 
     const updatedLead = await LeadsRepository.findByIdAndTenant(id, tenantId);
+    await recordAudit(actor, {
+      action: 'CONVERT',
+      entityType: 'LEAD',
+      entityId: id,
+      after: { companyId: company.id, contactId: contact.id },
+    });
     return { lead: toDTO(updatedLead!), company: companyToDTO(company), contact: contactToDTO(contact) };
   },
 };
