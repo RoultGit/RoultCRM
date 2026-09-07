@@ -4,6 +4,7 @@ import { AuthService } from './auth.service.js';
 import { ValidationError } from '../../lib/errors.js';
 import { UsersService } from '../users/users.service.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { rateLimit } from '../../middleware/rateLimit.js';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -20,11 +21,20 @@ const REFRESH_COOKIE_OPTS = {
 
 export const authRouter = Router();
 
-authRouter.post('/login', async (req, res, next) => {
+// Sin esto, probar contraseñas contra /auth/login es gratis e ilimitado. Diez intentos por IP cada
+// quince minutos deja trabajar a alguien que se equivoca de tecla y corta cualquier fuerza bruta.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Demasiados intentos de ingreso. Esperá unos minutos y probá de nuevo.',
+});
+
+authRouter.post('/login', loginLimiter, async (req, res, next) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError('Invalid email or password format');
     const { accessToken, refreshToken } = await AuthService.login(parsed.data.email, parsed.data.password);
+    loginLimiter.reset(req);
     res.cookie(REFRESH_COOKIE, refreshToken, REFRESH_COOKIE_OPTS);
     res.json({ accessToken });
   } catch (err) {
