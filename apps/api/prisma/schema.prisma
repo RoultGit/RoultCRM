@@ -108,6 +108,7 @@ model Company {
 
   contacts           Contact[]
   convertedFromLeads Lead[]    @relation("LeadConvertedCompany")
+  deals              Deal[]
 
   @@index([tenantId])
 }
@@ -151,4 +152,80 @@ model Lead {
 
   @@index([tenantId])
   @@index([tenantId, status])
+}
+
+enum Currency {
+  PEN
+  USD
+}
+
+enum DealStage {
+  CONTACTO
+  PROPUESTA
+  NEGOCIACION
+  ADELANTO
+  PRODUCCION
+  ENTREGADO
+  MANTENIMIENTO
+  PERDIDO
+}
+
+enum RelatedType {
+  LEAD
+  COMPANY
+  DEAL
+}
+
+model Deal {
+  id                  String    @id @default(uuid())
+  tenantId            String
+  companyId           String
+  company             Company   @relation(fields: [companyId], references: [id])
+  title               String
+  amount              Decimal   @db.Decimal(12, 2)
+  currency            Currency
+  stage               DealStage @default(CONTACTO)
+  assignedUserId      String?
+  expectedCloseDate   DateTime?
+  lostReason          String?
+  nextStepDescription String?
+  nextStepOwnerId     String?
+  nextStepDate        DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, stage])
+  @@index([tenantId, assignedUserId])
+  @@index([companyId])
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  tenantId    String
+  title       String
+  description String?
+  ownerId     String
+  relatedType RelatedType?
+  relatedId   String?
+  dueDate     DateTime
+  done        Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, ownerId, done])
+}
+
+model AssignmentHistory {
+  id             String      @id @default(uuid())
+  tenantId       String
+  entityType     RelatedType
+  entityId       String
+  previousUserId String?
+  newUserId      String?
+  changedById    String
+  changedAt      DateTime    @default(now())
+
+  @@index([tenantId, entityType, entityId])
 }
