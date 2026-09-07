@@ -6,7 +6,8 @@ import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import { CreateLeadDialog } from '../components/leads/CreateLeadDialog.js';
-import { useLeads, useSetLeadStatus, useConvertLead } from '../hooks/useLeads.js';
+import { useLeads, useSetLeadStatus, useConvertLead, useUpdateLead } from '../hooks/useLeads.js';
+import { AssigneeCell } from '../components/AssigneeCell.js';
 
 const STATUS_TONE: Record<LeadDTO['status'], 'info' | 'neutral' | 'warning' | 'success' | 'danger'> = {
   NEW: 'info',
@@ -42,17 +43,24 @@ export function LeadsPage() {
   const { data: leads, isLoading } = useLeads();
   const setStatus = useSetLeadStatus();
   const convert = useConvertLead();
+  const updateLead = useUpdateLead();
   const [duplicate, setDuplicate] = useState<{ lead: LeadDTO; company: CompanyDTO } | null>(null);
+  const [blocked, setBlocked] = useState<string | null>(null);
 
   const runConvert = (lead: LeadDTO, confirmDuplicate = false) =>
     convert.mutate(
       { id: lead.id, confirmDuplicate },
       {
-        onSuccess: () => setDuplicate(null),
+        onSuccess: () => {
+          setDuplicate(null);
+          setBlocked(null);
+        },
         onError: (err) => {
-          if (isAxiosError(err) && err.response?.status === 409) {
-            setDuplicate({ lead, company: err.response.data.details.duplicate as CompanyDTO });
-          }
+          if (!isAxiosError(err) || err.response?.status !== 409) return;
+          // Un 409 sin `details` es una empresa de otro vendedor: el choque se avisa, la ficha no.
+          const found = err.response.data.details?.duplicate as CompanyDTO | undefined;
+          if (found) setDuplicate({ lead, company: found });
+          else setBlocked(err.response.data.error as string);
         },
       }
     );
@@ -65,6 +73,16 @@ export function LeadsPage() {
       cell: (info) => <Badge tone={STATUS_TONE[info.getValue()]}>{STATUS_LABEL[info.getValue()]}</Badge>,
     }),
     columnHelper.accessor('source', { header: 'Origen', cell: (info) => info.getValue() ?? '—' }),
+    columnHelper.accessor('assignedUserId', {
+      header: 'Vendedor',
+      cell: ({ row }) => (
+        <AssigneeCell
+          assignedUserId={row.original.assignedUserId}
+          disabled={updateLead.isPending && updateLead.variables?.id === row.original.id}
+          onChange={(assignedUserId) => updateLead.mutate({ id: row.original.id, assignedUserId })}
+        />
+      ),
+    }),
     columnHelper.display({
       id: 'actions',
       header: 'Acciones',
@@ -125,9 +143,15 @@ export function LeadsPage() {
           </div>
         </div>
       ) : (
-        convert.isError && <p className="mb-4 text-sm text-red-600">No se pudo convertir el lead.</p>
+        <>
+          {blocked && <p className="mb-4 text-sm text-amber-700">{blocked}</p>}
+          {convert.isError && !blocked && (
+            <p className="mb-4 text-sm text-red-600">No se pudo convertir el lead.</p>
+          )}
+        </>
       )}
       {setStatus.isError && <p className="mb-4 text-sm text-red-600">No se pudo cambiar el estado del lead.</p>}
+      {updateLead.isError && <p className="mb-4 text-sm text-red-600">No se pudo cambiar el vendedor asignado.</p>}
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>

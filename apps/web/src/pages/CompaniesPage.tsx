@@ -3,12 +3,14 @@ import type { CompanyDTO } from '@ventry/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { CreateCompanyDialog } from '../components/companies/CreateCompanyDialog.js';
-import { useCompanies } from '../hooks/useCompanies.js';
+import { useCompanies, useUpdateCompany } from '../hooks/useCompanies.js';
+import { AssigneeCell } from '../components/AssigneeCell.js';
 
 const columnHelper = createColumnHelper<CompanyDTO>();
 
 export function CompaniesPage() {
   const { data: companies, isLoading } = useCompanies();
+  const updateCompany = useUpdateCompany();
 
   const columns = [
     columnHelper.accessor('name', { header: 'Empresa' }),
@@ -19,6 +21,16 @@ export function CompaniesPage() {
     columnHelper.accessor('city', { header: 'Ciudad', cell: (info) => info.getValue() ?? '—' }),
     columnHelper.accessor('email', { header: 'Correo', cell: (info) => info.getValue() ?? '—' }),
     columnHelper.accessor('whatsapp', { header: 'WhatsApp', cell: (info) => info.getValue() ?? '—' }),
+    columnHelper.accessor('assignedUserId', {
+      header: 'Vendedor',
+      cell: ({ row }) => (
+        <AssigneeCell
+          assignedUserId={row.original.assignedUserId}
+          disabled={updateCompany.isPending && updateCompany.variables?.id === row.original.id}
+          onChange={(assignedUserId) => updateCompany.mutate({ id: row.original.id, assignedUserId })}
+        />
+      ),
+    }),
   ];
 
   const table = useReactTable({ data: companies ?? [], columns, getCoreRowModel: getCoreRowModel() });
@@ -29,6 +41,9 @@ export function CompaniesPage() {
         <h1 className="text-xl font-semibold">Empresas</h1>
         <CreateCompanyDialog />
       </div>
+      {updateCompany.isError && (
+        <p className="mb-4 text-sm text-red-600">No se pudo cambiar el vendedor asignado.</p>
+      )}
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>

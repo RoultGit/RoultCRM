@@ -31,6 +31,15 @@ export function useCreateLead() {
   });
 }
 
+export function useUpdateLead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: { id: string; assignedUserId?: string }) =>
+      (await apiClient.patch<LeadDTO>(`/leads/${id}`, input)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: LEADS_KEY }),
+  });
+}
+
 export function useSetLeadStatus() {
   const queryClient = useQueryClient();
   return useMutation({

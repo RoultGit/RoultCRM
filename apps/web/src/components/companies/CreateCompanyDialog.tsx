@@ -14,6 +14,8 @@ type FormValues = z.infer<typeof formSchema>;
 export function CreateCompanyDialog() {
   const [open, setOpen] = useState(false);
   const [duplicate, setDuplicate] = useState<CompanyDTO | null>(null);
+  const [blocked, setBlocked] = useState<string | null>(null);
+
   const { register, handleSubmit, reset, getValues, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { line: 'WEB' },
@@ -25,12 +27,16 @@ export function CreateCompanyDialog() {
       onSuccess: () => {
         reset();
         setDuplicate(null);
+        setBlocked(null);
         setOpen(false);
       },
       onError: (err) => {
-        if (isAxiosError(err) && err.response?.status === 409) {
-          setDuplicate(err.response.data.details.duplicate as CompanyDTO);
-        }
+        if (!isAxiosError(err) || err.response?.status !== 409) return;
+        // Un 409 sin `details` es un duplicado de otro vendedor: el backend avisa del choque pero
+        // no manda la ficha, así que acá no hay nada que ofrecer, solo el mensaje.
+        const found = err.response.data.details?.duplicate as CompanyDTO | undefined;
+        if (found) setDuplicate(found);
+        else setBlocked(err.response.data.error as string);
       },
     });
   };
@@ -58,6 +64,7 @@ export function CreateCompanyDialog() {
             </div>
           ) : (
             <form className="space-y-3" onSubmit={handleSubmit(submit)}>
+              {blocked && <p className="text-sm text-amber-700">{blocked}</p>}
               <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="Nombre de la empresa" {...register('name')} />
               <select className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" {...register('line')}>
                 <option value="WEB">Web</option>

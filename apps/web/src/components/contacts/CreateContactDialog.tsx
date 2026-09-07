@@ -15,6 +15,8 @@ type FormValues = z.infer<typeof formSchema>;
 export function CreateContactDialog() {
   const [open, setOpen] = useState(false);
   const [duplicate, setDuplicate] = useState<ContactDTO | null>(null);
+  const [blocked, setBlocked] = useState<string | null>(null);
+
   const { data: companies } = useCompanies();
   const { register, handleSubmit, reset, getValues, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -29,9 +31,12 @@ export function CreateContactDialog() {
         setOpen(false);
       },
       onError: (err) => {
-        if (isAxiosError(err) && err.response?.status === 409) {
-          setDuplicate(err.response.data.details.duplicate as ContactDTO);
-        }
+        if (!isAxiosError(err) || err.response?.status !== 409) return;
+        // Un 409 sin `details` es un duplicado en la empresa de otro vendedor: hay choque, pero la
+        // ficha no viaja, así que solo se muestra el mensaje.
+        const found = err.response.data.details?.duplicate as ContactDTO | undefined;
+        if (found) setDuplicate(found);
+        else setBlocked(err.response.data.error as string);
       },
     });
   };
@@ -59,6 +64,7 @@ export function CreateContactDialog() {
             </div>
           ) : (
             <form className="space-y-3" onSubmit={handleSubmit(submit)}>
+              {blocked && <p className="text-sm text-amber-700">{blocked}</p>}
               <select className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" {...register('companyId')}>
                 <option value="">Selecciona una empresa</option>
                 {companies?.map((c) => (
