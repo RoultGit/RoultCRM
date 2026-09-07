@@ -7,7 +7,12 @@ import {
   useDroppable,
   useSensor,
   useSensors,
+  DragOverlay,
+  pointerWithin,
+  closestCorners,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core';
 import type { DealDTO, UserDTO } from '@ventry/shared';
 import { Card } from '../components/ui/card.js';
@@ -44,6 +49,17 @@ const STAGE_LABEL: Record<DealDTO['stage'], string> = {
   PERDIDO: 'Perdido',
 };
 
+// La detección por defecto (rectIntersection) resuelve la columna por el rectángulo de la card, no
+// por el cursor: arrastrando 200px, el cuerpo de la card ya pisa la columna siguiente aunque el
+// mouse siga sobre la de origen, y con el auto-scroll horizontal del tablero el error se acumula
+// hasta mandar el deal varias columnas más allá. Medido en el navegador: cursor sobre Adelanto,
+// deal a Perdido. Acá manda el cursor, y solo si quedó fuera de toda columna se cae a la más
+// cercana, para que soltar en el hueco entre dos columnas no pierda el arrastre.
+const collisionDetection: CollisionDetection = (args) => {
+  const underPointer = pointerWithin(args);
+  return underPointer.length > 0 ? underPointer : closestCorners(args);
+};
+
 function DealCard({
   deal,
   canAssign,
@@ -55,14 +71,17 @@ function DealCard({
   users?: UserDTO[];
   onStageChange: (deal: DealDTO, stage: DealDTO['stage']) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: deal.id });
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
   const assign = useAssignDeal();
 
+  // Ojo: la card NO lleva el transform de dnd-kit. Moviendo el mismo nodo que la librería mide, el
+  // rect se re-medía ya desplazado y el delta se contaba dos veces, así que la columna detectada
+  // corría adelante del cursor y se aceleraba: con el mouse sobre Adelanto el deal caía en Perdido.
+  // El que sigue al cursor es el DragOverlay de abajo; este nodo se queda quieto y solo se atenúa.
   return (
     <div
       ref={setNodeRef}
-      style={transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}
-      className={`rounded-lg border border-gray-200 bg-white p-3 shadow-sm ${isDragging ? 'opacity-50' : ''}`}
+      className={`rounded-lg border border-gray-200 bg-white p-3 shadow-sm ${isDragging ? 'opacity-40' : ''}`}
     >
       <div {...listeners} {...attributes} className="cursor-grab">
         <p className="text-sm font-medium text-gray-900">{deal.title}</p>
@@ -156,14 +175,9 @@ export function DealsPage() {
   const { data: users } = useUsers();
   const canAssign = useSession().data?.role === 'ADMIN';
   const [lostDeal, setLostDeal] = useState<DealDTO | null>(null);
+  const [activeDeal, setActiveDeal] = useState<DealDTO | null>(null);
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
-  // ponytail: BUG CONOCIDO, sin resolver. Soltar una card sobre una columna que no es la suya
-  // resuelve la columna equivocada — arrastrando el cursor hasta Adelanto, dnd-kit reporta PERDIDO.
-  // Pasa igual con collisionDetection={closestCorners} y con {pointerWithin}, así que no es el
-  // algoritmo de colisión: algo anda mal en los rects que dnd-kit mide para las columnas. El select
-  // de etapa de cada card hace exactamente lo mismo por el mismo camino (moveTo) y sí funciona, así
-  // que la función está cubierta mientras esto se investigue.
 
   // Un solo camino para el drop y para el select de la card.
   const moveTo = (deal: DealDTO, stage: DealDTO['stage']) => {
@@ -177,7 +191,11 @@ export function DealsPage() {
     setStage.mutate({ id: deal.id, stage });
   };
 
+  const onDragStart = (event: DragStartEvent) =>
+    setActiveDeal(deals?.find((d) => d.id === event.active.id) ?? null);
+
   const onDragEnd = (event: DragEndEvent) => {
+    setActiveDeal(null);
     const stage = event.over?.id as DealDTO['stage'] | undefined;
     const deal = deals?.find((d) => d.id === event.active.id);
     if (stage && deal) moveTo(deal, stage);
@@ -193,7 +211,9 @@ export function DealsPage() {
       {isLoading ? (
         <Card className="p-6 text-sm text-gray-500">Cargando…</Card>
       ) : (
-        <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveDeal(null)}>
+          {/* min-w-0 en el <main> del AppShell es lo que hace que este overflow-x-auto contenga
+              de verdad; sin eso el strip estira la página y se scrollea la ventana entera. */}
           <div className="flex gap-3 overflow-x-auto pb-4">
             {STAGES.map((stage) => (
               <StageColumn
@@ -206,6 +226,17 @@ export function DealsPage() {
               />
             ))}
           </div>
+          <DragOverlay>
+            {activeDeal && (
+              <div className="w-60 rotate-2 rounded-lg border border-gray-300 bg-white p-3 shadow-lg">
+                <p className="text-sm font-medium text-gray-900">{activeDeal.title}</p>
+                <p className="text-xs text-gray-500">{activeDeal.companyName}</p>
+                <p className="mt-1 text-sm font-semibold text-gray-900">
+                  {formatMoney(activeDeal.amount, activeDeal.currency)}
+                </p>
+              </div>
+            )}
+          </DragOverlay>
         </DndContext>
       )}
       <LostReasonDialog deal={lostDeal} onClose={() => setLostDeal(null)} />
