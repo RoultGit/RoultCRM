@@ -57,11 +57,15 @@ export function useSetDealStage() {
     // y la card recién se movía cuando respondía el servidor. setQueriesData hace match por
     // prefijo, o sea que alcanza a la lista con cualquier combinación de filtros activa.
     onMutate: async ({ id, stage }) => {
-      await queryClient.cancelQueries({ queryKey: DEALS_KEY });
+      // Primero se pinta, después se cancela. Con el `await cancelQueries` adelante, la card no se
+      // movía hasta que ese await resolviera: si justo había un refetch en vuelo, eso es esperar a
+      // la red, o sea exactamente lo que el update optimista viene a evitar. Cancelar después sirve
+      // igual, porque lo que importa es que la respuesta vieja no llegue a pisar la caché.
       const previous = queryClient.getQueriesData<DealDTO[]>({ queryKey: DEALS_KEY });
       queryClient.setQueriesData<DealDTO[]>({ queryKey: DEALS_KEY }, (deals) =>
         deals?.map((deal) => (deal.id === id ? { ...deal, stage } : deal))
       );
+      await queryClient.cancelQueries({ queryKey: DEALS_KEY });
       return { previous };
     },
     onError: (_err, _vars, context) => {
