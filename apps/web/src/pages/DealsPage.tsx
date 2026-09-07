@@ -84,7 +84,11 @@ function DealCard({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-lg border border-gray-200 bg-white p-3 shadow-sm ${isDragging ? 'opacity-40' : ''}`}
+      className={`rounded-lg border bg-white p-3 transition-all duration-150 ${
+        isDragging
+          ? 'border-dashed border-gray-300 opacity-40 shadow-none'
+          : 'animate-card-in border-gray-200 shadow-sm'
+      }`}
     >
       <div {...listeners} {...attributes} className="cursor-grab">
         <p className="text-sm font-medium text-gray-900">{deal.title}</p>
@@ -275,9 +279,14 @@ export function DealsPage() {
               />
             ))}
           </div>
-          <DragOverlay>
+          {/* dropAnimation={null}: por defecto dnd-kit anima el overlay de vuelta a la posición
+              original de la card al soltar. Como el update es optimista, la card ya está en la
+              columna nueva para cuando eso ocurre, así que esa animación se veía como "vuelve y
+              después salta". Sin ella, el overlay desaparece en el mismo frame en que la card
+              aparece en su columna nueva: la card no se mueve, ya está donde la soltaste. */}
+          <DragOverlay dropAnimation={null}>
             {activeDeal && (
-              <div className="w-60 rotate-2 rounded-lg border border-gray-300 bg-white p-3 shadow-lg">
+              <div className="w-60 rotate-2 scale-105 cursor-grabbing rounded-lg border border-gray-300 bg-white p-3 shadow-xl ring-1 ring-black/5">
                 <p className="text-sm font-medium text-gray-900">{activeDeal.title}</p>
                 <p className="text-xs text-gray-500">{activeDeal.companyName}</p>
                 <p className="mt-1 text-sm font-semibold text-gray-900">
