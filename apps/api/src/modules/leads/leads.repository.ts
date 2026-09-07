@@ -34,8 +34,8 @@ export const LeadsRepository = {
     return prisma.lead.findFirst({ where: { id, tenantId, ...owner } });
   },
 
-  create(data: Prisma.LeadUncheckedCreateInput) {
-    return prisma.lead.create({ data });
+  create(data: Prisma.LeadUncheckedCreateInput, client: Prisma.TransactionClient = prisma) {
+    return client.lead.create({ data });
   },
 
   updateByIdAndTenant(id: string, tenantId: string, data: Prisma.LeadUpdateInput) {
