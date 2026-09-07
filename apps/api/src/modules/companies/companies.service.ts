@@ -3,7 +3,8 @@ import type { z } from 'zod';
 import type { Company } from '@prisma/client';
 import { CompaniesRepository } from './companies.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
-import { NotFoundError, DuplicateError } from '../../lib/errors.js';
+import { NotFoundError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
+import { ownerFilter, defaultAssignee, type Actor } from '../../lib/scope.js';
 
 export function toDTO(company: Company): CompanyDTO {
   return {
@@ -28,13 +29,15 @@ async function assertAssignedUserValid(tenantId: string, assignedUserId?: string
 }
 
 export const CompaniesService = {
-  async list(tenantId: string): Promise<CompanyDTO[]> {
-    const companies = await CompaniesRepository.findManyByTenant(tenantId);
+  async list(actor: Actor): Promise<CompanyDTO[]> {
+    const companies = await CompaniesRepository.findManyByTenant(actor.tenantId, ownerFilter(actor));
     return companies.map(toDTO);
   },
 
-  async create(tenantId: string, input: z.infer<typeof createCompanySchema>): Promise<CompanyDTO> {
-    await assertAssignedUserValid(tenantId, input.assignedUserId);
+  async create(actor: Actor, input: z.infer<typeof createCompanySchema>): Promise<CompanyDTO> {
+    const tenantId = actor.tenantId;
+    const assignedUserId = defaultAssignee(actor, input.assignedUserId);
+    await assertAssignedUserValid(tenantId, assignedUserId);
 
     if (!input.confirmDuplicate) {
       const duplicate = await CompaniesRepository.findPossibleDuplicate(tenantId, {
@@ -53,15 +56,19 @@ export const CompaniesService = {
       source: input.source,
       whatsapp: input.whatsapp,
       email: input.email,
-      assignedUserId: input.assignedUserId,
+      assignedUserId,
       notes: input.notes,
     });
     return toDTO(company);
   },
 
-  async update(tenantId: string, id: string, input: z.infer<typeof updateCompanySchema>): Promise<CompanyDTO> {
-    const existing = await CompaniesRepository.findByIdAndTenant(id, tenantId);
+  async update(actor: Actor, id: string, input: z.infer<typeof updateCompanySchema>): Promise<CompanyDTO> {
+    const tenantId = actor.tenantId;
+    const existing = await CompaniesRepository.findByIdAndTenant(id, tenantId, ownerFilter(actor));
     if (!existing) throw new NotFoundError('Company not found');
+    if (input.assignedUserId !== undefined && actor.role !== 'ADMIN') {
+      throw new ForbiddenError('Solo un administrador puede reasignar una empresa');
+    }
     await assertAssignedUserValid(tenantId, input.assignedUserId);
     await CompaniesRepository.updateByIdAndTenant(id, tenantId, input);
     const updated = await CompaniesRepository.findByIdAndTenant(id, tenantId);

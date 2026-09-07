@@ -4,6 +4,7 @@ import type { Contact } from '@prisma/client';
 import { ContactsRepository } from './contacts.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
 import { NotFoundError, DuplicateError } from '../../lib/errors.js';
+import { ownerFilter, type Actor } from '../../lib/scope.js';
 
 type ContactWithCompany = Contact & { company: { name: string } };
 
@@ -24,13 +25,15 @@ export function toDTO(contact: ContactWithCompany): ContactDTO {
 }
 
 export const ContactsService = {
-  async list(tenantId: string): Promise<ContactDTO[]> {
-    const contacts = await ContactsRepository.findManyByTenant(tenantId);
+  async list(actor: Actor): Promise<ContactDTO[]> {
+    const contacts = await ContactsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor));
     return contacts.map(toDTO);
   },
 
-  async create(tenantId: string, input: z.infer<typeof createContactSchema>): Promise<ContactDTO> {
-    const company = await CompaniesRepository.findByIdAndTenant(input.companyId, tenantId);
+  async create(actor: Actor, input: z.infer<typeof createContactSchema>): Promise<ContactDTO> {
+    const tenantId = actor.tenantId;
+    // Scopeado: un vendedor no puede colgarle un contacto a la empresa de otro.
+    const company = await CompaniesRepository.findByIdAndTenant(input.companyId, tenantId, ownerFilter(actor));
     if (!company) throw new NotFoundError('Company not found');
 
     if (!input.confirmDuplicate) {
@@ -57,8 +60,9 @@ export const ContactsService = {
     return toDTO(contact);
   },
 
-  async update(tenantId: string, id: string, input: z.infer<typeof updateContactSchema>): Promise<ContactDTO> {
-    const existing = await ContactsRepository.findByIdAndTenant(id, tenantId);
+  async update(actor: Actor, id: string, input: z.infer<typeof updateContactSchema>): Promise<ContactDTO> {
+    const tenantId = actor.tenantId;
+    const existing = await ContactsRepository.findByIdAndTenant(id, tenantId, ownerFilter(actor));
     if (!existing) throw new NotFoundError('Contact not found');
     await ContactsRepository.updateByIdAndTenant(id, tenantId, input);
     const updated = await ContactsRepository.findByIdAndTenant(id, tenantId);

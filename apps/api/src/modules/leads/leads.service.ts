@@ -6,7 +6,8 @@ import { CompaniesRepository } from '../companies/companies.repository.js';
 import { toDTO as companyToDTO } from '../companies/companies.service.js';
 import { ContactsRepository } from '../contacts/contacts.repository.js';
 import { toDTO as contactToDTO } from '../contacts/contacts.service.js';
-import { NotFoundError, ValidationError, DuplicateError } from '../../lib/errors.js';
+import { NotFoundError, ValidationError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
+import { ownerFilter, defaultAssignee, type Actor } from '../../lib/scope.js';
 import { prisma } from '../../lib/prisma.js';
 
 export function toDTO(lead: Lead): LeadDTO {
@@ -30,14 +31,14 @@ export function toDTO(lead: Lead): LeadDTO {
 }
 
 export const LeadsService = {
-  async list(tenantId: string): Promise<LeadDTO[]> {
-    const leads = await LeadsRepository.findManyByTenant(tenantId);
+  async list(actor: Actor): Promise<LeadDTO[]> {
+    const leads = await LeadsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor));
     return leads.map(toDTO);
   },
 
-  async create(tenantId: string, input: z.infer<typeof createLeadSchema>): Promise<LeadDTO> {
+  async create(actor: Actor, input: z.infer<typeof createLeadSchema>): Promise<LeadDTO> {
     const lead = await LeadsRepository.create({
-      tenantId,
+      tenantId: actor.tenantId,
       businessName: input.businessName,
       contactName: input.contactName,
       phone: input.phone,
@@ -45,35 +46,39 @@ export const LeadsService = {
       email: input.email,
       line: input.line,
       source: input.source,
-      assignedUserId: input.assignedUserId,
+      assignedUserId: defaultAssignee(actor, input.assignedUserId),
       notes: input.notes,
     });
     return toDTO(lead);
   },
 
-  async update(tenantId: string, id: string, input: z.infer<typeof updateLeadSchema>): Promise<LeadDTO> {
-    const existing = await LeadsRepository.findByIdAndTenant(id, tenantId);
+  async update(actor: Actor, id: string, input: z.infer<typeof updateLeadSchema>): Promise<LeadDTO> {
+    const existing = await LeadsRepository.findByIdAndTenant(id, actor.tenantId, ownerFilter(actor));
     if (!existing) throw new NotFoundError('Lead not found');
-    await LeadsRepository.updateByIdAndTenant(id, tenantId, input);
-    const updated = await LeadsRepository.findByIdAndTenant(id, tenantId);
+    if (input.assignedUserId !== undefined && actor.role !== 'ADMIN') {
+      throw new ForbiddenError('Solo un administrador puede reasignar un lead');
+    }
+    await LeadsRepository.updateByIdAndTenant(id, actor.tenantId, input);
+    const updated = await LeadsRepository.findByIdAndTenant(id, actor.tenantId);
     return toDTO(updated!);
   },
 
-  async setStatus(tenantId: string, id: string, status: z.infer<typeof setLeadStatusSchema>['status']): Promise<LeadDTO> {
-    const existing = await LeadsRepository.findByIdAndTenant(id, tenantId);
+  async setStatus(actor: Actor, id: string, status: z.infer<typeof setLeadStatusSchema>['status']): Promise<LeadDTO> {
+    const existing = await LeadsRepository.findByIdAndTenant(id, actor.tenantId, ownerFilter(actor));
     if (!existing) throw new NotFoundError('Lead not found');
     if (existing.status === 'CONVERTED') throw new ValidationError('Cannot change the status of a converted lead');
-    await LeadsRepository.updateStatus(id, tenantId, status);
-    const updated = await LeadsRepository.findByIdAndTenant(id, tenantId);
+    await LeadsRepository.updateStatus(id, actor.tenantId, status);
+    const updated = await LeadsRepository.findByIdAndTenant(id, actor.tenantId);
     return toDTO(updated!);
   },
 
   async convert(
-    tenantId: string,
+    actor: Actor,
     id: string,
     confirmDuplicate: boolean
   ): Promise<{ lead: LeadDTO; company: CompanyDTO; contact: ContactDTO }> {
-    const lead = await LeadsRepository.findByIdAndTenant(id, tenantId);
+    const tenantId = actor.tenantId;
+    const lead = await LeadsRepository.findByIdAndTenant(id, tenantId, ownerFilter(actor));
     if (!lead) throw new NotFoundError('Lead not found');
     if (lead.status === 'CONVERTED') throw new ValidationError('Lead is already converted');
 

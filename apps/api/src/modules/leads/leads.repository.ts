@@ -2,12 +2,12 @@ import { prisma } from '../../lib/prisma.js';
 import type { Prisma, LeadStatus } from '@prisma/client';
 
 export const LeadsRepository = {
-  findManyByTenant(tenantId: string) {
-    return prisma.lead.findMany({ where: { tenantId }, orderBy: { createdAt: 'desc' } });
+  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}) {
+    return prisma.lead.findMany({ where: { tenantId, ...owner }, orderBy: { createdAt: 'desc' } });
   },
 
-  findByIdAndTenant(id: string, tenantId: string) {
-    return prisma.lead.findFirst({ where: { id, tenantId } });
+  findByIdAndTenant(id: string, tenantId: string, owner: { assignedUserId?: string } = {}) {
+    return prisma.lead.findFirst({ where: { id, tenantId, ...owner } });
   },
 
   create(data: Prisma.LeadUncheckedCreateInput) {

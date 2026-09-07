@@ -4,12 +4,19 @@ import type { Prisma } from '@prisma/client';
 const withCompanyName = { include: { company: { select: { name: true } } } } as const;
 
 export const ContactsRepository = {
-  findManyByTenant(tenantId: string) {
-    return prisma.contact.findMany({ where: { tenantId }, orderBy: { createdAt: 'desc' }, ...withCompanyName });
+  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}) {
+    return prisma.contact.findMany({
+      where: { tenantId, ...(owner.assignedUserId ? { company: { assignedUserId: owner.assignedUserId } } : {}) },
+      orderBy: { createdAt: 'desc' },
+      ...withCompanyName,
+    });
   },
 
-  findByIdAndTenant(id: string, tenantId: string) {
-    return prisma.contact.findFirst({ where: { id, tenantId }, ...withCompanyName });
+  findByIdAndTenant(id: string, tenantId: string, owner: { assignedUserId?: string } = {}) {
+    return prisma.contact.findFirst({
+      where: { id, tenantId, ...(owner.assignedUserId ? { company: { assignedUserId: owner.assignedUserId } } : {}) },
+      ...withCompanyName,
+    });
   },
 
   findPossibleDuplicate(

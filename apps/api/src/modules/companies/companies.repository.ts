@@ -2,12 +2,12 @@ import { prisma } from '../../lib/prisma.js';
 import type { Prisma } from '@prisma/client';
 
 export const CompaniesRepository = {
-  findManyByTenant(tenantId: string) {
-    return prisma.company.findMany({ where: { tenantId }, orderBy: { createdAt: 'desc' } });
+  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}) {
+    return prisma.company.findMany({ where: { tenantId, ...owner }, orderBy: { createdAt: 'desc' } });
   },
 
-  findByIdAndTenant(id: string, tenantId: string) {
-    return prisma.company.findFirst({ where: { id, tenantId } });
+  findByIdAndTenant(id: string, tenantId: string, owner: { assignedUserId?: string } = {}) {
+    return prisma.company.findFirst({ where: { id, tenantId, ...owner } });
   },
 
   findPossibleDuplicate(

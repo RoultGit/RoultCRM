@@ -8,15 +8,43 @@ describe('/companies routes', () => {
   const app = createApp();
   let tenantId: string;
   let token: string;
+  let sellerAId: string;
+  let sellerBId: string;
 
   beforeAll(async () => {
     process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? 'test-access-secret';
     tenantId = (await prisma.tenant.create({ data: { name: 'Companies Route Tenant' } })).id;
     token = signAccessToken({ userId: 'user-1', tenantId, role: 'ADMIN' });
+    // CompaniesService valida que el vendedor asignado exista, así que estos dos son filas reales.
+    sellerAId = (
+      await prisma.user.create({
+        data: {
+          tenantId,
+          email: `seller-a-${Date.now()}@roult.pe`,
+          passwordHash: 'x',
+          firstName: 'Ana',
+          lastName: 'A',
+          role: 'VENDEDOR',
+        },
+      })
+    ).id;
+    sellerBId = (
+      await prisma.user.create({
+        data: {
+          tenantId,
+          email: `seller-b-${Date.now()}@roult.pe`,
+          passwordHash: 'x',
+          firstName: 'Beto',
+          lastName: 'B',
+          role: 'VENDEDOR',
+        },
+      })
+    ).id;
   });
 
   afterAll(async () => {
     await prisma.company.deleteMany({ where: { tenantId } });
+    await prisma.user.deleteMany({ where: { tenantId } });
     await prisma.tenant.delete({ where: { id: tenantId } });
     await prisma.$disconnect();
   });
@@ -101,5 +129,36 @@ describe('/companies routes', () => {
       .send({ city: 'Lima' });
     expect(res.status).toBe(200);
     expect(res.body.city).toBe('Lima');
+  });
+  it('hides another vendedor\u2019s companies from a vendedor', async () => {
+    const sellerA = signAccessToken({ userId: sellerAId, tenantId, role: 'VENDEDOR' });
+    const sellerB = signAccessToken({ userId: sellerBId, tenantId, role: 'VENDEDOR' });
+
+    const created = await request(app)
+      .post('/companies')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ name: 'Solo de A SAC', line: 'WEB' });
+    expect(created.status).toBe(201);
+    expect(created.body.assignedUserId).toBe(sellerAId);
+
+    const listB = await request(app).get('/companies').set('Authorization', `Bearer ${sellerB}`);
+    expect(listB.body.map((c: { id: string }) => c.id)).not.toContain(created.body.id);
+
+    const patchB = await request(app)
+      .patch(`/companies/${created.body.id}`)
+      .set('Authorization', `Bearer ${sellerB}`)
+      .send({ city: 'Lima' });
+    expect(patchB.status).toBe(404);
+  });
+
+  it('shows an admin every company in the tenant', async () => {
+    const sellerA = signAccessToken({ userId: sellerAId, tenantId, role: 'VENDEDOR' });
+    const created = await request(app)
+      .post('/companies')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ name: 'Solo de A SAC', line: 'WEB' });
+
+    const listAdmin = await request(app).get('/companies').set('Authorization', `Bearer ${token}`);
+    expect(listAdmin.body.map((c: { id: string }) => c.id)).toContain(created.body.id);
   });
 });

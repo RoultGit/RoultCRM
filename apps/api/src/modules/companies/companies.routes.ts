@@ -10,7 +10,7 @@ companiesRouter.use(requireAuth);
 
 companiesRouter.get('/', async (req, res, next) => {
   try {
-    const companies = await CompaniesService.list(req.user!.tenantId);
+    const companies = await CompaniesService.list(req.user!);
     res.json(companies);
   } catch (err) {
     next(err);
@@ -21,7 +21,7 @@ companiesRouter.post('/', async (req, res, next) => {
   try {
     const parsed = createCompanySchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const company = await CompaniesService.create(req.user!.tenantId, parsed.data);
+    const company = await CompaniesService.create(req.user!, parsed.data);
     res.status(201).json(company);
   } catch (err) {
     next(err);
@@ -32,7 +32,7 @@ companiesRouter.patch('/:id', async (req, res, next) => {
   try {
     const parsed = updateCompanySchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const company = await CompaniesService.update(req.user!.tenantId, req.params.id, parsed.data);
+    const company = await CompaniesService.update(req.user!, req.params.id, parsed.data);
     res.json(company);
   } catch (err) {
     next(err);

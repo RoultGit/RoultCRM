@@ -10,7 +10,7 @@ leadsRouter.use(requireAuth);
 
 leadsRouter.get('/', async (req, res, next) => {
   try {
-    const leads = await LeadsService.list(req.user!.tenantId);
+    const leads = await LeadsService.list(req.user!);
     res.json(leads);
   } catch (err) {
     next(err);
@@ -21,7 +21,7 @@ leadsRouter.post('/', async (req, res, next) => {
   try {
     const parsed = createLeadSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const lead = await LeadsService.create(req.user!.tenantId, parsed.data);
+    const lead = await LeadsService.create(req.user!, parsed.data);
     res.status(201).json(lead);
   } catch (err) {
     next(err);
@@ -32,7 +32,7 @@ leadsRouter.patch('/:id', async (req, res, next) => {
   try {
     const parsed = updateLeadSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const lead = await LeadsService.update(req.user!.tenantId, req.params.id, parsed.data);
+    const lead = await LeadsService.update(req.user!, req.params.id, parsed.data);
     res.json(lead);
   } catch (err) {
     next(err);
@@ -43,7 +43,7 @@ leadsRouter.patch('/:id/status', async (req, res, next) => {
   try {
     const parsed = setLeadStatusSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const lead = await LeadsService.setStatus(req.user!.tenantId, req.params.id, parsed.data.status);
+    const lead = await LeadsService.setStatus(req.user!, req.params.id, parsed.data.status);
     res.json(lead);
   } catch (err) {
     next(err);
@@ -54,7 +54,7 @@ leadsRouter.post('/:id/convert', async (req, res, next) => {
   try {
     const parsed = convertLeadSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const result = await LeadsService.convert(req.user!.tenantId, req.params.id, parsed.data.confirmDuplicate ?? false);
+    const result = await LeadsService.convert(req.user!, req.params.id, parsed.data.confirmDuplicate ?? false);
     res.status(201).json(result);
   } catch (err) {
     next(err);

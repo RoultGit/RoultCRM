@@ -137,4 +137,52 @@ describe('/leads routes', () => {
       .send({});
     expect(res.status).toBe(400);
   });
+  it('hides another vendedor\u2019s leads from a vendedor', async () => {
+    const sellerA = signAccessToken({ userId: 'seller-a', tenantId, role: 'VENDEDOR' });
+    const sellerB = signAccessToken({ userId: 'seller-b', tenantId, role: 'VENDEDOR' });
+
+    const created = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ businessName: 'Solo de A', contactName: 'Ana', line: 'WEB' });
+    expect(created.status).toBe(201);
+    expect(created.body.assignedUserId).toBe('seller-a');
+
+    const listB = await request(app).get('/leads').set('Authorization', `Bearer ${sellerB}`);
+    expect(listB.status).toBe(200);
+    expect(listB.body.map((l: { id: string }) => l.id)).not.toContain(created.body.id);
+
+    const patchB = await request(app)
+      .patch(`/leads/${created.body.id}`)
+      .set('Authorization', `Bearer ${sellerB}`)
+      .send({ notes: 'robado' });
+    expect(patchB.status).toBe(404);
+  });
+
+  it('shows an admin every lead in the tenant', async () => {
+    // El `token` de este archivo es de un VENDEDOR, así que el caso de admin firma el suyo.
+    const adminToken = signAccessToken({ userId: 'admin-1', tenantId, role: 'ADMIN' });
+    const sellerA = signAccessToken({ userId: 'seller-a', tenantId, role: 'VENDEDOR' });
+    const created = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ businessName: 'Solo de A', contactName: 'Ana', line: 'WEB' });
+
+    const listAdmin = await request(app).get('/leads').set('Authorization', `Bearer ${adminToken}`);
+    expect(listAdmin.body.map((l: { id: string }) => l.id)).toContain(created.body.id);
+  });
+
+  it('refuses to let a vendedor reassign a lead', async () => {
+    const sellerA = signAccessToken({ userId: 'seller-a', tenantId, role: 'VENDEDOR' });
+    const created = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ businessName: 'Solo de A', contactName: 'Ana', line: 'WEB' });
+
+    const res = await request(app)
+      .patch(`/leads/${created.body.id}`)
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ assignedUserId: 'seller-b' });
+    expect(res.status).toBe(403);
+  });
 });
