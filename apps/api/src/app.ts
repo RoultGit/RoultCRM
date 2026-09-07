@@ -17,7 +17,20 @@ import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
   const app = express();
-  app.use(cors({ origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173', credentials: true }));
+  // WEB_ORIGIN acepta varios orígenes separados por coma: en Vercel conviven el dominio de
+  // producción y el de cada preview, y la cookie de refresh necesita que el origen esté permitido
+  // explícitamente porque va con credentials.
+  const allowedOrigins = (process.env.WEB_ORIGIN ?? 'http://localhost:5173').split(',').map((o) => o.trim());
+  app.use(
+    cors({
+      origin(origin, callback) {
+        // Sin cabecera Origin (curl, health checks del propio Vercel) no hay nada que bloquear.
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error(`Origen no permitido: ${origin}`));
+      },
+      credentials: true,
+    })
+  );
   // El default de express.json son 100KB, pero el tope declarado de importación es de 1000 filas y
   // un archivo de contactos de ese tamaño pesa ~320KB. Con el default, usar la función tal como está
   // documentada devolvía un 500 genérico sin decir que el archivo era grande.

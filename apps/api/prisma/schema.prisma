@@ -4,7 +4,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // En serverless cada invocación puede abrir su propia conexión, y Postgres se queda sin cupo
+  // enseguida. DATABASE_URL apunta al pooler de Supabase (puerto 6543, pgbouncer=true) y DIRECT_URL
+  // a la conexión directa (5432), que es la única que sirve para correr migraciones.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {

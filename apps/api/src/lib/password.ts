@@ -1,4 +1,7 @@
-import bcrypt from 'bcrypt';
+// bcryptjs y no bcrypt: el segundo es un módulo nativo y en un entorno serverless se instala
+// compilado para otra plataforma. Los hashes son idénticos, así que las contraseñas ya guardadas
+// siguen validando sin migración.
+import bcrypt from 'bcryptjs';
 
 const SALT_ROUNDS = 12;
 
