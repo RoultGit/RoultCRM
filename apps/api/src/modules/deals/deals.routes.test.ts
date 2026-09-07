@@ -281,4 +281,20 @@ describe('/deals routes', () => {
     const res = await request(app).get('/deals/export').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
   });
+  it('does not let a vendedor read another vendedor’s deals through the filter', async () => {
+    const mine = await createDeal();
+    await request(app)
+      .patch(`/deals/${mine.id}/assign`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ assignedUserId: sellerId });
+
+    // El vendedor "otro" no tiene ningún deal. Si el query param pisara el scoping por dueño,
+    // pedir explícitamente los de sellerId le devolvería la cartera ajena entera.
+    const otro = signAccessToken({ userId: 'seller-otro', tenantId, role: 'VENDEDOR' });
+    const res = await request(app)
+      .get(`/deals?assignedUserId=${sellerId}`)
+      .set('Authorization', `Bearer ${otro}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(0);
+  });
 });

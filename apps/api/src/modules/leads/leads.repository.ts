@@ -13,13 +13,18 @@ export const LeadsRepository = {
     return prisma.lead.findMany({
       where: {
         tenantId,
-        ...owner,
-        ...(filters.status ? { status: filters.status } : {}),
-        ...(filters.assignedUserId ? { assignedUserId: filters.assignedUserId } : {}),
-        ...(filters.line ? { line: filters.line } : {}),
-        // El origen se escribe a mano, así que se busca por coincidencia parcial y sin distinguir
-        // mayúsculas: "Instagram", "instagram" y "IG - Instagram" caen en el mismo filtro.
-        ...(filters.source ? { source: { contains: filters.source, mode: 'insensitive' as const } } : {}),
+        // El scoping por dueño y el filtro del query van en AND, NUNCA como dos spreads en el
+        // mismo objeto: ahí el último gana, y `?assignedUserId=<otro>` pisaba el scoping y le
+        // devolvía a un vendedor la cartera de un colega. Intersecándolos, un vendedor que filtre
+        // por otro dueño obtiene cero filas, que es la respuesta correcta.
+        AND: [owner, {
+          ...(filters.status ? { status: filters.status } : {}),
+          ...(filters.assignedUserId ? { assignedUserId: filters.assignedUserId } : {}),
+          ...(filters.line ? { line: filters.line } : {}),
+          // El origen se escribe a mano, así que se busca por coincidencia parcial y sin distinguir
+          // mayúsculas: "Instagram", "instagram" y "IG - Instagram" caen en el mismo filtro.
+          ...(filters.source ? { source: { contains: filters.source, mode: 'insensitive' as const } } : {}),
+        }],
       },
       orderBy: { createdAt: 'desc' },
     });

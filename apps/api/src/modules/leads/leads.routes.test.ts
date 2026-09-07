@@ -225,4 +225,17 @@ describe('/leads routes', () => {
     const res = await request(app).get('/leads?status=INVENTADO').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(400);
   });
+  it('does not let a vendedor read another vendedor’s leads through the filter', async () => {
+    const sellerA = signAccessToken({ userId: 'seller-a', tenantId, role: 'VENDEDOR' });
+    const created = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${sellerA}`)
+      .send({ businessName: 'Solo de A', contactName: 'Ana', line: 'WEB' });
+
+    const sellerB = signAccessToken({ userId: 'seller-b', tenantId, role: 'VENDEDOR' });
+    const res = await request(app)
+      .get('/leads?assignedUserId=seller-a')
+      .set('Authorization', `Bearer ${sellerB}`);
+    expect(res.body.map((l: { id: string }) => l.id)).not.toContain(created.body.id);
+  });
 });

@@ -11,9 +11,14 @@ export const CompaniesRepository = {
     return prisma.company.findMany({
       where: {
         tenantId,
-        ...owner,
-        ...(filters.assignedUserId ? { assignedUserId: filters.assignedUserId } : {}),
-        ...(filters.line ? { line: filters.line } : {}),
+        // El scoping por dueño y el filtro del query van en AND, NUNCA como dos spreads en el
+        // mismo objeto: ahí el último gana, y `?assignedUserId=<otro>` pisaba el scoping y le
+        // devolvía a un vendedor la cartera de un colega. Intersecándolos, un vendedor que filtre
+        // por otro dueño obtiene cero filas, que es la respuesta correcta.
+        AND: [owner, {
+          ...(filters.assignedUserId ? { assignedUserId: filters.assignedUserId } : {}),
+          ...(filters.line ? { line: filters.line } : {}),
+        }],
       },
       orderBy: { createdAt: 'desc' },
     });
