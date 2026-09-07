@@ -1,5 +1,15 @@
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Building2, Contact, Handshake, ListChecks, CalendarClock, Settings } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  Contact,
+  Handshake,
+  ListChecks,
+  CalendarClock,
+  History,
+  Settings,
+} from 'lucide-react';
 import { cn } from '../../lib/cn.js';
 import { useSession } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
@@ -15,6 +25,10 @@ const NAV_ITEMS = [
   { to: '/settings', label: 'Configuración', icon: Settings },
 ];
 
+// Estas rutas responden 403 a un VENDEDOR, así que mostrarle el link sería ofrecerle una puerta
+// cerrada.
+const ADMIN_ONLY_NAV = [{ to: '/audit', label: 'Auditoría', icon: History }];
+
 export function AppShell() {
   // Sin esto, entrar a cualquier ruta sin sesión (o tras vencer el refresh token) pintaba la app
   // entera vacía y en silencio: las queries daban 401 y cada tabla mostraba cero filas, que es
@@ -29,7 +43,7 @@ export function AppShell() {
       <aside className="w-60 shrink-0 border-r border-gray-200 bg-white p-4">
         <div className="mb-6 px-2 text-lg font-semibold">VentryCRM</div>
         <nav className="space-y-1">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+          {[...NAV_ITEMS, ...(session.data?.role === 'ADMIN' ? ADMIN_ONLY_NAV : [])].map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
