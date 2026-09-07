@@ -10,7 +10,13 @@ MVP F1 de VentryCRM (CRM multi-tenant para ROUlt), siguiendo:
 
 Stack: monorepo npm workspaces — `apps/api` (Node/Express/TS/Prisma), `apps/web` (React/TS/Vite/Tailwind), `packages/shared` (Zod). Multi-tenant vía `tenantId` en cada tabla. Auth JWT propio con rotación de refresh tokens.
 
-Todo el trabajo vive en el worktree `.claude/worktrees/ventry-plan1-foundation`, rama `worktree-ventry-plan1-foundation`. `master` sigue en el commit de specs (1932504) — por decisión del usuario no se mergea entre planes.
+**Repo:** https://github.com/RoultGit/RoultCRM — todo en `master`.
+**App:** https://roult-crm.vercel.app (equipo ROULT, proyecto `roult-crm`).
+**Base:** Supabase `frconarrihakjwynibrp`, región us-east-1. RLS activo y permisos revocados a `anon`/`authenticated`.
+
+Vercel despliega solo con cada push a `master` — ya no se suben archivos a mano.
+
+Un solo proyecto de Vercel sirve el frontend y la API: el SPA en la raíz y Express como función en `/api`. Comparten origen, así que no hay CORS que mantener ni cookie cross-site.
 
 ## Dónde estoy
 
