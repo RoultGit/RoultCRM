@@ -54,7 +54,8 @@ export function AuditPage() {
         ) : !entries || entries.length === 0 ? (
           <div className="p-6 text-sm text-gray-500">Todavía no hay movimientos registrados.</div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-gray-200 bg-gray-50">
               <tr>
                 {['Cuándo', 'Quién', 'Qué', 'Detalle'].map((header) => (
@@ -82,6 +83,7 @@ export function AuditPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

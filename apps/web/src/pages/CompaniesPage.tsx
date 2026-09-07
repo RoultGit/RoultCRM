@@ -94,7 +94,8 @@ export function CompaniesPage() {
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-gray-200 bg-gray-50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -118,6 +119,7 @@ export function CompaniesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

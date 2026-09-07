@@ -69,7 +69,7 @@ export function EditDialog<T extends FieldValues>({
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/30" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 max-h-[85vh] w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white p-6 shadow-lg">
+        <Dialog.Content className="focus:outline-none fixed left-1/2 top-1/2 max-h-[85vh] w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white p-6 shadow-lg">
           <Dialog.Title className="mb-4 text-lg font-semibold">{title}</Dialog.Title>
           <form className="space-y-3" onSubmit={handleSubmit((data) => onSubmit(data, () => setOpen(false)))}>
             {fields.map((field) => {

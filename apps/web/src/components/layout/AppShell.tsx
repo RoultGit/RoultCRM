@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
-import { Building2, CalendarClock, CalendarDays, Contact, Handshake, History, LayoutDashboard, ListChecks, LogOut, Upload, Users } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Building2, CalendarClock, CalendarDays, Contact, Handshake, History, LayoutDashboard, ListChecks, LogOut, Menu, Upload, Users } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
 import { useSession, useLogout } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
@@ -24,6 +26,33 @@ const ADMIN_ONLY_NAV = [
   { to: '/audit', label: 'Auditoría', icon: History },
 ];
 
+// El menú lateral se usa en dos lugares: fijo a la izquierda en pantallas grandes y dentro del
+// cajón deslizante en el teléfono. Una sola definición para que no se desincronicen.
+function SidebarNav({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
+  return (
+    <nav className="space-y-1">
+      {[...NAV_ITEMS, ...(isAdmin ? ADMIN_ONLY_NAV : [])].map(({ to, label, icon: Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={to === '/'}
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            cn(
+              // min-h-11 = 44px, el mínimo para que un dedo acierte sin errarle al de al lado.
+              'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100',
+              isActive && 'bg-gray-900 text-white hover:bg-gray-900'
+            )
+          }
+        >
+          <Icon size={18} />
+          {label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
 export function AppShell() {
   // Sin esto, entrar a cualquier ruta sin sesión (o tras vencer el refresh token) pintaba la app
   // entera vacía y en silencio: las queries daban 401 y cada tabla mostraba cero filas, que es
@@ -31,51 +60,66 @@ export function AppShell() {
   // caído se renueva solo y solo llega acá si tampoco hay refresh válido.
   const session = useSession();
   const logout = useLogout();
+  const [menuOpen, setMenuOpen] = useState(false);
   if (session.isLoading) return <div className="p-6 text-sm text-gray-500">Cargando…</div>;
   if (session.isError) return <Navigate to="/login" replace />;
 
+  const isAdmin = session.data?.role === 'ADMIN';
+
   return (
     <div className="flex min-h-screen bg-surface">
-      <aside className="w-60 shrink-0 border-r border-gray-200 bg-white p-4">
+      {/* El lateral fijo desaparece por debajo de lg. Con 240px clavados, en un teléfono de 390px
+          dejaba 150px para el contenido: no entraba nada y la página entera se scrolleaba de
+          costado. Abajo de lg, el mismo menú vive en el cajón deslizante. */}
+      <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white p-4 lg:block">
         <div className="mb-6 px-2 text-lg font-semibold">VentryCRM</div>
-        <nav className="space-y-1">
-          {[...NAV_ITEMS, ...(session.data?.role === 'ADMIN' ? ADMIN_ONLY_NAV : [])].map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100',
-                  isActive && 'bg-gray-900 text-white hover:bg-gray-900'
-                )
-              }
-            >
-              <Icon size={18} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
+        <SidebarNav isAdmin={isAdmin} />
       </aside>
+
       <main className="min-w-0 flex-1">
-        <header className="flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 py-3">
+        <header className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
+          {/* Radix Dialog y no un div propio: trae el foco atrapado adentro, cerrar con Escape y el
+              bloqueo del scroll de fondo, que es justo lo que hay que reimplementar mal si uno se
+              arma el cajón a mano. */}
+          <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
+            <Dialog.Trigger asChild>
+              <button
+                type="button"
+                aria-label="Abrir menú"
+                className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 lg:hidden"
+              >
+                <Menu size={20} />
+              </button>
+            </Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 lg:hidden" />
+              <Dialog.Content className="focus:outline-none fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto border-r border-gray-200 bg-white p-4 shadow-xl lg:hidden">
+                <Dialog.Title className="mb-6 px-2 text-lg font-semibold">VentryCRM</Dialog.Title>
+                {/* Cerrar al navegar: si no, el cajón queda tapando la pantalla a la que acabás de
+                    entrar y hay que cerrarlo a mano cada vez. */}
+                <SidebarNav isAdmin={isAdmin} onNavigate={() => setMenuOpen(false)} />
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
+
           <GlobalSearch />
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">
+          <div className="ml-auto flex shrink-0 items-center gap-3">
+            {/* El nombre se oculta en pantalla chica: el botón de salir es lo que hace falta ahí. */}
+            <span className="hidden text-sm text-gray-600 sm:inline">
               {session.data?.firstName} {session.data?.lastName}
             </span>
             <button
               type="button"
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               disabled={logout.isPending}
               onClick={() => logout.mutate()}
             >
               <LogOut size={16} />
-              Salir
+              <span className="hidden sm:inline">Salir</span>
             </button>
           </div>
         </header>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <Outlet />
         </div>
       </main>

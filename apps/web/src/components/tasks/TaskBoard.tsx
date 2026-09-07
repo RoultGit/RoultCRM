@@ -122,7 +122,7 @@ function StatusColumn({
   const { setNodeRef, isOver } = useDroppable({ id: status.key });
   const Icon = status.icon;
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex w-[260px] shrink-0 flex-col lg:w-auto lg:min-w-0 lg:flex-1">
       <div className="mb-2 flex items-center gap-2 px-1">
         <Icon className={`h-4 w-4 ${status.dot}`} />
         <span className="text-sm font-medium text-gray-900">{status.label}</span>
@@ -168,7 +168,10 @@ export function TaskBoard({ tasks, users }: { tasks: TaskDTO[]; users?: UserDTO[
       onDragEnd={onDragEnd}
       onDragCancel={() => setActive(null)}
     >
-      <div className="flex gap-3">
+      {/* min-w-[260px] por columna + scroll acá adentro: con flex-1 a secas, en un teléfono las
+          tres columnas quedaban en 110px cada una y las cards no se podían leer. El deslizamiento
+          vive en el tablero, no en la página. */}
+      <div className="flex gap-3 overflow-x-auto pb-2">
         {TASK_STATUS.map((status) => (
           <StatusColumn
             key={status.key}

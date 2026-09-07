@@ -51,7 +51,7 @@ export function QualifyLeadDialog({ lead, onClose }: { lead: LeadDTO | null; onC
     <Dialog.Root open={!!lead} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/30" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-lg">
+        <Dialog.Content className="focus:outline-none fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-lg">
           <Dialog.Title className="mb-1 text-lg font-semibold">Calificar y pasar a venta</Dialog.Title>
           <p className="mb-4 text-sm text-gray-500">
             <strong>{lead?.businessName}</strong> pasa a ser cliente y su oportunidad entra al pipeline.

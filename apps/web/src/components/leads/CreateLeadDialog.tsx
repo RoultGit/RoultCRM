@@ -33,7 +33,7 @@ export function CreateLeadDialog() {
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/30" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-lg">
+        <Dialog.Content className="focus:outline-none fixed left-1/2 top-1/2 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-lg">
           <Dialog.Title className="mb-4 text-lg font-semibold">Nuevo lead</Dialog.Title>
           <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
             <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="Empresa / persona" {...register('businessName')} />

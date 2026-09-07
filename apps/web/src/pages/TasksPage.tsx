@@ -33,7 +33,9 @@ export function TasksPage() {
                   key={option.key}
                   onClick={() => setView(option.key)}
                   aria-pressed={view === option.key}
-                  className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                  // whitespace-nowrap: en un teléfono "Línea de tiempo" se partía en dos renglones y
+                  // estiraba toda la fila de controles al doble de alto.
+                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                     view === option.key ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-900'
                   }`}
                 >
