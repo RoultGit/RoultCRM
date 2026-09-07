@@ -39,10 +39,10 @@ export const setDealStageSchema = z
   });
 
 export const dealFiltersSchema = z.object({
-  stage: dealStageSchema.optional(),
+  stage: optionalText(dealStageSchema),
   assignedUserId: optionalText(z.string()),
-  currency: currencySchema.optional(),
-  line: lineSchema.optional(),
+  currency: optionalText(currencySchema),
+  line: optionalText(lineSchema),
   from: optionalText(z.string().date()),
   to: optionalText(z.string().date()),
 });

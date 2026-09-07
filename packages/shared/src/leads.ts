@@ -22,9 +22,9 @@ export const setLeadStatusSchema = z.object({
 });
 
 export const leadFiltersSchema = z.object({
-  status: leadStatusSchema.optional(),
+  status: optionalText(leadStatusSchema),
   assignedUserId: optionalText(z.string()),
-  line: lineSchema.optional(),
+  line: optionalText(lineSchema),
   source: optionalText(z.string()),
 });
 

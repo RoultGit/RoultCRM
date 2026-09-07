@@ -15,7 +15,7 @@ export const createCompanySchema = z.object({
 
 export const companyFiltersSchema = z.object({
   assignedUserId: optionalText(z.string()),
-  line: lineSchema.optional(),
+  line: optionalText(lineSchema),
 });
 
 export const updateCompanySchema = createCompanySchema.omit({ confirmDuplicate: true }).partial();

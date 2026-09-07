@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { optionalText } from './common.js';
 
 export const createUserSchema = z.object({
   email: z.string().email(),
@@ -18,7 +19,7 @@ export const updateUserSchema = z.object({
 });
 
 export const userFiltersSchema = z.object({
-  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+  status: optionalText(z.enum(['ACTIVE', 'INACTIVE'])),
 });
 
 export const setUserStatusSchema = z.object({

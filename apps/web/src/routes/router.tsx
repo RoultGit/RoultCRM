@@ -10,6 +10,7 @@ import { TasksPage } from '../pages/TasksPage.js';
 import { AuditPage } from '../pages/AuditPage.js';
 import { DashboardPage } from '../pages/DashboardPage.js';
 import { ImportPage } from '../pages/ImportPage.js';
+import { AdminOnly } from '../components/AdminOnly.js';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -24,8 +25,22 @@ export const router = createBrowserRouter([
       { path: 'leads', element: <LeadsPage /> },
       { path: 'deals', element: <DealsPage /> },
       { path: 'tasks', element: <TasksPage /> },
-      { path: 'audit', element: <AuditPage /> },
-      { path: 'import', element: <ImportPage /> },
+      {
+        path: 'audit',
+        element: (
+          <AdminOnly>
+            <AuditPage />
+          </AdminOnly>
+        ),
+      },
+      {
+        path: 'import',
+        element: (
+          <AdminOnly>
+            <ImportPage />
+          </AdminOnly>
+        ),
+      },
     ],
   },
 ]);
