@@ -1,7 +1,7 @@
 import type { CompanyDTO, createCompanySchema, updateCompanySchema } from '@ventry/shared';
 import type { z } from 'zod';
 import type { Company } from '@prisma/client';
-import { CompaniesRepository } from './companies.repository.js';
+import { CompaniesRepository, type CompanyFilters } from './companies.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { AppError, NotFoundError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
 import { ownerFilter, defaultAssignee, canSee, type Actor } from '../../lib/scope.js';
@@ -39,8 +39,8 @@ async function assertAssignedUserValid(tenantId: string, assignedUserId?: string
 }
 
 export const CompaniesService = {
-  async list(actor: Actor): Promise<CompanyDTO[]> {
-    const companies = await CompaniesRepository.findManyByTenant(actor.tenantId, ownerFilter(actor));
+  async list(actor: Actor, filters: CompanyFilters = {}): Promise<CompanyDTO[]> {
+    const companies = await CompaniesRepository.findManyByTenant(actor.tenantId, ownerFilter(actor), filters);
     return companies.map(toDTO);
   },
 

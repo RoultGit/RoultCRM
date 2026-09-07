@@ -1,7 +1,7 @@
 import type { DealDTO, createDealSchema, updateDealSchema, setDealStageSchema } from '@ventry/shared';
 import type { z } from 'zod';
 import type { Deal } from '@prisma/client';
-import { DealsRepository } from './deals.repository.js';
+import { DealsRepository, type DealFilters } from './deals.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { NotFoundError, ForbiddenError } from '../../lib/errors.js';
@@ -36,8 +36,8 @@ async function assertUserInTenant(tenantId: string, userId?: string) {
 }
 
 export const DealsService = {
-  async list(actor: Actor): Promise<DealDTO[]> {
-    const deals = await DealsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor));
+  async list(actor: Actor, filters: DealFilters = {}): Promise<DealDTO[]> {
+    const deals = await DealsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor), filters);
     return deals.map(toDTO);
   },
 

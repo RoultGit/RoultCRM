@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { currencySchema, moneySchema, optionalText } from './common.js';
+import { currencySchema, lineSchema, moneySchema, optionalText } from './common.js';
 
 export const dealStageSchema = z.enum([
   'CONTACTO',
@@ -37,6 +37,15 @@ export const setDealStageSchema = z
     message: 'Indica el motivo de pérdida',
     path: ['lostReason'],
   });
+
+export const dealFiltersSchema = z.object({
+  stage: dealStageSchema.optional(),
+  assignedUserId: optionalText(z.string()),
+  currency: currencySchema.optional(),
+  line: lineSchema.optional(),
+  from: optionalText(z.string().date()),
+  to: optionalText(z.string().date()),
+});
 
 export const assignDealSchema = z.object({
   assignedUserId: optionalText(z.string()),

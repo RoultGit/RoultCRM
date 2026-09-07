@@ -26,8 +26,8 @@ export const UsersService = {
     return toDTO(user);
   },
 
-  async list(tenantId: string): Promise<UserDTO[]> {
-    const users = await UsersRepository.findManyByTenant(tenantId);
+  async list(tenantId: string, filters: { status?: 'ACTIVE' | 'INACTIVE' } = {}): Promise<UserDTO[]> {
+    const users = await UsersRepository.findManyByTenant(tenantId, filters);
     return users.map(toDTO);
   },
 

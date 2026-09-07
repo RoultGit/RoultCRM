@@ -13,6 +13,11 @@ export const createCompanySchema = z.object({
   confirmDuplicate: z.boolean().optional(),
 });
 
+export const companyFiltersSchema = z.object({
+  assignedUserId: optionalText(z.string()),
+  line: lineSchema.optional(),
+});
+
 export const updateCompanySchema = createCompanySchema.omit({ confirmDuplicate: true }).partial();
 
 export interface CompanyDTO {

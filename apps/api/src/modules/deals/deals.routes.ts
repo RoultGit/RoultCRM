@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { createDealSchema, updateDealSchema, setDealStageSchema, assignDealSchema } from '@ventry/shared';
+import {
+  createDealSchema,
+  updateDealSchema,
+  setDealStageSchema,
+  assignDealSchema,
+  dealFiltersSchema,
+} from '@ventry/shared';
 import { DealsService } from './deals.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
@@ -10,7 +16,11 @@ dealsRouter.use(requireAuth);
 
 dealsRouter.get('/', async (req, res, next) => {
   try {
-    res.json(await DealsService.list(req.user!));
+    const parsed = dealFiltersSchema.safeParse(req.query);
+    // Un filtro con un valor inválido tiene que ser un error, no un filtro ignorado: silenciarlo
+    // devolvería la lista completa y el usuario creería que ese es el resultado del filtro.
+    if (!parsed.success) throw new ValidationError(parsed.error.message);
+    res.json(await DealsService.list(req.user!, parsed.data));
   } catch (err) {
     next(err);
   }

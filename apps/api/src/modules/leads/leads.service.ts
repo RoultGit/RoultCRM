@@ -1,7 +1,7 @@
 import type { LeadDTO, CompanyDTO, ContactDTO, createLeadSchema, updateLeadSchema, setLeadStatusSchema } from '@ventry/shared';
 import type { z } from 'zod';
 import type { Lead } from '@prisma/client';
-import { LeadsRepository } from './leads.repository.js';
+import { LeadsRepository, type LeadFilters } from './leads.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
 import { toDTO as companyToDTO } from '../companies/companies.service.js';
@@ -38,8 +38,8 @@ async function assertAssignedUserValid(tenantId: string, assignedUserId?: string
 }
 
 export const LeadsService = {
-  async list(actor: Actor): Promise<LeadDTO[]> {
-    const leads = await LeadsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor));
+  async list(actor: Actor, filters: LeadFilters = {}): Promise<LeadDTO[]> {
+    const leads = await LeadsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor), filters);
     return leads.map(toDTO);
   },
 

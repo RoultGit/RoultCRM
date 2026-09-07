@@ -1,9 +1,22 @@
 import { prisma } from '../../lib/prisma.js';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, Line } from '@prisma/client';
+
+export interface CompanyFilters {
+  assignedUserId?: string;
+  line?: Line;
+}
 
 export const CompaniesRepository = {
-  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}) {
-    return prisma.company.findMany({ where: { tenantId, ...owner }, orderBy: { createdAt: 'desc' } });
+  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}, filters: CompanyFilters = {}) {
+    return prisma.company.findMany({
+      where: {
+        tenantId,
+        ...owner,
+        ...(filters.assignedUserId ? { assignedUserId: filters.assignedUserId } : {}),
+        ...(filters.line ? { line: filters.line } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   },
 
   findByIdAndTenant(id: string, tenantId: string, owner: { assignedUserId?: string } = {}) {

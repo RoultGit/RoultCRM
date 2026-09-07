@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createCompanySchema, updateCompanySchema } from '@ventry/shared';
+import { createCompanySchema, updateCompanySchema, companyFiltersSchema } from '@ventry/shared';
 import { CompaniesService } from './companies.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
@@ -10,7 +10,9 @@ companiesRouter.use(requireAuth);
 
 companiesRouter.get('/', async (req, res, next) => {
   try {
-    const companies = await CompaniesService.list(req.user!);
+    const parsed = companyFiltersSchema.safeParse(req.query);
+    if (!parsed.success) throw new ValidationError(parsed.error.message);
+    const companies = await CompaniesService.list(req.user!, parsed.data);
     res.json(companies);
   } catch (err) {
     next(err);

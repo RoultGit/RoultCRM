@@ -2,8 +2,11 @@ import { prisma } from '../../lib/prisma.js';
 import type { Prisma, UserStatus } from '@prisma/client';
 
 export const UsersRepository = {
-  findManyByTenant(tenantId: string) {
-    return prisma.user.findMany({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
+  findManyByTenant(tenantId: string, filters: { status?: UserStatus } = {}) {
+    return prisma.user.findMany({
+      where: { tenantId, ...(filters.status ? { status: filters.status } : {}) },
+      orderBy: { createdAt: 'asc' },
+    });
   },
 
   findByIdAndTenant(id: string, tenantId: string) {

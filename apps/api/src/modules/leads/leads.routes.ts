@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { createLeadSchema, updateLeadSchema, setLeadStatusSchema, convertLeadSchema } from '@ventry/shared';
+import {
+  createLeadSchema,
+  updateLeadSchema,
+  setLeadStatusSchema,
+  convertLeadSchema,
+  leadFiltersSchema,
+} from '@ventry/shared';
 import { LeadsService } from './leads.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
@@ -10,7 +16,9 @@ leadsRouter.use(requireAuth);
 
 leadsRouter.get('/', async (req, res, next) => {
   try {
-    const leads = await LeadsService.list(req.user!);
+    const parsed = leadFiltersSchema.safeParse(req.query);
+    if (!parsed.success) throw new ValidationError(parsed.error.message);
+    const leads = await LeadsService.list(req.user!, parsed.data);
     res.json(leads);
   } catch (err) {
     next(err);

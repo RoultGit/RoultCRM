@@ -21,6 +21,13 @@ export const setLeadStatusSchema = z.object({
   status: leadStatusSchema.exclude(['CONVERTED']),
 });
 
+export const leadFiltersSchema = z.object({
+  status: leadStatusSchema.optional(),
+  assignedUserId: optionalText(z.string()),
+  line: lineSchema.optional(),
+  source: optionalText(z.string()),
+});
+
 export const convertLeadSchema = z.object({
   confirmDuplicate: z.boolean().optional(),
 });

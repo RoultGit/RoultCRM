@@ -185,4 +185,44 @@ describe('/leads routes', () => {
       .send({ assignedUserId: 'seller-b' });
     expect(res.status).toBe(403);
   });
+  it('filters leads by status and by line', async () => {
+    const web = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ businessName: 'Uno', contactName: 'A', line: 'WEB' });
+    const soft = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ businessName: 'Dos', contactName: 'B', line: 'SOFTWARE' });
+    await request(app)
+      .patch(`/leads/${soft.body.id}/status`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'CONTACTED' });
+
+    const byLine = await request(app).get('/leads?line=SOFTWARE').set('Authorization', `Bearer ${token}`);
+    expect(byLine.body.map((l: { id: string }) => l.id)).toEqual([soft.body.id]);
+
+    const byStatus = await request(app).get('/leads?status=NEW').set('Authorization', `Bearer ${token}`);
+    expect(byStatus.body.map((l: { id: string }) => l.id)).toContain(web.body.id);
+    expect(byStatus.body.map((l: { id: string }) => l.id)).not.toContain(soft.body.id);
+  });
+
+  it('filters leads by source, case-insensitively and partially', async () => {
+    const ig = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ businessName: 'Desde IG', contactName: 'C', line: 'WEB', source: 'IG - Instagram' });
+    await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ businessName: 'Referido', contactName: 'D', line: 'WEB', source: 'Referido' });
+
+    const res = await request(app).get('/leads?source=instagram').set('Authorization', `Bearer ${token}`);
+    expect(res.body.map((l: { id: string }) => l.id)).toEqual([ig.body.id]);
+  });
+
+  it('rejects an unknown lead status filter', async () => {
+    const res = await request(app).get('/leads?status=INVENTADO').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(400);
+  });
 });

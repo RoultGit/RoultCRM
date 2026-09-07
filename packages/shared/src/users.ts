@@ -17,6 +17,10 @@ export const updateUserSchema = z.object({
   commissionPct: z.number().min(0).max(100).optional(),
 });
 
+export const userFiltersSchema = z.object({
+  status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+});
+
 export const setUserStatusSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE']),
 });

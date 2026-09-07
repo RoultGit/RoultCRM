@@ -213,4 +213,48 @@ describe('/deals routes', () => {
       .send({ stage: 'NEGOCIACION' });
     expect(stage.status).toBe(404);
   });
+  it('filters deals by stage', async () => {
+    const a = await createDeal();
+    const b = await createDeal();
+    await request(app)
+      .patch(`/deals/${b.id}/stage`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ stage: 'NEGOCIACION' });
+
+    const res = await request(app).get('/deals?stage=NEGOCIACION').set('Authorization', `Bearer ${token}`);
+    const ids = res.body.map((d: { id: string }) => d.id);
+    expect(ids).toContain(b.id);
+    expect(ids).not.toContain(a.id);
+  });
+
+  it('filters deals by currency and by assigned vendedor', async () => {
+    const pen = await createDeal();
+    const usd = await request(app)
+      .post('/deals')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ companyId, title: 'En dólares', amount: '500', currency: 'USD', assignedUserId: sellerId });
+
+    const byCurrency = await request(app).get('/deals?currency=USD').set('Authorization', `Bearer ${token}`);
+    expect(byCurrency.body.map((d: { id: string }) => d.id)).toEqual([usd.body.id]);
+
+    const bySeller = await request(app)
+      .get(`/deals?assignedUserId=${sellerId}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(bySeller.body.map((d: { id: string }) => d.id)).toEqual([usd.body.id]);
+    expect(bySeller.body.map((d: { id: string }) => d.id)).not.toContain(pen.id);
+  });
+
+  it('filters deals by the line of their company', async () => {
+    await createDeal();
+    const web = await request(app).get('/deals?line=WEB').set('Authorization', `Bearer ${token}`);
+    expect(web.body).toHaveLength(1);
+    const software = await request(app).get('/deals?line=SOFTWARE').set('Authorization', `Bearer ${token}`);
+    expect(software.body).toHaveLength(0);
+  });
+
+  it('rejects an unknown filter value instead of returning everything', async () => {
+    await createDeal();
+    const res = await request(app).get('/deals?stage=NO_EXISTE').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(400);
+  });
 });
