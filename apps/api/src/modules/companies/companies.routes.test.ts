@@ -39,6 +39,17 @@ describe('/companies routes', () => {
     expect(res.body.name).toBe('ABC SAC');
   });
 
+  it('treats blank optional fields as absent instead of rejecting them', async () => {
+    const res = await request(app)
+      .post('/companies')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Sin Correo SAC', line: 'WEB', email: '', whatsapp: '', city: '' });
+    expect(res.status).toBe(201);
+    expect(res.body.email).toBeNull();
+    expect(res.body.whatsapp).toBeNull();
+    expect(res.body.city).toBeNull();
+  });
+
   it('blocks creating a company with a duplicate email and returns the existing match', async () => {
     await request(app)
       .post('/companies')

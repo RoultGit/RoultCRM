@@ -1,18 +1,18 @@
 import { z } from 'zod';
-import { lineSchema } from './common.js';
+import { lineSchema, optionalText } from './common.js';
 
 export const leadStatusSchema = z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'UNQUALIFIED', 'LOST']);
 
 export const createLeadSchema = z.object({
-  businessName: z.string().min(1),
-  contactName: z.string().min(1),
-  phone: z.string().optional(),
-  whatsapp: z.string().optional(),
-  email: z.string().email().optional(),
+  businessName: z.string().min(1, 'Ingresa la empresa o persona'),
+  contactName: z.string().min(1, 'Ingresa el nombre de contacto'),
+  phone: optionalText(z.string()),
+  whatsapp: optionalText(z.string()),
+  email: optionalText(z.string().email()),
   line: lineSchema,
-  source: z.string().optional(),
-  assignedUserId: z.string().optional(),
-  notes: z.string().optional(),
+  source: optionalText(z.string()),
+  assignedUserId: optionalText(z.string()),
+  notes: optionalText(z.string()),
 });
 
 export const updateLeadSchema = createLeadSchema.partial();

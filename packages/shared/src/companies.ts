@@ -1,15 +1,15 @@
 import { z } from 'zod';
-import { lineSchema } from './common.js';
+import { lineSchema, optionalText } from './common.js';
 
 export const createCompanySchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1, 'Ingresa el nombre de la empresa'),
   line: lineSchema,
-  city: z.string().optional(),
-  source: z.string().optional(),
-  whatsapp: z.string().optional(),
-  email: z.string().email().optional(),
-  assignedUserId: z.string().optional(),
-  notes: z.string().optional(),
+  city: optionalText(z.string()),
+  source: optionalText(z.string()),
+  whatsapp: optionalText(z.string()),
+  email: optionalText(z.string().email()),
+  assignedUserId: optionalText(z.string()),
+  notes: optionalText(z.string()),
   confirmDuplicate: z.boolean().optional(),
 });
 

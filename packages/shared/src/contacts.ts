@@ -1,13 +1,14 @@
 import { z } from 'zod';
+import { optionalText } from './common.js';
 
 export const createContactSchema = z.object({
-  companyId: z.string().min(1),
-  name: z.string().min(1),
-  position: z.string().optional(),
-  phone: z.string().optional(),
-  whatsapp: z.string().optional(),
-  email: z.string().email().optional(),
-  notes: z.string().optional(),
+  companyId: z.string().min(1, 'Selecciona una empresa'),
+  name: z.string().min(1, 'Ingresa el nombre del contacto'),
+  position: optionalText(z.string()),
+  phone: optionalText(z.string()),
+  whatsapp: optionalText(z.string()),
+  email: optionalText(z.string().email()),
+  notes: optionalText(z.string()),
   confirmDuplicate: z.boolean().optional(),
 });
 
