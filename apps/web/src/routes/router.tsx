@@ -9,6 +9,7 @@ import { DealsPage } from '../pages/DealsPage.js';
 import { TasksPage } from '../pages/TasksPage.js';
 import { AuditPage } from '../pages/AuditPage.js';
 import { DashboardPage } from '../pages/DashboardPage.js';
+import { ImportPage } from '../pages/ImportPage.js';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: 'deals', element: <DealsPage /> },
       { path: 'tasks', element: <TasksPage /> },
       { path: 'audit', element: <AuditPage /> },
+      { path: 'import', element: <ImportPage /> },
     ],
   },
 ]);

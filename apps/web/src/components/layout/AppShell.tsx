@@ -8,6 +8,7 @@ import {
   ListChecks,
   CalendarClock,
   History,
+  Upload,
   Settings,
 } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
@@ -27,7 +28,10 @@ const NAV_ITEMS = [
 
 // Estas rutas responden 403 a un VENDEDOR, así que mostrarle el link sería ofrecerle una puerta
 // cerrada.
-const ADMIN_ONLY_NAV = [{ to: '/audit', label: 'Auditoría', icon: History }];
+const ADMIN_ONLY_NAV = [
+  { to: '/import', label: 'Importar', icon: Upload },
+  { to: '/audit', label: 'Auditoría', icon: History },
+];
 
 export function AppShell() {
   // Sin esto, entrar a cualquier ruta sin sesión (o tras vencer el refresh token) pintaba la app
