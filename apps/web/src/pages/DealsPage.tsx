@@ -23,6 +23,7 @@ import { useSession } from '../hooks/useAuth.js';
 import { formatMoney } from '../lib/money.js';
 import { formatDate, isOverdue } from '../lib/date.js';
 import { CreateDealDialog } from '../components/deals/CreateDealDialog.js';
+import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { LostReasonDialog } from '../components/deals/LostReasonDialog.js';
 
 // El orden del pipeline es el del spec de negocio, sección 22. PERDIDO va al final y fuera de la
@@ -170,7 +171,8 @@ function StageColumn({
 }
 
 export function DealsPage() {
-  const { data: deals, isLoading } = useDeals();
+  const [filters, setFilters] = useState<FilterValue>({});
+  const { data: deals, isLoading } = useDeals(filters);
   const setStage = useSetDealStage();
   const { data: users } = useUsers();
   const canAssign = useSession().data?.role === 'ADMIN';
@@ -207,6 +209,18 @@ export function DealsPage() {
         <h1 className="text-xl font-semibold">Pipeline</h1>
         <CreateDealDialog />
       </div>
+      <FilterBar
+        value={filters}
+        onChange={setFilters}
+        exportPath="/deals/export"
+        exportName="deals"
+        fields={[
+          { key: 'stage', label: 'Etapa', options: STAGES.map((s) => ({ value: s, label: STAGE_LABEL[s] })) },
+          { key: 'assignedUserId', label: 'Vendedor', options: 'vendedores' },
+          { key: 'line', label: 'Línea', options: [{ value: 'WEB', label: 'Web' }, { value: 'SOFTWARE', label: 'Software' }] },
+          { key: 'currency', label: 'Moneda', options: [{ value: 'PEN', label: 'PEN' }, { value: 'USD', label: 'USD' }] },
+        ]}
+      />
       {setStage.isError && <p className="mb-4 text-sm text-red-600">No se pudo mover el deal de etapa.</p>}
       {isLoading ? (
         <Card className="p-6 text-sm text-gray-500">Cargando…</Card>

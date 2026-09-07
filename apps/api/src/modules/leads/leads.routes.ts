@@ -9,6 +9,7 @@ import {
 import { LeadsService } from './leads.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
+import { toCsv, UTF8_BOM } from '../../lib/csv.js';
 
 export const leadsRouter = Router();
 
@@ -20,6 +21,31 @@ leadsRouter.get('/', async (req, res, next) => {
     if (!parsed.success) throw new ValidationError(parsed.error.message);
     const leads = await LeadsService.list(req.user!, parsed.data);
     res.json(leads);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Va ANTES de las rutas con :id para que "/export" no se lea como un id.
+leadsRouter.get('/export', async (req, res, next) => {
+  try {
+    const parsed = leadFiltersSchema.safeParse(req.query);
+    if (!parsed.success) throw new ValidationError(parsed.error.message);
+    const rows = await LeadsService.list(req.user!, parsed.data);
+    const csv = toCsv(rows as unknown as Record<string, unknown>[], [
+      { key: 'businessName', header: 'Empresa / persona' },
+      { key: 'contactName', header: 'Contacto' },
+      { key: 'status', header: 'Estado' },
+      { key: 'line', header: 'Línea' },
+      { key: 'source', header: 'Origen' },
+      { key: 'email', header: 'Correo' },
+      { key: 'phone', header: 'Teléfono' },
+      { key: 'whatsapp', header: 'WhatsApp' },
+      { key: 'createdAt', header: 'Creado' },
+    ]);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="leads.csv"');
+    res.send(UTF8_BOM + csv);
   } catch (err) {
     next(err);
   }

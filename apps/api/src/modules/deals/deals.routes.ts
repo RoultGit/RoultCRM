@@ -9,6 +9,7 @@ import {
 import { DealsService } from './deals.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
+import { toCsv, UTF8_BOM } from '../../lib/csv.js';
 
 export const dealsRouter = Router();
 
@@ -21,6 +22,31 @@ dealsRouter.get('/', async (req, res, next) => {
     // devolvería la lista completa y el usuario creería que ese es el resultado del filtro.
     if (!parsed.success) throw new ValidationError(parsed.error.message);
     res.json(await DealsService.list(req.user!, parsed.data));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Va ANTES de las rutas con :id para que "/export" no se lea como un id.
+dealsRouter.get('/export', async (req, res, next) => {
+  try {
+    const parsed = dealFiltersSchema.safeParse(req.query);
+    if (!parsed.success) throw new ValidationError(parsed.error.message);
+    const rows = await DealsService.list(req.user!, parsed.data);
+    const csv = toCsv(rows as unknown as Record<string, unknown>[], [
+      { key: 'companyName', header: 'Empresa' },
+      { key: 'title', header: 'Deal' },
+      { key: 'amount', header: 'Monto' },
+      { key: 'currency', header: 'Moneda' },
+      { key: 'stage', header: 'Etapa' },
+      { key: 'lostReason', header: 'Motivo de pérdida' },
+      { key: 'nextStepDescription', header: 'Próximo paso' },
+      { key: 'nextStepDate', header: 'Fecha próximo paso' },
+      { key: 'createdAt', header: 'Creado' },
+    ]);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="deals.csv"');
+    res.send(UTF8_BOM + csv);
   } catch (err) {
     next(err);
   }

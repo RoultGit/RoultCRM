@@ -8,6 +8,7 @@ import { Button } from '../components/ui/button.js';
 import { CreateLeadDialog } from '../components/leads/CreateLeadDialog.js';
 import { useLeads, useSetLeadStatus, useConvertLead, useUpdateLead } from '../hooks/useLeads.js';
 import { AssigneeCell } from '../components/AssigneeCell.js';
+import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 
 const STATUS_TONE: Record<LeadDTO['status'], 'info' | 'neutral' | 'warning' | 'success' | 'danger'> = {
   NEW: 'info',
@@ -40,7 +41,8 @@ const SELECTABLE_STATUS: Exclude<LeadDTO['status'], 'CONVERTED'>[] = [
 const columnHelper = createColumnHelper<LeadDTO>();
 
 export function LeadsPage() {
-  const { data: leads, isLoading } = useLeads();
+  const [filters, setFilters] = useState<FilterValue>({});
+  const { data: leads, isLoading } = useLeads(filters);
   const setStatus = useSetLeadStatus();
   const convert = useConvertLead();
   const updateLead = useUpdateLead();
@@ -127,6 +129,24 @@ export function LeadsPage() {
         <h1 className="text-xl font-semibold">Leads</h1>
         <CreateLeadDialog />
       </div>
+      <FilterBar
+        value={filters}
+        onChange={setFilters}
+        exportPath="/leads/export"
+        exportName="leads"
+        fields={[
+          {
+            key: 'status',
+            label: 'Estado',
+            options: (['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'UNQUALIFIED', 'LOST'] as const).map((s) => ({
+              value: s,
+              label: STATUS_LABEL[s],
+            })),
+          },
+          { key: 'assignedUserId', label: 'Vendedor', options: 'vendedores' },
+          { key: 'line', label: 'Línea', options: [{ value: 'WEB', label: 'Web' }, { value: 'SOFTWARE', label: 'Software' }] },
+        ]}
+      />
       {duplicate ? (
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <span>

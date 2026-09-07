@@ -5,11 +5,14 @@ import { Badge } from '../components/ui/badge.js';
 import { CreateCompanyDialog } from '../components/companies/CreateCompanyDialog.js';
 import { useCompanies, useUpdateCompany } from '../hooks/useCompanies.js';
 import { AssigneeCell } from '../components/AssigneeCell.js';
+import { FilterBar, type FilterValue } from '../components/FilterBar.js';
+import { useState } from 'react';
 
 const columnHelper = createColumnHelper<CompanyDTO>();
 
 export function CompaniesPage() {
-  const { data: companies, isLoading } = useCompanies();
+  const [filters, setFilters] = useState<FilterValue>({});
+  const { data: companies, isLoading } = useCompanies(filters);
   const updateCompany = useUpdateCompany();
 
   const columns = [
@@ -41,6 +44,16 @@ export function CompaniesPage() {
         <h1 className="text-xl font-semibold">Empresas</h1>
         <CreateCompanyDialog />
       </div>
+      <FilterBar
+        value={filters}
+        onChange={setFilters}
+        exportPath="/companies/export"
+        exportName="empresas"
+        fields={[
+          { key: 'assignedUserId', label: 'Vendedor', options: 'vendedores' },
+          { key: 'line', label: 'Línea', options: [{ value: 'WEB', label: 'Web' }, { value: 'SOFTWARE', label: 'Software' }] },
+        ]}
+      />
       {updateCompany.isError && (
         <p className="mb-4 text-sm text-red-600">No se pudo cambiar el vendedor asignado.</p>
       )}

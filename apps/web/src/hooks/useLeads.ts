@@ -4,10 +4,15 @@ import { apiClient } from '../lib/api.js';
 
 const LEADS_KEY = ['leads'];
 
-export function useLeads() {
+export type LeadFilters = Record<string, string | undefined>;
+
+export function useLeads(filters: LeadFilters = {}) {
   return useQuery({
-    queryKey: LEADS_KEY,
-    queryFn: async () => (await apiClient.get<LeadDTO[]>('/leads')).data,
+  // Los filtros entran en la queryKey: sin eso TanStack sirve el resultado cacheado del filtro
+  // anterior y la tabla no cambia al filtrar. Las invalidaciones siguen andando porque hacen match
+  // por prefijo de la key.
+    queryKey: [...LEADS_KEY, filters],
+    queryFn: async () => (await apiClient.get<LeadDTO[]>('/leads', { params: filters })).data,
   });
 }
 

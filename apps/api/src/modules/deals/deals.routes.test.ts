@@ -257,4 +257,28 @@ describe('/deals routes', () => {
     const res = await request(app).get('/deals?stage=NO_EXISTE').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(400);
   });
+  it('exports deals as CSV honouring the active filter', async () => {
+    await createDeal();
+    await request(app)
+      .post('/deals')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ companyId, title: 'En dólares', amount: '500', currency: 'USD' });
+
+    const res = await request(app).get('/deals/export?currency=USD').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/csv');
+    expect(res.headers['content-disposition']).toContain('deals.csv');
+    const lines = res.text.split('\r\n');
+    expect(lines[0]).toContain('Empresa,Deal,Monto,Moneda,Etapa');
+    // Solo la fila filtrada, más la cabecera.
+    expect(lines).toHaveLength(2);
+    expect(lines[1]).toContain('En dólares');
+    // El BOM es lo que hace que Excel lea el archivo como UTF-8.
+    expect(res.text.charCodeAt(0)).toBe(0xfeff);
+  });
+
+  it('does not let /export be swallowed by the :id routes', async () => {
+    const res = await request(app).get('/deals/export').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+  });
 });

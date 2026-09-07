@@ -3,6 +3,7 @@ import { createCompanySchema, updateCompanySchema, companyFiltersSchema } from '
 import { CompaniesService } from './companies.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
+import { toCsv, UTF8_BOM } from '../../lib/csv.js';
 
 export const companiesRouter = Router();
 
@@ -14,6 +15,29 @@ companiesRouter.get('/', async (req, res, next) => {
     if (!parsed.success) throw new ValidationError(parsed.error.message);
     const companies = await CompaniesService.list(req.user!, parsed.data);
     res.json(companies);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Va ANTES de las rutas con :id para que "/export" no se lea como un id.
+companiesRouter.get('/export', async (req, res, next) => {
+  try {
+    const parsed = companyFiltersSchema.safeParse(req.query);
+    if (!parsed.success) throw new ValidationError(parsed.error.message);
+    const rows = await CompaniesService.list(req.user!, parsed.data);
+    const csv = toCsv(rows as unknown as Record<string, unknown>[], [
+      { key: 'name', header: 'Empresa' },
+      { key: 'line', header: 'Línea' },
+      { key: 'city', header: 'Ciudad' },
+      { key: 'email', header: 'Correo' },
+      { key: 'whatsapp', header: 'WhatsApp' },
+      { key: 'source', header: 'Origen' },
+      { key: 'createdAt', header: 'Creado' },
+    ]);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="empresas.csv"');
+    res.send(UTF8_BOM + csv);
   } catch (err) {
     next(err);
   }
