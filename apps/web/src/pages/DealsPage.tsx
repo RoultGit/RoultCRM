@@ -16,6 +16,7 @@ import { useDeals, useSetDealStage, useAssignDeal } from '../hooks/useDeals.js';
 import { useUsers } from '../hooks/useUsers.js';
 import { useSession } from '../hooks/useAuth.js';
 import { formatMoney } from '../lib/money.js';
+import { formatDate, isOverdue } from '../lib/date.js';
 import { CreateDealDialog } from '../components/deals/CreateDealDialog.js';
 import { LostReasonDialog } from '../components/deals/LostReasonDialog.js';
 
@@ -43,11 +44,17 @@ const STAGE_LABEL: Record<DealDTO['stage'], string> = {
   PERDIDO: 'Perdido',
 };
 
-function isOverdue(date: string | null): boolean {
-  return !!date && new Date(date) < new Date(new Date().toDateString());
-}
-
-function DealCard({ deal, canAssign, users }: { deal: DealDTO; canAssign: boolean; users?: UserDTO[] }) {
+function DealCard({
+  deal,
+  canAssign,
+  users,
+  onStageChange,
+}: {
+  deal: DealDTO;
+  canAssign: boolean;
+  users?: UserDTO[];
+  onStageChange: (deal: DealDTO, stage: DealDTO['stage']) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: deal.id });
   const assign = useAssignDeal();
 
@@ -64,13 +71,29 @@ function DealCard({ deal, canAssign, users }: { deal: DealDTO; canAssign: boolea
         {deal.nextStepDescription && (
           <p className={`mt-2 text-xs ${isOverdue(deal.nextStepDate) ? 'font-medium text-red-600' : 'text-gray-500'}`}>
             {deal.nextStepDescription}
-            {deal.nextStepDate && ` · ${new Date(deal.nextStepDate).toLocaleDateString('es-PE')}`}
+            {deal.nextStepDate && ` · ${formatDate(deal.nextStepDate)}`}
           </p>
         )}
         {deal.stage === 'PERDIDO' && deal.lostReason && (
           <p className="mt-2 text-xs text-gray-500">Motivo: {deal.lostReason}</p>
         )}
       </div>
+      {/* El arrastre es solo para mouse: el KeyboardSensor de dnd-kit desplaza la card de a 25px y
+          nunca llega a la columna de al lado sin acoplar el código al ancho exacto del layout. Este
+          select es el camino equivalente, y de paso sirve en touch y con lector de pantalla. */}
+      <select
+        className="mt-2 w-full rounded-md border border-gray-200 px-2 py-1 text-xs"
+        value={deal.stage}
+        aria-label={`Etapa de ${deal.title}`}
+        onPointerDown={(e) => e.stopPropagation()}
+        onChange={(e) => onStageChange(deal, e.target.value as DealDTO['stage'])}
+      >
+        {STAGES.map((stage) => (
+          <option key={stage} value={stage}>
+            {STAGE_LABEL[stage]}
+          </option>
+        ))}
+      </select>
       {canAssign && (
         <select
           className="mt-2 w-full rounded-md border border-gray-200 px-2 py-1 text-xs"
@@ -98,11 +121,13 @@ function StageColumn({
   deals,
   canAssign,
   users,
+  onStageChange,
 }: {
   stage: DealDTO['stage'];
   deals: DealDTO[];
   canAssign: boolean;
   users?: UserDTO[];
+  onStageChange: (deal: DealDTO, stage: DealDTO['stage']) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   return (
@@ -118,7 +143,7 @@ function StageColumn({
         }`}
       >
         {deals.map((deal) => (
-          <DealCard key={deal.id} deal={deal} canAssign={canAssign} users={users} />
+          <DealCard key={deal.id} deal={deal} canAssign={canAssign} users={users} onStageChange={onStageChange} />
         ))}
       </div>
     </div>
@@ -133,17 +158,29 @@ export function DealsPage() {
   const [lostDeal, setLostDeal] = useState<DealDTO | null>(null);
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
-  const onDragEnd = (event: DragEndEvent) => {
-    const stage = event.over?.id as DealDTO['stage'] | undefined;
-    const deal = deals?.find((d) => d.id === event.active.id);
-    if (!stage || !deal || deal.stage === stage) return;
-    // PERDIDO exige un motivo (spec de negocio, sección 22), así que el drop abre el diálogo en vez
-    // de mandar la mutación: sin motivo el backend responde 400 igual.
+  // ponytail: BUG CONOCIDO, sin resolver. Soltar una card sobre una columna que no es la suya
+  // resuelve la columna equivocada — arrastrando el cursor hasta Adelanto, dnd-kit reporta PERDIDO.
+  // Pasa igual con collisionDetection={closestCorners} y con {pointerWithin}, así que no es el
+  // algoritmo de colisión: algo anda mal en los rects que dnd-kit mide para las columnas. El select
+  // de etapa de cada card hace exactamente lo mismo por el mismo camino (moveTo) y sí funciona, así
+  // que la función está cubierta mientras esto se investigue.
+
+  // Un solo camino para el drop y para el select de la card.
+  const moveTo = (deal: DealDTO, stage: DealDTO['stage']) => {
+    if (deal.stage === stage) return;
+    // PERDIDO exige un motivo (spec de negocio, sección 22), así que se abre el diálogo en vez de
+    // mandar la mutación: sin motivo el backend responde 400 igual.
     if (stage === 'PERDIDO') {
       setLostDeal(deal);
       return;
     }
     setStage.mutate({ id: deal.id, stage });
+  };
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const stage = event.over?.id as DealDTO['stage'] | undefined;
+    const deal = deals?.find((d) => d.id === event.active.id);
+    if (stage && deal) moveTo(deal, stage);
   };
 
   return (
@@ -165,6 +202,7 @@ export function DealsPage() {
                 deals={(deals ?? []).filter((d) => d.stage === stage)}
                 canAssign={canAssign}
                 users={users}
+                onStageChange={moveTo}
               />
             ))}
           </div>

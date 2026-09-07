@@ -3,15 +3,14 @@ import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { useTasks, useUpdateTask } from '../hooks/useTasks.js';
 import { CreateTaskDialog } from '../components/tasks/CreateTaskDialog.js';
-
-const startOfToday = () => new Date(new Date().toDateString());
+import { formatDate, isOverdue as isDateOverdue, isToday as isDateToday } from '../lib/date.js';
 
 function isOverdue(task: TaskDTO): boolean {
-  return !task.done && new Date(task.dueDate) < startOfToday();
+  return !task.done && isDateOverdue(task.dueDate);
 }
 
 function isToday(task: TaskDTO): boolean {
-  return new Date(task.dueDate).toDateString() === new Date().toDateString();
+  return isDateToday(task.dueDate);
 }
 
 function TaskRow({ task }: { task: TaskDTO }) {
@@ -30,9 +29,7 @@ function TaskRow({ task }: { task: TaskDTO }) {
         <p className={`text-sm ${task.done ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{task.title}</p>
         {task.description && <p className="text-xs text-gray-500">{task.description}</p>}
       </div>
-      <Badge tone={isOverdue(task) ? 'danger' : 'neutral'}>
-        {new Date(task.dueDate).toLocaleDateString('es-PE')}
-      </Badge>
+      <Badge tone={isOverdue(task) ? 'danger' : 'neutral'}>{formatDate(task.dueDate)}</Badge>
     </li>
   );
 }
