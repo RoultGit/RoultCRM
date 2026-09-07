@@ -1,47 +1,50 @@
 # Estado de la sesión — VentryCRM MVP F1
 
-_Actualizado: 2026-09-06. Archivo liviano de referencia — no leas el ledger detallado salvo que necesites el historial completo de cada tarea/revisión._
+_Actualizado: 2026-09-06 (sesión 3). Archivo liviano de referencia._
 
 ## Objetivo
 
-Construir y testear el MVP F1 completo de VentryCRM (CRM multi-tenant SaaS para ROUlt) en modo autónomo, siguiendo:
-- Spec de negocio: `roult-crm-mvp-y-roadmap-v2-vendedores.md` y `modulos-crm-roult.pdf` (raíz del repo)
-- Spec técnico: `docs/superpowers/specs/2026-09-05-ventry-crm-mvp-design.md`
+MVP F1 de VentryCRM (CRM multi-tenant para ROUlt), siguiendo:
+- Negocio: `roult-crm-mvp-y-roadmap-v2-vendedores.md` y `modulos-crm-roult.pdf` (raíz del repo)
+- Técnico: `docs/superpowers/specs/2026-09-05-ventry-crm-mvp-design.md`
 
-Stack: monorepo npm workspaces — `apps/api` (Node/Express/TS/Prisma), `apps/web` (React/TS/Vite/Tailwind), `packages/shared` (Zod/tipos). Multi-tenant vía `tenantId` en cada tabla. Auth JWT propio con refresh-token rotation.
+Stack: monorepo npm workspaces — `apps/api` (Node/Express/TS/Prisma), `apps/web` (React/TS/Vite/Tailwind), `packages/shared` (Zod). Multi-tenant vía `tenantId` en cada tabla. Auth JWT propio con rotación de refresh tokens.
+
+Todo el trabajo vive en el worktree `.claude/worktrees/ventry-plan1-foundation`, rama `worktree-ventry-plan1-foundation`. `master` sigue en el commit de specs (1932504) — por decisión del usuario no se mergea entre planes.
 
 ## Dónde estoy
 
-**Plan 1 — Foundation, Auth & Vendedores: ✅ COMPLETO (10/10 tareas)**
+**Plan 1 — Foundation, Auth & Vendedores: ✅ COMPLETO Y APROBADO.**
 - Plan: `docs/superpowers/plans/2026-09-05-foundation-auth-team.md`
-- Trabajo en: worktree `.claude/worktrees/ventry-plan1-foundation` (este mismo directorio), rama `worktree-ventry-plan1-foundation`
-- Ledger detallado (cada tarea, cada review, cada fix): `.superpowers/sdd/2026-09-05-foundation-auth-team/progress.md`
-- Entregado: monorepo funcionando, schema Prisma, login/refresh/logout con rotación, seed de tenant/admin, módulo Users/Vendedores (backend+frontend), sistema de diseño fiel a las 6 imágenes de referencia.
-- **3 bugs reales de seguridad/concurrencia encontrados y corregidos** durante el proceso de revisión (race condition en refresh tokens, timing leak de enumeración de usuarios en login, race condition en el seed script que podía duplicar tenants).
-- **Verificación manual en navegador: PASÓ.** Login, crear/desactivar vendedor, y el flujo de refresh-token confirmados funcionando end-to-end sin errores.
+- Ledger: `.superpowers/sdd/2026-09-05-foundation-auth-team/progress.md`
+- 10/10 tareas + revisión final de todo el branch (APROBADA) + verificación manual en navegador.
 
-**Ahora mismo (al momento del `/clear`):** la revisión final del branch fue detenida manualmente a pedido del usuario (para ahorrar tokens) antes de terminar — **no llegó a producir un veredicto**. El diff ya está generado en `.superpowers/sdd/2026-09-05-foundation-auth-team/review-1932504..fcb1407.diff` — no hace falta regenerarlo. **Acción inmediata al retomar (cuando el usuario quiera continuar):**
-1. Volver a despachar la revisión final desde cero: usar el diff ya generado (`review-1932504..fcb1407.diff`) y el prompt completo que está en el ledger de Plan 1 (buscar la entrada "Final whole-branch review dispatched" en `.superpowers/sdd/2026-09-05-foundation-auth-team/progress.md`). Usar modelo `sonnet` (opus dio rate-limit 2 veces en esta sesión).
-2. Tras la revisión: aplicar hallazgos (una sola ronda de fix + re-review si hay Critical/Important), luego `superpowers:finishing-a-development-branch` para mergear a `master`.
-3. Nota: las 10 tareas individuales de Plan 1 ya pasaron su propia revisión y quedaron limpias (incluyendo 3 bugs reales de seguridad/concurrencia encontrados y corregidos) — lo único pendiente es esta pasada final de control de calidad a nivel de todo el branch, no una tarea de código nueva.
+**Plan 2 — Leads, Empresas y Contactos: ✅ COMPLETO Y VERIFICADO.**
+- Plan: `docs/superpowers/plans/2026-09-06-leads-companies-contacts.md` (commit 433fe61)
+- 8/8 tareas implementadas (commits 4409e97..8ff41fb). Revisión de subagente solo para Task 7 (conversión de lead), tal como pedía el plan; su hallazgo (3 escrituras sin transacción) se corrigió en 8ff41fb.
+- **Verificación end-to-end hecha en esta sesión** (API con curl + navegador real): login, CRUD de empresas/contactos/leads, detección de duplicados con confirmación, flujo de estados del lead y conversión Lead→Empresa+Contacto, todo confirmado funcionando. Doble conversión y cambio de estado sobre un lead convertido correctamente rechazados.
+- **1 bug real encontrado y corregido** (commit 433fe61): los campos opcionales vacíos (`""`) rompían la validación Zod (`Invalid email`) y bloqueaban el envío de los tres diálogos — el flujo completo de aviso de duplicado en Empresas era inalcanzable. Se agregó `optionalText()` en `@ventry/shared` y mensajes de validación en español.
+- Estado verde: `npm run build` limpio, 63 tests de API + 7 de web pasando.
+
+## Decisiones pendientes del usuario (bloquean cerrar Plan 2 al 100%)
+
+1. **No se puede descartar un lead desde la UI.** El backend acepta `UNQUALIFIED` y `LOST`, pero `NEXT_STATUS` en `LeadsPage.tsx` solo ofrece el camino lineal Nuevo → Contactado → Calificado → Convertir. Un vendedor no tiene forma de marcar un lead como perdido. El plan lo especificó así; es un hueco del plan, no del código.
+2. **Un lead cuyo nombre choca con una empresa existente no se puede convertir desde la UI.** `LeadsPage` muestra el error pero no ofrece "convertir de todas formas" (`confirmDuplicate: true`), que el backend sí soporta. En Empresas y Contactos ese botón sí existe.
 
 ## Qué falta para terminar el goal
 
-1. Terminar la revisión final del branch y aplicar hallazgos (si hay) — ver "Acción inmediata" arriba.
-2. Mergear el branch (`superpowers:finishing-a-development-branch`) a `master`.
-3. **Plan 2** — Leads, Empresas, Contactos, Deduplicación (por escribir, usando `superpowers:brainstorming`/`writing-plans` igual que Plan 1).
-4. **Plan 3** — Deals, Pipeline, Asignación de vendedor, Actividades, Tareas/próximo paso (por escribir).
-5. **Plan 4** — Búsqueda global, Filtros, Import/Export, Dashboard operativo, Auditoría (por escribir).
-6. Testing end-to-end final del MVP F1 completo.
+1. Resolver los dos puntos de arriba (son ~30 líneas de UI entre los dos).
+2. **Plan 3** — Deals, Pipeline, Asignación de vendedor, Actividades, Tareas/próximo paso (por escribir).
+3. **Plan 4** — Búsqueda global, Filtros, Import/Export, Dashboard operativo, Auditoría (por escribir).
+4. Testing end-to-end final del MVP F1 completo.
 
-## Cómo retomar tras `/clear`
+## Cómo retomar
 
-1. Leer este archivo (`STATUS.md`) para el panorama general — no hace falta releer el spec ni el PDF de nuevo, ya están reflejados aquí y en el plan.
-2. Seguir la "Acción inmediata" de arriba para la revisión final pendiente.
-3. Si se necesita el detalle de qué se decidió y por qué en cada tarea de Plan 1 (por ejemplo para Plan 2, que reutiliza el mismo patrón de tenant-scoping): leer `.superpowers/sdd/2026-09-05-foundation-auth-team/progress.md`.
-4. El modo sigue siendo autónomo salvo que el usuario diga lo contrario: no pedir confirmaciones rutinarias, solo detenerse ante un bloqueo real (credenciales, decisión de negocio no cubierta).
-5. El loop autónomo (`/loop`) fue detenido explícitamente a pedido del usuario antes de este `/clear` — si se quiere retomar el trabajo autónomo continuo, hay que volver a invocar `/loop` con el objetivo.
+1. Leer este archivo. No hace falta releer el spec ni el PDF.
+2. Postgres de pruebas: `docker compose up -d db-test` (puerto 55432). `apps/api/.env` y `apps/web/.env` existen localmente y están gitignoreados.
+3. Servidores: `npm run dev:api` (4000) y `npm run dev:web` (5173). Seed: `npm run db:seed -w @ventry/api` → `admin@roult.pe` / `RoultDemo2026!`.
+4. Rutas web en inglés (`/companies`, `/contacts`, `/leads`, `/team`) aunque el sidebar esté en español.
 
 ## Modo de trabajo
 
-Autónomo (usuario desconectado, sin pedir confirmaciones salvo bloqueo real: credenciales de Supabase o decisión de negocio no cubierta por los docs). Cada tarea sigue TDD + revisión por un subagente independiente + ronda de corrección si hace falta, antes de pasar a la siguiente.
+Autónomo salvo bloqueo real (credenciales o decisión de negocio no cubierta). Revisión ligera desde Plan 2: revisión inline propia por tarea, subagente solo para la lógica cross-entity de mayor riesgo. Modelo: opus para construir, sonnet para revisar.
