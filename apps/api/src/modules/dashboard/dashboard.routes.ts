@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { chartRangeSchema } from '@ventry/shared';
+import { chartRangeSchema } from '@roult/shared';
 import { DashboardService } from './dashboard.service.js';
 import { ChartsService } from './charts.service.js';
 import { requireAuth } from '../../middleware/auth.js';

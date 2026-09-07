@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import Papa from 'papaparse';
-import type { ImportPreviewDTO, ImportRowResult, ImportableEntity } from '@ventry/shared';
+import type { ImportPreviewDTO, ImportRowResult, ImportableEntity } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import { usePreviewImport, useCommitImport } from '../hooks/useImport.js';
 
 const ENTITIES: { value: ImportableEntity; label: string; columns: string }[] = [
-  { value: 'companies', label: 'Empresas', columns: 'name, line, city, source, whatsapp, email, notes' },
+  { value: 'companies', label: 'Empresas', columns: 'name, representativeName, line, city, source, whatsapp, email, notes' },
   { value: 'contacts', label: 'Contactos', columns: 'companyId, name, position, phone, whatsapp, email, notes' },
-  { value: 'leads', label: 'Leads', columns: 'businessName, contactName, line, phone, whatsapp, email, source, notes' },
+  { value: 'leads', label: 'Leads', columns: 'businessName, contactName, representativeName, line, billingType, phone, whatsapp, email, source, notes' },
 ];
 
 const STATUS_TONE = { NEW: 'success', DUPLICATE: 'warning', INVALID: 'danger' } as const;

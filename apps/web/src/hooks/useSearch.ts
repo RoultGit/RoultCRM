@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { SearchResponseDTO } from '@ventry/shared';
+import type { SearchResponseDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 export function useSearch(query: string) {

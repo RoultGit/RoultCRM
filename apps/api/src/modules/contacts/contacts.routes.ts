@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createContactSchema, updateContactSchema } from '@ventry/shared';
+import { createContactSchema, updateContactSchema } from '@roult/shared';
 import { ContactsService } from './contacts.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';

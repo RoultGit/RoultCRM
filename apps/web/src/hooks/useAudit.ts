@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { AuditEntryDTO } from '@ventry/shared';
+import type { AuditEntryDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 export function useAudit() {

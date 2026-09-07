@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createUserSchema } from '@ventry/shared';
+import { createUserSchema } from '@roult/shared';
 import { z } from 'zod';
 import { Button } from '../ui/button.js';
 import { useCreateUser } from '../../hooks/useUsers.js';

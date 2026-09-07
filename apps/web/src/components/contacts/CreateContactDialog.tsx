@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createContactSchema, type ContactDTO } from '@ventry/shared';
+import { createContactSchema, type ContactDTO } from '@roult/shared';
 import { z } from 'zod';
 import { isAxiosError } from 'axios';
 import { Button } from '../ui/button.js';

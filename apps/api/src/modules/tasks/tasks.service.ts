@@ -1,4 +1,4 @@
-import type { TaskDTO, createTaskSchema, updateTaskSchema } from '@ventry/shared';
+import type { TaskDTO, createTaskSchema, updateTaskSchema } from '@roult/shared';
 import type { z } from 'zod';
 import type { Task } from '@prisma/client';
 import { TasksRepository } from './tasks.repository.js';
@@ -17,6 +17,7 @@ export function toDTO(task: Task): TaskDTO {
     dueDate: task.dueDate.toISOString(),
     dueTime: task.dueTime,
     status: task.status,
+    progress: task.progress,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
   };
@@ -38,7 +39,12 @@ export const TasksService = {
   async setStatus(actor: Actor, id: string, status: TaskDTO['status']): Promise<TaskDTO> {
     const existing = await TasksRepository.findByIdAndTenant(id, actor.tenantId, taskOwnerFilter(actor));
     if (!existing) throw new NotFoundError('Task not found');
-    await TasksRepository.updateByIdAndTenant(id, actor.tenantId, { status });
+    // Cerrar la tarea lleva el avance a 100. Una tarjeta que dice "Hecha" con la barra al 40% es
+    // una contradicción que el que la mira tiene que resolver de memoria.
+    await TasksRepository.updateByIdAndTenant(id, actor.tenantId, {
+      status,
+      ...(status === 'DONE' ? { progress: 100 } : {}),
+    });
     const updated = await TasksRepository.findByIdAndTenant(id, actor.tenantId);
     return toDTO(updated!);
   },
@@ -60,6 +66,7 @@ export const TasksService = {
       dueDate: new Date(input.dueDate),
       dueTime: input.dueTime,
       status: input.status,
+      progress: input.progress,
     });
     return toDTO(task);
   },
@@ -76,6 +83,7 @@ export const TasksService = {
       ...(input.dueDate !== undefined ? { dueDate: new Date(input.dueDate) } : {}),
       ...(input.dueTime !== undefined ? { dueTime: input.dueTime ?? null } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
+      ...(input.progress !== undefined ? { progress: input.progress } : {}),
     });
     const updated = await TasksRepository.findByIdAndTenant(id, actor.tenantId);
     return toDTO(updated!);

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { isAxiosError } from 'axios';
-import type { LeadDTO, CompanyDTO } from '@ventry/shared';
+import { BILLING_OPTIONS, type BillingType, type LeadDTO, type CompanyDTO } from '@roult/shared';
 import { Button } from '../ui/button.js';
 import { useConvertLead } from '../../hooks/useLeads.js';
-import { formatMoney } from '../../lib/money.js';
+import { formatAmount } from '../../lib/money.js';
 
 // Calificar un lead es decir "esto es una venta real". En un paso deja de ser un prospecto y pasa a
 // ser un cliente con una oportunidad en el pipeline. Antes había que convertir a mano y después ir a
@@ -13,6 +13,7 @@ export function QualifyLeadDialog({ lead, onClose }: { lead: LeadDTO | null; onC
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<'PEN' | 'USD'>('PEN');
+  const [billingType, setBillingType] = useState<BillingType>('ONE_TIME');
   const [duplicate, setDuplicate] = useState<CompanyDTO | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
   const convert = useConvertLead();
@@ -23,6 +24,9 @@ export function QualifyLeadDialog({ lead, onClose }: { lead: LeadDTO | null; onC
     setTitle(lead.line === 'WEB' ? `Web para ${lead.businessName}` : `Software para ${lead.businessName}`);
     setAmount('');
     setCurrency('PEN');
+    // Arranca con lo que ya se anotó en el lead: si el prospecto se cargó como suscripción, la
+    // venta que sale de él es una suscripción salvo que acá se diga otra cosa.
+    setBillingType(lead.billingType);
     setDuplicate(null);
     setBlocked(null);
   }, [lead?.id]);
@@ -30,7 +34,7 @@ export function QualifyLeadDialog({ lead, onClose }: { lead: LeadDTO | null; onC
   const submit = (confirmDuplicate = false) => {
     if (!lead) return;
     convert.mutate(
-      { id: lead.id, confirmDuplicate, deal: { title: title.trim(), amount: amount.trim(), currency } },
+      { id: lead.id, confirmDuplicate, deal: { title: title.trim(), amount: amount.trim(), currency, billingType } },
       {
         onSuccess: onClose,
         onError: (err) => {
@@ -83,7 +87,7 @@ export function QualifyLeadDialog({ lead, onClose }: { lead: LeadDTO | null; onC
                 <div className="flex gap-2">
                   <input
                     className={field}
-                    placeholder="8000"
+                    placeholder={billingType === 'MONTHLY' ? '500 (por mes)' : '8000'}
                     inputMode="decimal"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
@@ -101,8 +105,24 @@ export function QualifyLeadDialog({ lead, onClose }: { lead: LeadDTO | null; onC
               {amount.trim() && !amountValid && (
                 <p className="text-xs text-red-600">Escribí solo números, con hasta dos decimales. Ej: 8000 u 8000.50</p>
               )}
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-gray-600">¿Cómo se cobra?</span>
+                <select
+                  className={field}
+                  value={billingType}
+                  onChange={(e) => setBillingType(e.target.value as BillingType)}
+                >
+                  {BILLING_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {amountValid && (
-                <p className="text-xs text-gray-500">Se creará por {formatMoney(amount.trim(), currency)}.</p>
+                <p className="text-xs text-gray-500">
+                  Se creará por {formatAmount(amount.trim(), currency, billingType)}.
+                </p>
               )}
               {convert.isError && !duplicate && !blocked && (
                 <p className="text-xs text-red-600">No se pudo completar. Probá de nuevo.</p>

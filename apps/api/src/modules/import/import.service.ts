@@ -6,7 +6,7 @@ import {
   type ImportPreviewDTO,
   type ImportRowResult,
   type ImportableEntity,
-} from '@ventry/shared';
+} from '@roult/shared';
 import type { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';

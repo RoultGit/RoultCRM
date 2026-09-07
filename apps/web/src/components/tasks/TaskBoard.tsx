@@ -14,12 +14,12 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { Clock, Pencil } from 'lucide-react';
-import { updateTaskSchema, type TaskDTO, type UserDTO } from '@ventry/shared';
+import { updateTaskSchema, type TaskDTO, type UserDTO } from '@roult/shared';
 import { Badge } from '../ui/badge.js';
 import { EditDialog } from '../EditDialog.js';
 import { useSetTaskStatus, useUpdateTask } from '../../hooks/useTasks.js';
 import { formatDate } from '../../lib/date.js';
-import { OwnerAvatar, STATUS_META, TASK_STATUS, isTaskOverdue } from './shared.js';
+import { OwnerAvatar, ProgressBar, STATUS_META, TASK_STATUS, isTaskOverdue } from './shared.js';
 
 // Igual que en el pipeline de deals: manda el cursor, y solo si quedó fuera de toda columna se cae
 // a la más cercana. Con la detección por rectángulo, el cuerpo de la card pisa la columna de al
@@ -60,6 +60,11 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
           </p>
         </div>
         {task.description && <p className="mt-1 pl-6 text-xs text-gray-500">{task.description}</p>}
+        {/* Solo si hay avance y la tarea sigue abierta: una barra en cero en cada tarjeta es ruido,
+            y en una tarea hecha el tilde y el tachado ya dicen que está al 100%. */}
+        {task.progress > 0 && task.status !== 'DONE' && (
+          <ProgressBar value={task.progress} className="mt-2 pl-6" />
+        )}
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-dashed border-gray-100 pt-2">
           <Badge tone={overdue ? 'danger' : 'neutral'}>{formatDate(task.dueDate)}</Badge>
           {task.dueTime && (
@@ -96,11 +101,13 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
             description: task.description ?? '',
             dueDate: task.dueDate.slice(0, 10),
             dueTime: task.dueTime ?? '',
+            progress: task.progress,
           }}
           fields={[
             { key: 'title', label: 'Título' },
             { key: 'dueDate', label: 'Fecha límite', type: 'date' },
             { key: 'dueTime', label: 'Hora (opcional)', type: 'time' },
+            { key: 'progress', label: 'Avance (%)', type: 'number' },
             { key: 'description', label: 'Detalle', type: 'textarea' },
           ]}
           onSubmit={(data, close) => update.mutate({ id: task.id, ...data }, { onSuccess: close })}

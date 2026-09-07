@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ContactDTO } from '@ventry/shared';
+import type { ContactDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 const CONTACTS_KEY = ['contacts'];

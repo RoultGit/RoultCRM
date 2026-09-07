@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { calendarRangeSchema } from '@ventry/shared';
+import { calendarRangeSchema } from '@roult/shared';
 import { CalendarService } from './calendar.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';

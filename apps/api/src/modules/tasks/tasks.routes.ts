@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createTaskSchema, updateTaskSchema, taskStatusSchema } from '@ventry/shared';
+import { createTaskSchema, updateTaskSchema, taskStatusSchema } from '@roult/shared';
 import { TasksService } from './tasks.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';

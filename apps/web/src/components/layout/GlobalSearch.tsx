@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import type { SearchResultDTO } from '@ventry/shared';
+import type { SearchResultDTO } from '@roult/shared';
 import { useSearch } from '../../hooks/useSearch.js';
 
 const TYPE_LABEL: Record<SearchResultDTO['type'], string> = {

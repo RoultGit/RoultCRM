@@ -5,7 +5,7 @@ import {
   setLeadStatusSchema,
   convertLeadSchema,
   leadFiltersSchema,
-} from '@ventry/shared';
+} from '@roult/shared';
 import { LeadsService } from './leads.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
@@ -35,8 +35,10 @@ leadsRouter.get('/export', async (req, res, next) => {
     const csv = toCsv(rows as unknown as Record<string, unknown>[], [
       { key: 'businessName', header: 'Empresa / persona' },
       { key: 'contactName', header: 'Contacto' },
+      { key: 'representativeName', header: 'Representante' },
       { key: 'status', header: 'Estado' },
       { key: 'line', header: 'Línea' },
+      { key: 'billingType', header: 'Cobro' },
       { key: 'source', header: 'Origen' },
       { key: 'email', header: 'Correo' },
       { key: 'phone', header: 'Teléfono' },

@@ -27,6 +27,60 @@ describe('/leads routes', () => {
     await prisma.lead.deleteMany({ where: { tenantId } });
   });
 
+  it('actually filters leads by billing type', async () => {
+    await request(app).post('/leads').set('Authorization', `Bearer ${token}`)
+      .send({ businessName: 'Mensual SAC', contactName: 'A', line: 'SERVICIO', billingType: 'MONTHLY' });
+    await request(app).post('/leads').set('Authorization', `Bearer ${token}`)
+      .send({ businessName: 'Único SAC', contactName: 'B', line: 'WEB' });
+
+    const res = await request(app).get('/leads?billingType=MONTHLY').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].businessName).toBe('Mensual SAC');
+  });
+
+  it('accepts the new business lines', async () => {
+    for (const line of ['AUTOMATIZACION', 'SERVICIO'] as const) {
+      const res = await request(app)
+        .post('/leads')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ businessName: `Prospecto ${line}`, contactName: 'Ana', line });
+      expect(res.status).toBe(201);
+      expect(res.body.line).toBe(line);
+    }
+  });
+
+  it('records the representative and the billing type, and carries both into the conversion', async () => {
+    const lead = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        businessName: 'Suscriptora SAC',
+        contactName: 'Quien atiende',
+        representativeName: 'Quien firma',
+        line: 'SERVICIO',
+        billingType: 'MONTHLY',
+      });
+    expect(lead.body.representativeName).toBe('Quien firma');
+    expect(lead.body.billingType).toBe('MONTHLY');
+
+    await request(app)
+      .patch(`/leads/${lead.body.id}/status`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'QUALIFIED' });
+
+    const res = await request(app)
+      .post(`/leads/${lead.body.id}/convert`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ deal: { title: 'Soporte mensual', amount: '500', currency: 'PEN' } });
+
+    expect(res.status).toBe(201);
+    // El representante viaja a la empresa y el tipo de cobro al deal: si se perdieran acá, habría
+    // que volver a cargarlos a mano justo cuando el prospecto se vuelve cliente.
+    expect(res.body.company.representativeName).toBe('Quien firma');
+    expect(res.body.deal.billingType).toBe('MONTHLY');
+  });
+
   it('rejects unauthenticated requests', async () => {
     const res = await request(app).get('/leads');
     expect(res.status).toBe(401);

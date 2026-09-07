@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import type { DealDTO } from '@ventry/shared';
+import type { DealDTO } from '@roult/shared';
 import { Button } from '../ui/button.js';
 import { useDeleteDeal } from '../../hooks/useDeals.js';
 import { formatMoney } from '../../lib/money.js';

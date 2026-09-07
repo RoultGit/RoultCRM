@@ -1,4 +1,4 @@
-import type { CompanyDTO, createCompanySchema, updateCompanySchema } from '@ventry/shared';
+import type { CompanyDTO, createCompanySchema, updateCompanySchema } from '@roult/shared';
 import type { z } from 'zod';
 import type { Company, Prisma } from '@prisma/client';
 import { CompaniesRepository, type CompanyFilters } from './companies.repository.js';
@@ -11,6 +11,7 @@ export function toDTO(company: Company): CompanyDTO {
   return {
     id: company.id,
     name: company.name,
+    representativeName: company.representativeName,
     line: company.line,
     city: company.city,
     source: company.source,
@@ -65,6 +66,7 @@ export const CompaniesService = {
     const company = await CompaniesRepository.create({
       tenantId,
       name: input.name,
+      representativeName: input.representativeName,
       line: input.line,
       city: input.city,
       source: input.source,

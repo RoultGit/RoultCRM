@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { TaskDTO } from '@ventry/shared';
+import type { TaskDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 const TASKS_KEY = ['tasks'];

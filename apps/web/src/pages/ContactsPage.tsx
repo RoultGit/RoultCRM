@@ -1,10 +1,10 @@
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
-import type { ContactDTO } from '@ventry/shared';
+import type { ContactDTO } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
 import { CreateContactDialog } from '../components/contacts/CreateContactDialog.js';
 import { useContacts, useUpdateContact } from '../hooks/useContacts.js';
 import { EditDialog } from '../components/EditDialog.js';
-import { updateContactSchema } from '@ventry/shared';
+import { updateContactSchema } from '@roult/shared';
 
 const columnHelper = createColumnHelper<ContactDTO>();
 

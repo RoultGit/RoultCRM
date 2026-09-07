@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma && npm run build -w @ventry/shared && npm run build -w @ventry/web",
+  "buildCommand": "npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma && npm run build -w @roult/shared && npm run build -w @roult/web",
   "outputDirectory": "apps/web/dist",
-  "installCommand": "npm install --include=dev && npm run build -w @ventry/shared && npx prisma generate --schema=apps/api/prisma/schema.prisma",
+  "installCommand": "npm install --include=dev && npm run build -w @roult/shared && npx prisma generate --schema=apps/api/prisma/schema.prisma",
   "rewrites": [
     {
       "source": "/api/(.*)",

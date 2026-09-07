@@ -1,4 +1,4 @@
-import type { CalendarEventDTO } from '@ventry/shared';
+import type { CalendarEventDTO } from '@roult/shared';
 import { prisma } from '../../lib/prisma.js';
 import { ownerFilter, type Actor } from '../../lib/scope.js';
 

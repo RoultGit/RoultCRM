@@ -120,6 +120,42 @@ describe('/tasks routes', () => {
     expect(res.status).toBe(404);
   });
 
+  it('records progress and refuses values outside 0-100', async () => {
+    const created = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Con avance', dueDate: '2026-09-08', progress: 40 });
+    expect(created.body.progress).toBe(40);
+
+    for (const bad of [-1, 101, 33.5]) {
+      const res = await request(app)
+        .post('/tasks')
+        .set('Authorization', `Bearer ${sellerToken}`)
+        .send({ title: 'Avance imposible', dueDate: '2026-09-08', progress: bad });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it('starts at zero and jumps to 100 when the task is closed', async () => {
+    const created = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Sin avance declarado', dueDate: '2026-09-08' });
+    expect(created.body.progress).toBe(0);
+
+    await request(app)
+      .patch(`/tasks/${created.body.id}`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ progress: 60 });
+
+    const done = await request(app)
+      .patch(`/tasks/${created.body.id}/status`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ status: 'DONE' });
+    // Una tarjeta que dice "Hecha" con la barra al 60% es una contradicción a la vista.
+    expect(done.body.progress).toBe(100);
+  });
+
   it('rejects a task with an invalid due date', async () => {
     const res = await request(app)
       .post('/tasks')

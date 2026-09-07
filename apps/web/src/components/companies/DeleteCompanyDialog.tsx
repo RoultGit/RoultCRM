@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { isAxiosError } from 'axios';
-import type { CompanyDTO } from '@ventry/shared';
+import type { CompanyDTO } from '@roult/shared';
 import { Button } from '../ui/button.js';
 import { useDeleteCompany } from '../../hooks/useCompanies.js';
 import { useContacts } from '../../hooks/useContacts.js';

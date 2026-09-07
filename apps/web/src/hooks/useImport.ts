@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ImportCommitDTO, ImportPreviewDTO, ImportableEntity } from '@ventry/shared';
+import type { ImportCommitDTO, ImportPreviewDTO, ImportableEntity } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 type Rows = Record<string, string>[];

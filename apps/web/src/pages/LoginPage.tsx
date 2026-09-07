@@ -19,7 +19,7 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface">
       <Card className="w-full max-w-sm p-8">
-        <h1 className="mb-6 text-xl font-semibold">Ingresar a VentryCRM</h1>
+        <h1 className="mb-6 text-xl font-semibold">Ingresar a RoultCRM</h1>
         <form className="space-y-4" onSubmit={handleSubmit((data) => login.mutate(data))}>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">Correo</label>

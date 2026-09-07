@@ -48,6 +48,35 @@ describe('/dashboard routes', () => {
     companyId = (await prisma.company.create({ data: { tenantId, name: 'ABC SAC', line: 'WEB' } })).id;
   });
 
+  it('never mixes one-time money with subscriptions', async () => {
+    await prisma.deal.createMany({
+      data: [
+        { tenantId, companyId, title: 'Web única', amount: '8000', currency: 'PEN', stage: 'ENTREGADO', billingType: 'ONE_TIME' },
+        { tenantId, companyId, title: 'Soporte mensual', amount: '500', currency: 'PEN', stage: 'ENTREGADO', billingType: 'MONTHLY' },
+        { tenantId, companyId, title: 'En juego mensual', amount: '300', currency: 'PEN', stage: 'NEGOCIACION', billingType: 'MONTHLY' },
+      ],
+    });
+
+    const res = await request(app).get('/dashboard').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    // 8000 que se cobran una vez y 500 que se cobran cada mes son magnitudes distintas: sumarlas
+    // daría 8500, un número que no es ni facturación ni recurrencia.
+    expect(res.body.wonAmount.PEN).toBe('8000');
+    expect(res.body.wonMonthly.PEN).toBe('500');
+    expect(res.body.activeMonthly.PEN).toBe('300');
+    expect(res.body.activeAmount.PEN).toBe('0');
+  });
+
+  it('defaults existing deals to one-time billing', async () => {
+    await prisma.deal.create({
+      data: { tenantId, companyId, title: 'Sin especificar', amount: '1000', currency: 'PEN', stage: 'ENTREGADO' },
+    });
+    const res = await request(app).get('/dashboard').set('Authorization', `Bearer ${token}`);
+    // Lo que ya existía era pago único hasta hoy: no puede cambiar de significado retroactivamente.
+    expect(res.body.wonAmount.PEN).toBe('1000');
+    expect(res.body.wonMonthly.PEN).toBe('0');
+  });
+
   it('rejects unauthenticated requests', async () => {
     expect((await request(app).get('/dashboard')).status).toBe(401);
   });

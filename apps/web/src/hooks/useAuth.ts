@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import type { UserDTO } from '@ventry/shared';
+import type { UserDTO } from '@roult/shared';
 import { apiClient, setAccessToken } from '../lib/api.js';
 
 interface LoginInput {

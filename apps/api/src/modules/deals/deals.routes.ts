@@ -5,7 +5,7 @@ import {
   setDealStageSchema,
   assignDealSchema,
   dealFiltersSchema,
-} from '@ventry/shared';
+} from '@roult/shared';
 import { DealsService } from './deals.service.js';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
@@ -38,6 +38,7 @@ dealsRouter.get('/export', async (req, res, next) => {
       { key: 'title', header: 'Deal' },
       { key: 'amount', header: 'Monto' },
       { key: 'currency', header: 'Moneda' },
+      { key: 'billingType', header: 'Cobro' },
       { key: 'stage', header: 'Etapa' },
       { key: 'lostReason', header: 'Motivo de pérdida' },
       { key: 'nextStepDescription', header: 'Próximo paso' },

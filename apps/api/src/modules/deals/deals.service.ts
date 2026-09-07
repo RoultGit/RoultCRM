@@ -1,4 +1,4 @@
-import type { DealDTO, createDealSchema, updateDealSchema, setDealStageSchema } from '@ventry/shared';
+import type { DealDTO, createDealSchema, updateDealSchema, setDealStageSchema } from '@roult/shared';
 import type { z } from 'zod';
 import type { Deal, Prisma } from '@prisma/client';
 import { DealsRepository, type DealFilters } from './deals.repository.js';
@@ -18,6 +18,7 @@ export function toDTO(deal: DealWithCompany): DealDTO {
     title: deal.title,
     amount: deal.amount.toString(),
     currency: deal.currency,
+    billingType: deal.billingType,
     stage: deal.stage,
     assignedUserId: deal.assignedUserId,
     expectedCloseDate: deal.expectedCloseDate?.toISOString() ?? null,
@@ -59,6 +60,7 @@ export const DealsService = {
       title: input.title,
       amount: input.amount,
       currency: input.currency,
+      billingType: input.billingType,
       assignedUserId,
       expectedCloseDate: input.expectedCloseDate ? new Date(input.expectedCloseDate) : undefined,
       nextStepDescription: input.nextStepDescription,
@@ -84,6 +86,7 @@ export const DealsService = {
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.amount !== undefined ? { amount: input.amount } : {}),
       ...(input.currency !== undefined ? { currency: input.currency } : {}),
+      ...(input.billingType !== undefined ? { billingType: input.billingType } : {}),
       ...(input.assignedUserId !== undefined ? { assignedUserId: input.assignedUserId } : {}),
       ...(input.expectedCloseDate !== undefined ? { expectedCloseDate: new Date(input.expectedCloseDate) } : {}),
       ...(input.nextStepDescription !== undefined ? { nextStepDescription: input.nextStepDescription } : {}),

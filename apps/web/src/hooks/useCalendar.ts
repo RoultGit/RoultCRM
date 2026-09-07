@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { CalendarEventDTO } from '@ventry/shared';
+import type { CalendarEventDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 // El rango entra en la queryKey: sin eso, cambiar de mes serviría el resultado cacheado del mes

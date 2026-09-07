@@ -54,6 +54,37 @@ describe('/deals routes', () => {
     return res.body;
   }
 
+  it('actually filters by billing type', async () => {
+    await prisma.deal.createMany({
+      data: [
+        { tenantId, companyId, title: 'Único', amount: '8000', currency: 'PEN', billingType: 'ONE_TIME' },
+        { tenantId, companyId, title: 'Mensual A', amount: '500', currency: 'PEN', billingType: 'MONTHLY' },
+        { tenantId, companyId, title: 'Mensual B', amount: '300', currency: 'PEN', billingType: 'MONTHLY' },
+      ],
+    });
+
+    const res = await request(app).get('/deals?billingType=MONTHLY').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    // Un filtro que se ignora devuelve TODO y se lee como "todos son suscripciones": miente sin
+    // fallar. Por eso se afirma el largo además del contenido.
+    expect(res.body).toHaveLength(2);
+    expect(res.body.every((d: { billingType: string }) => d.billingType === 'MONTHLY')).toBe(true);
+  });
+
+  it('accepts a subscription deal and defaults to one-time', async () => {
+    const sub = await request(app)
+      .post('/deals')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ companyId, title: 'Soporte', amount: '500', currency: 'PEN', billingType: 'MONTHLY' });
+    expect(sub.body.billingType).toBe('MONTHLY');
+
+    const plain = await request(app)
+      .post('/deals')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ companyId, title: 'Web', amount: '8000', currency: 'PEN' });
+    expect(plain.body.billingType).toBe('ONE_TIME');
+  });
+
   it('rejects unauthenticated requests', async () => {
     const res = await request(app).get('/deals');
     expect(res.status).toBe(401);
@@ -311,7 +342,7 @@ describe('/deals routes', () => {
     expect(res.headers['content-type']).toContain('text/csv');
     expect(res.headers['content-disposition']).toContain('deals.csv');
     const lines = res.text.split('\r\n');
-    expect(lines[0]).toContain('Empresa,Deal,Monto,Moneda,Etapa');
+    expect(lines[0]).toContain('Empresa,Deal,Monto,Moneda,Cobro,Etapa');
     // Solo la fila filtrada, más la cabecera.
     expect(lines).toHaveLength(2);
     expect(lines[1]).toContain('En dólares');

@@ -1,4 +1,4 @@
-import { DEAL_STAGE_GROUPS, type DashboardChartsDTO, type MonthPointDTO } from '@ventry/shared';
+import { DEAL_STAGE_GROUPS, type DashboardChartsDTO, type MonthPointDTO } from '@roult/shared';
 import type { DealStage } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { ownerFilter, type Actor } from '../../lib/scope.js';

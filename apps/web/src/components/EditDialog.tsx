@@ -11,7 +11,7 @@ export interface EditField {
   label: string;
   // 'time' usa el <input type="time"> nativo: el navegador ya da el formato de 24h, el teclado
   // correcto en móvil y devuelve exactamente el "HH:mm" que espera el schema.
-  type?: 'text' | 'email' | 'date' | 'time' | 'textarea';
+  type?: 'text' | 'email' | 'date' | 'time' | 'number' | 'textarea';
   /** `vendedores` se llena solo con los usuarios del tenant. */
   options?: { value: string; label: string }[] | 'vendedores';
   /** Un select obligatorio (Línea, Moneda) no debe ofrecer la opción vacía. */
@@ -20,7 +20,7 @@ export interface EditField {
 
 // Un solo diálogo para editar empresa, contacto, lead, deal, vendedor y tarea. Seis diálogos casi
 // idénticos serían seis lugares donde arreglar el mismo detalle; este se maneja por una lista de
-// campos y el schema de update que ya vive en @ventry/shared.
+// campos y el schema de update que ya vive en @roult/shared.
 export function EditDialog<T extends FieldValues>({
   title,
   fields,
@@ -93,7 +93,12 @@ export function EditDialog<T extends FieldValues>({
                   ) : field.type === 'textarea' ? (
                     <textarea className={className} rows={2} {...register(field.key as never)} />
                   ) : (
-                    <input className={className} type={field.type ?? 'text'} {...register(field.key as never)} />
+                    <input
+                      className={className}
+                      type={field.type ?? 'text'}
+                      {...(field.type === 'number' ? { min: 0, max: 100, step: 1 } : {})}
+                      {...register(field.key as never)}
+                    />
                   )}
                 </label>
               );

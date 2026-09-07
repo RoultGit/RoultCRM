@@ -14,6 +14,14 @@ export const timeSchema = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Usa el formato HH:mm, por ejemplo 09:30');
 
+// Avance de 0 a 100. coerce porque el <input type="number"> entrega string y sin esto todo avance
+// escrito a mano se rechazaba como "no es un número".
+export const progressSchema = z.coerce
+  .number({ invalid_type_error: 'El avance tiene que ser un número' })
+  .int('El avance va en números enteros')
+  .min(0, 'El avance no puede ser negativo')
+  .max(100, 'El avance no puede pasar de 100');
+
 export const createTaskSchema = z.object({
   title: z.string().min(1, 'Ingresa el título de la tarea'),
   description: optionalText(z.string()),
@@ -23,6 +31,7 @@ export const createTaskSchema = z.object({
   dueDate: z.string().date('Ingresa una fecha válida'),
   dueTime: optionalText(timeSchema),
   status: taskStatusSchema.optional(),
+  progress: progressSchema.optional(),
 });
 
 export const updateTaskSchema = createTaskSchema.partial();
@@ -42,6 +51,7 @@ export interface TaskDTO {
   dueDate: string;
   dueTime: string | null;
   status: 'TODO' | 'DOING' | 'DONE';
+  progress: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,10 +1,11 @@
 import { prisma } from '../../lib/prisma.js';
-import type { Prisma, DealStage, Currency, Line } from '@prisma/client';
+import type { Prisma, DealStage, Currency, Line, BillingType } from '@prisma/client';
 
 export interface DealFilters {
   stage?: DealStage;
   assignedUserId?: string;
   currency?: Currency;
+  billingType?: BillingType;
   line?: Line;
   from?: string;
   to?: string;
@@ -25,6 +26,7 @@ export const DealsRepository = {
           ...(filters.stage ? { stage: filters.stage } : {}),
           ...(filters.assignedUserId ? { assignedUserId: filters.assignedUserId } : {}),
           ...(filters.currency ? { currency: filters.currency } : {}),
+          ...(filters.billingType ? { billingType: filters.billingType } : {}),
           // Deal no tiene línea propia: la hereda de su empresa.
           ...(filters.line ? { company: { line: filters.line } } : {}),
           ...(filters.from || filters.to

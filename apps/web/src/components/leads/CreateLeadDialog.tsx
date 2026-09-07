@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createLeadSchema } from '@ventry/shared';
+import { LINE_OPTIONS, BILLING_OPTIONS,createLeadSchema } from '@roult/shared';
 import { z } from 'zod';
 import { Button } from '../ui/button.js';
 import { useCreateLead } from '../../hooks/useLeads.js';
@@ -38,9 +38,18 @@ export function CreateLeadDialog() {
           <form className="space-y-3" onSubmit={handleSubmit(onSubmit)}>
             <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="Empresa / persona" {...register('businessName')} />
             <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="Nombre de contacto" {...register('contactName')} />
+            {/* Quien atiende el teléfono y quien firma no siempre son la misma persona. */}
+            <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="Representante legal (opcional)" {...register('representativeName')} />
             <select className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" {...register('line')}>
-              <option value="WEB">Web</option>
-              <option value="SOFTWARE">Software</option>
+              {LINE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            {/* Si el prospecto es una suscripción, el deal que salga de él nace como suscripción. */}
+            <select className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" {...register('billingType')}>
+              {BILLING_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
             </select>
             <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="Correo (opcional)" type="email" {...register('email')} />
             <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="WhatsApp (opcional)" {...register('whatsapp')} />

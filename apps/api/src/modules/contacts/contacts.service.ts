@@ -1,4 +1,4 @@
-import type { ContactDTO, createContactSchema, updateContactSchema } from '@ventry/shared';
+import type { ContactDTO, createContactSchema, updateContactSchema } from '@roult/shared';
 import type { z } from 'zod';
 import type { Contact, Prisma } from '@prisma/client';
 import { ContactsRepository } from './contacts.repository.js';

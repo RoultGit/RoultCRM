@@ -15,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { DashboardChartsDTO, DashboardDTO } from '@ventry/shared';
+import type { DashboardChartsDTO, DashboardDTO } from '@roult/shared';
 import { ChartCard, ChartEmpty, ChartTooltip } from './ChartCard.js';
 import { chart, axisProps, gridProps, ANIMATION_MS, monthLabel } from './theme.js';
 import { formatMoney } from '../../lib/money.js';

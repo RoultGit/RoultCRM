@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createDealSchema } from '@ventry/shared';
+import { BILLING_OPTIONS,createDealSchema } from '@roult/shared';
 import { z } from 'zod';
 import { Button } from '../ui/button.js';
 import { useCreateDeal } from '../../hooks/useDeals.js';
@@ -69,6 +69,12 @@ export function CreateDealDialog() {
                 <option value="USD">USD</option>
               </select>
             </div>
+            {/* En suscripción, el monto de arriba es lo que se cobra CADA MES, no el total. */}
+            <select className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" {...register('billingType')}>
+              {BILLING_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
             <select
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
               {...register('assignedUserId')}

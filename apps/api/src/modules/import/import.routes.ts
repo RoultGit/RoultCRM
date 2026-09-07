@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { importPreviewSchema, importCommitSchema, importableEntitySchema } from '@ventry/shared';
+import { importPreviewSchema, importCommitSchema, importableEntitySchema } from '@roult/shared';
 import { ImportService } from './import.service.js';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';

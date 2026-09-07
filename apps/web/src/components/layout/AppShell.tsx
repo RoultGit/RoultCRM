@@ -72,7 +72,7 @@ export function AppShell() {
           dejaba 150px para el contenido: no entraba nada y la página entera se scrolleaba de
           costado. Abajo de lg, el mismo menú vive en el cajón deslizante. */}
       <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white p-4 lg:block">
-        <div className="mb-6 px-2 text-lg font-semibold">VentryCRM</div>
+        <div className="mb-6 px-2 text-lg font-semibold">RoultCRM</div>
         <SidebarNav isAdmin={isAdmin} />
       </aside>
 
@@ -94,7 +94,7 @@ export function AppShell() {
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 lg:hidden" />
               <Dialog.Content className="focus:outline-none fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto border-r border-gray-200 bg-white p-4 shadow-xl lg:hidden">
-                <Dialog.Title className="mb-6 px-2 text-lg font-semibold">VentryCRM</Dialog.Title>
+                <Dialog.Title className="mb-6 px-2 text-lg font-semibold">RoultCRM</Dialog.Title>
                 {/* Cerrar al navegar: si no, el cajón queda tapando la pantalla a la que acabás de
                     entrar y hay que cerrarlo a mano cada vez. */}
                 <SidebarNav isAdmin={isAdmin} onNavigate={() => setMenuOpen(false)} />

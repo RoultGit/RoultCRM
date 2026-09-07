@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { CompanyDTO } from '@ventry/shared';
+import type { CompanyDTO, Line } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 const COMPANIES_KEY = ['companies'];
@@ -18,7 +18,7 @@ export function useCompanies(filters: CompanyFilters = {}) {
 
 export interface CreateCompanyInput {
   name: string;
-  line: 'WEB' | 'SOFTWARE';
+  line: Line;
   city?: string;
   source?: string;
   whatsapp?: string;

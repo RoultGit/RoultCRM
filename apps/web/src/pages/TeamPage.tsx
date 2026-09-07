@@ -1,12 +1,12 @@
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
-import type { UserDTO } from '@ventry/shared';
+import type { UserDTO } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import { CreateVendedorDialog } from '../components/team/CreateVendedorDialog.js';
 import { useUsers, useSetUserStatus, useUpdateUser } from '../hooks/useUsers.js';
 import { EditDialog } from '../components/EditDialog.js';
-import { updateUserSchema } from '@ventry/shared';
+import { updateUserSchema } from '@roult/shared';
 
 const columnHelper = createColumnHelper<UserDTO>();
 

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { DealDTO } from '@ventry/shared';
+import type { BillingType, DealDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 const DEALS_KEY = ['deals'];
@@ -21,6 +21,7 @@ export interface CreateDealInput {
   title: string;
   amount: string;
   currency: 'PEN' | 'USD';
+  billingType?: BillingType;
   assignedUserId?: string;
   expectedCloseDate?: string;
   nextStepDescription?: string;

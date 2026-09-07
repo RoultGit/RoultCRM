@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { currencySchema, lineSchema, moneySchema, optionalText } from './common.js';
+import { billingTypeSchema, currencySchema, lineSchema, moneySchema, optionalText } from './common.js';
 
 export const dealStageSchema = z.enum([
   'CONTACTO',
@@ -17,6 +17,7 @@ export const createDealSchema = z.object({
   title: z.string().min(1, 'Ingresa el título del deal'),
   amount: moneySchema,
   currency: currencySchema,
+  billingType: billingTypeSchema.optional(),
   assignedUserId: optionalText(z.string()),
   expectedCloseDate: optionalText(z.string().date()),
   nextStepDescription: optionalText(z.string()),
@@ -42,6 +43,7 @@ export const dealFiltersSchema = z.object({
   stage: optionalText(dealStageSchema),
   assignedUserId: optionalText(z.string()),
   currency: optionalText(currencySchema),
+  billingType: optionalText(billingTypeSchema),
   line: optionalText(lineSchema),
   from: optionalText(z.string().date()),
   to: optionalText(z.string().date()),
@@ -58,6 +60,7 @@ export interface DealDTO {
   title: string;
   amount: string;
   currency: 'PEN' | 'USD';
+  billingType: z.infer<typeof billingTypeSchema>;
   stage: z.infer<typeof dealStageSchema>;
   assignedUserId: string | null;
   expectedCloseDate: string | null;
@@ -88,8 +91,13 @@ export interface DashboardDTO {
   dealsActive: number;
   dealsWon: number;
   dealsLost: number;
+  // Pago único y suscripción van SEPARADOS, igual que PEN y USD. Sumar 8.000 que se cobran una vez
+  // con 8.000 que se cobran cada mes da un número que no existe: ni es facturación ni es
+  // recurrencia. El de suscripción es lo que entra POR MES.
   wonAmount: MoneyByCurrency;
+  wonMonthly: MoneyByCurrency;
   activeAmount: MoneyByCurrency;
+  activeMonthly: MoneyByCurrency;
   clientsActive: number;
   tasksUpcoming: number;
   tasksOverdue: number;

@@ -1,10 +1,11 @@
 import { prisma } from '../../lib/prisma.js';
-import type { Prisma, LeadStatus, Line } from '@prisma/client';
+import type { Prisma, LeadStatus, Line, BillingType } from '@prisma/client';
 
 export interface LeadFilters {
   status?: LeadStatus;
   assignedUserId?: string;
   line?: Line;
+  billingType?: BillingType;
   source?: string;
 }
 
@@ -21,6 +22,7 @@ export const LeadsRepository = {
           ...(filters.status ? { status: filters.status } : {}),
           ...(filters.assignedUserId ? { assignedUserId: filters.assignedUserId } : {}),
           ...(filters.line ? { line: filters.line } : {}),
+          ...(filters.billingType ? { billingType: filters.billingType } : {}),
           // El origen se escribe a mano, así que se busca por coincidencia parcial y sin distinguir
           // mayúsculas: "Instagram", "instagram" y "IG - Instagram" caen en el mismo filtro.
           ...(filters.source ? { source: { contains: filters.source, mode: 'insensitive' as const } } : {}),

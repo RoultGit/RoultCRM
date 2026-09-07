@@ -1,4 +1,4 @@
-import type { SearchResultDTO } from '@ventry/shared';
+import type { SearchResultDTO } from '@roult/shared';
 import { prisma } from '../../lib/prisma.js';
 import { ownerFilter, type Actor } from '../../lib/scope.js';
 

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { UserDTO } from '@ventry/shared';
+import type { UserDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 const USERS_KEY = ['users'];

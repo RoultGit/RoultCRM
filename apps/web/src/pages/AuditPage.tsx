@@ -1,4 +1,4 @@
-import type { AuditEntryDTO } from '@ventry/shared';
+import type { AuditEntryDTO } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { useAudit } from '../hooks/useAudit.js';

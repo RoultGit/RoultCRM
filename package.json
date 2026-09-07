@@ -1,15 +1,15 @@
 {
-  "name": "ventry-crm",
+  "name": "roult-crm",
   "private": true,
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev:api": "npm run dev -w @ventry/api",
-    "dev:web": "npm run dev -w @ventry/web",
-    "build": "npm run build -w @ventry/shared && npm run build -w @ventry/api && npm run build -w @ventry/web",
-    "test": "npm run test -w @ventry/api && npm run test -w @ventry/web"
+    "dev:api": "npm run dev -w @roult/api",
+    "dev:web": "npm run dev -w @roult/web",
+    "build": "npm run build -w @roult/shared && npm run build -w @roult/api && npm run build -w @roult/web",
+    "test": "npm run test -w @roult/api && npm run test -w @roult/web"
   },
   "devDependencies": {
     "typescript": "^5.5.4"

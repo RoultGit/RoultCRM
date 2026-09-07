@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { LeadDTO } from '@ventry/shared';
+import type { LeadDTO, Line, BillingType } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 const LEADS_KEY = ['leads'];
@@ -19,10 +19,12 @@ export function useLeads(filters: LeadFilters = {}) {
 export interface CreateLeadInput {
   businessName: string;
   contactName: string;
+  representativeName?: string;
   phone?: string;
   whatsapp?: string;
   email?: string;
-  line: 'WEB' | 'SOFTWARE';
+  line: Line;
+  billingType?: BillingType;
   source?: string;
   assignedUserId?: string;
   notes?: string;
@@ -64,7 +66,7 @@ export function useConvertLead() {
     }: {
       id: string;
       confirmDuplicate?: boolean;
-      deal?: { title: string; amount: string; currency: 'PEN' | 'USD' };
+      deal?: { title: string; amount: string; currency: 'PEN' | 'USD'; billingType?: BillingType };
     }) => (await apiClient.post(`/leads/${id}/convert`, { confirmDuplicate, deal })).data,
     // Convertir toca cinco cosas a la vez: el lead, la empresa, el contacto, el deal y los números
     // del dashboard. Sin esto el pipeline no muestra la venta recién creada hasta recargar.

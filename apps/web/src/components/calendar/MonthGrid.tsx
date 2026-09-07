@@ -1,4 +1,4 @@
-import type { CalendarEventDTO } from '@ventry/shared';
+import type { CalendarEventDTO } from '@roult/shared';
 import { WEEKDAYS, dayNumber, isSameMonth, monthMatrix, toIso } from '../../lib/calendar.js';
 import { todayAsUTC } from '../../lib/date.js';
 import { EVENT_STYLE } from './eventStyle.js';

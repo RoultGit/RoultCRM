@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createCompanySchema, type CompanyDTO } from '@ventry/shared';
+import { LINE_OPTIONS,createCompanySchema, type CompanyDTO } from '@roult/shared';
 import { z } from 'zod';
 import { isAxiosError } from 'axios';
 import { Button } from '../ui/button.js';
@@ -66,9 +66,11 @@ export function CreateCompanyDialog() {
             <form className="space-y-3" onSubmit={handleSubmit(submit)}>
               {blocked && <p className="text-sm text-amber-700">{blocked}</p>}
               <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="Nombre de la empresa" {...register('name')} />
+              <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="Representante legal (opcional)" {...register('representativeName')} />
               <select className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" {...register('line')}>
-                <option value="WEB">Web</option>
-                <option value="SOFTWARE">Software</option>
+                {LINE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
               </select>
               <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="Correo (opcional)" type="email" {...register('email')} />
               <input className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="WhatsApp (opcional)" {...register('whatsapp')} />

@@ -1,4 +1,4 @@
-import type { CalendarEventDTO } from '@ventry/shared';
+import type { CalendarEventDTO } from '@roult/shared';
 
 // El color codifica QUÉ es el evento, no quién lo creó: una tarea propia, el próximo paso de una
 // venta y un cierre estimado exigen cosas distintas, y en una semana cargada eso es lo que hay que

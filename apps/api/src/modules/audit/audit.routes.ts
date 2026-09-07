@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { AuditEntryDTO } from '@ventry/shared';
+import type { AuditEntryDTO } from '@roult/shared';
 import { prisma } from '../../lib/prisma.js';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 

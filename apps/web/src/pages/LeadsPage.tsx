@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
 import { isAxiosError } from 'axios';
-import type { LeadDTO, CompanyDTO } from '@ventry/shared';
+import { LINE_OPTIONS, BILLING_OPTIONS } from '@roult/shared';
+import type { LeadDTO, CompanyDTO } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
@@ -11,7 +12,7 @@ import { useLeads, useSetLeadStatus, useConvertLead, useUpdateLead } from '../ho
 import { AssigneeCell } from '../components/AssigneeCell.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { EditDialog } from '../components/EditDialog.js';
-import { updateLeadSchema } from '@ventry/shared';
+import { updateLeadSchema } from '@roult/shared';
 
 const STATUS_TONE: Record<LeadDTO['status'], 'info' | 'neutral' | 'warning' | 'success' | 'danger'> = {
   NEW: 'info',
@@ -74,6 +75,20 @@ export function LeadsPage() {
   const columns = [
     columnHelper.accessor('businessName', { header: 'Empresa / persona' }),
     columnHelper.accessor('contactName', { header: 'Contacto' }),
+    columnHelper.accessor('representativeName', {
+      header: 'Representante',
+      cell: (info) => info.getValue() ?? '—',
+    }),
+    columnHelper.accessor('billingType', {
+      header: 'Cobro',
+      cell: (info) => (
+        // "Suscripción mensual" partía la celda en dos renglones y engordaba toda la fila. La
+        // columna ya dice "Cobro", así que la etiqueta corta alcanza.
+        <Badge tone={info.getValue() === 'MONTHLY' ? 'info' : 'neutral'}>
+          {info.getValue() === 'MONTHLY' ? 'Mensual' : 'Único'}
+        </Badge>
+      ),
+    }),
     columnHelper.accessor('status', {
       header: 'Estado',
       cell: (info) => <Badge tone={STATUS_TONE[info.getValue()]}>{STATUS_LABEL[info.getValue()]}</Badge>,
@@ -108,6 +123,8 @@ export function LeadsPage() {
               values={{
                 businessName: lead.businessName,
                 contactName: lead.contactName,
+                representativeName: lead.representativeName ?? '',
+                billingType: lead.billingType,
                 line: lead.line,
                 email: lead.email ?? '',
                 phone: lead.phone ?? '',
@@ -118,7 +135,9 @@ export function LeadsPage() {
               fields={[
                 { key: 'businessName', label: 'Empresa / persona' },
                 { key: 'contactName', label: 'Nombre de contacto' },
-                { key: 'line', label: 'Línea', options: [{ value: 'WEB', label: 'Web' }, { value: 'SOFTWARE', label: 'Software' }] },
+                { key: 'representativeName', label: 'Representante legal' },
+                { key: 'billingType', label: 'Cobro', options: BILLING_OPTIONS },
+                { key: 'line', label: 'Línea', options: LINE_OPTIONS },
                 { key: 'email', label: 'Correo', type: 'email' },
                 { key: 'phone', label: 'Teléfono' },
                 { key: 'whatsapp', label: 'WhatsApp' },
@@ -182,7 +201,8 @@ export function LeadsPage() {
             })),
           },
           { key: 'assignedUserId', label: 'Vendedor', options: 'vendedores' },
-          { key: 'line', label: 'Línea', options: [{ value: 'WEB', label: 'Web' }, { value: 'SOFTWARE', label: 'Software' }] },
+          { key: 'billingType', label: 'Cobro', options: BILLING_OPTIONS },
+          { key: 'line', label: 'Línea', options: LINE_OPTIONS },
         ]}
       />
       {duplicate ? (

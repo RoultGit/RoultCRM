@@ -1,5 +1,5 @@
 {
-  "name": "@ventry/api",
+  "name": "@roult/api",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
-    "@ventry/shared": "*",
+    "@roult/shared": "*",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

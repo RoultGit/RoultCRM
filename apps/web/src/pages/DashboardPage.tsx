@@ -45,10 +45,23 @@ function KpiTile({
   );
 }
 
-function MoneyTile({ label, amount, currency }: { label: string; amount: string; currency: 'PEN' | 'USD' }) {
+function MoneyTile({
+  label,
+  amount,
+  currency,
+  suffix,
+}: {
+  label: string;
+  amount: string;
+  currency: 'PEN' | 'USD';
+  suffix?: string;
+}) {
   return (
     <Card className="p-4">
-      <p className="text-xl font-semibold text-gray-900">{formatMoney(amount, currency)}</p>
+      <p className="text-xl font-semibold text-gray-900">
+        {formatMoney(amount, currency)}
+        {suffix && <span className="text-sm font-normal text-gray-500">{suffix}</span>}
+      </p>
       <p className="mt-1 text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
     </Card>
   );
@@ -123,13 +136,25 @@ export function DashboardPage() {
         {isAdmin && <SellerList data={charts?.bySeller ?? []} />}
       </div>
 
-      {/* PEN y USD siempre separados, nunca un total combinado (spec de negocio, sección 21). */}
-      <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Montos por moneda</h2>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* Cuatro totales que NO se suman entre sí: PEN con USD sería inventar un tipo de cambio, y
+          pago único con suscripción sería sumar plata que ya entró con plata que entra cada mes.
+          Cada uno responde una pregunta distinta, así que cada uno va en su propia tarjeta. */}
+      <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Pago único</h2>
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <MoneyTile label="Ganado PEN" amount={data.wonAmount.PEN} currency="PEN" />
         <MoneyTile label="Ganado USD" amount={data.wonAmount.USD} currency="USD" />
         <MoneyTile label="En juego PEN" amount={data.activeAmount.PEN} currency="PEN" />
         <MoneyTile label="En juego USD" amount={data.activeAmount.USD} currency="USD" />
+      </div>
+
+      <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+        Suscripciones · lo que entra cada mes
+      </h2>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MoneyTile label="Activo PEN / mes" amount={data.wonMonthly.PEN} currency="PEN" suffix="/mes" />
+        <MoneyTile label="Activo USD / mes" amount={data.wonMonthly.USD} currency="USD" suffix="/mes" />
+        <MoneyTile label="En juego PEN / mes" amount={data.activeMonthly.PEN} currency="PEN" suffix="/mes" />
+        <MoneyTile label="En juego USD / mes" amount={data.activeMonthly.USD} currency="USD" suffix="/mes" />
       </div>
     </div>
   );

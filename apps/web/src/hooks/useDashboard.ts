@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { DashboardDTO, DashboardChartsDTO } from '@ventry/shared';
+import type { DashboardDTO, DashboardChartsDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
 export function useDashboard() {

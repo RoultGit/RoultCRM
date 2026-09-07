@@ -14,7 +14,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { updateDealSchema, type DealDTO, type UserDTO } from '@ventry/shared';
+import { updateDealSchema, LINE_OPTIONS, BILLING_OPTIONS, type DealDTO, type UserDTO } from '@roult/shared';
 import { Trash2 } from 'lucide-react';
 import { Card } from '../components/ui/card.js';
 import { Button } from '../components/ui/button.js';
@@ -22,7 +22,7 @@ import { Badge } from '../components/ui/badge.js';
 import { useDeals, useSetDealStage, useAssignDeal, useUpdateDeal } from '../hooks/useDeals.js';
 import { useUsers } from '../hooks/useUsers.js';
 import { useSession } from '../hooks/useAuth.js';
-import { formatMoney } from '../lib/money.js';
+import { formatAmount } from '../lib/money.js';
 import { formatDate, isOverdue } from '../lib/date.js';
 import { CreateDealDialog } from '../components/deals/CreateDealDialog.js';
 import { EditDialog } from '../components/EditDialog.js';
@@ -100,7 +100,14 @@ function DealCard({
       <div {...listeners} {...attributes} className="cursor-grab">
         <p className="text-sm font-medium text-gray-900">{deal.title}</p>
         <p className="text-xs text-gray-500">{deal.companyName}</p>
-        <p className="mt-1 text-sm font-semibold text-gray-900">{formatMoney(deal.amount, deal.currency)}</p>
+        <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+          {formatAmount(deal.amount, deal.currency, deal.billingType)}
+          {deal.billingType === 'MONTHLY' && (
+            <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700">
+              Suscripción
+            </span>
+          )}
+        </p>
         {deal.nextStepDescription && (
           <p className={`mt-2 text-xs ${isOverdue(deal.nextStepDate) ? 'font-medium text-red-600' : 'text-gray-500'}`}>
             {deal.nextStepDescription}
@@ -122,6 +129,7 @@ function DealCard({
             title: deal.title,
             amount: deal.amount,
             currency: deal.currency,
+            billingType: deal.billingType,
             expectedCloseDate: deal.expectedCloseDate?.slice(0, 10) ?? '',
             nextStepDescription: deal.nextStepDescription ?? '',
             nextStepDate: deal.nextStepDate?.slice(0, 10) ?? '',
@@ -137,6 +145,7 @@ function DealCard({
                 { value: 'USD', label: 'USD' },
               ],
             },
+            { key: 'billingType', label: 'Cobro', options: BILLING_OPTIONS },
             { key: 'expectedCloseDate', label: 'Cierre estimado', type: 'date' },
             { key: 'nextStepDescription', label: 'Próximo paso' },
             { key: 'nextStepDate', label: 'Fecha del próximo paso', type: 'date' },
@@ -285,8 +294,9 @@ export function DealsPage() {
         fields={[
           { key: 'stage', label: 'Etapa', options: STAGES.map((s) => ({ value: s, label: STAGE_LABEL[s] })) },
           { key: 'assignedUserId', label: 'Vendedor', options: 'vendedores' },
-          { key: 'line', label: 'Línea', options: [{ value: 'WEB', label: 'Web' }, { value: 'SOFTWARE', label: 'Software' }] },
+          { key: 'line', label: 'Línea', options: LINE_OPTIONS },
           { key: 'currency', label: 'Moneda', options: [{ value: 'PEN', label: 'PEN' }, { value: 'USD', label: 'USD' }] },
+          { key: 'billingType', label: 'Cobro', options: BILLING_OPTIONS },
         ]}
       />
       {setStage.isError && <p className="mb-4 text-sm text-red-600">No se pudo mover el deal de etapa.</p>}
@@ -320,7 +330,7 @@ export function DealsPage() {
                 <p className="text-sm font-medium text-gray-900">{activeDeal.title}</p>
                 <p className="text-xs text-gray-500">{activeDeal.companyName}</p>
                 <p className="mt-1 text-sm font-semibold text-gray-900">
-                  {formatMoney(activeDeal.amount, activeDeal.currency)}
+                  {formatAmount(activeDeal.amount, activeDeal.currency, activeDeal.billingType)}
                 </p>
               </div>
             )}

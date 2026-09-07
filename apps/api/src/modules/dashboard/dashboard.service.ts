@@ -1,4 +1,4 @@
-import { DEAL_STAGE_GROUPS, type DashboardDTO, type MoneyByCurrency } from '@ventry/shared';
+import { DEAL_STAGE_GROUPS, type DashboardDTO, type MoneyByCurrency } from '@roult/shared';
 import type { DealStage } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { ownerFilter, type Actor } from '../../lib/scope.js';
@@ -13,11 +13,12 @@ function todayAsUTC(): Date {
 async function amountByCurrency(
   tenantId: string,
   owner: { assignedUserId?: string },
-  stages: readonly string[]
+  stages: readonly string[],
+  billingType: 'ONE_TIME' | 'MONTHLY'
 ): Promise<MoneyByCurrency> {
   const grouped = await prisma.deal.groupBy({
     by: ['currency'],
-    where: { tenantId, ...owner, stage: { in: stages as DealStage[] } },
+    where: { tenantId, ...owner, billingType, stage: { in: stages as DealStage[] } },
     _sum: { amount: true },
   });
   // PEN y USD nunca se suman entre sí (spec de negocio, sección 21): se devuelven como dos totales
@@ -37,7 +38,7 @@ export const DashboardService = {
     // Una tarea es del usuario por ownerId, no por assignedUserId, así que su filtro es propio.
     const taskOwner = actor.role === 'ADMIN' ? {} : { ownerId: actor.userId };
 
-    const [leadsNew, dealsActive, dealsWon, dealsLost, clientsActive, tasksUpcoming, tasksOverdue, wonAmount, activeAmount] =
+    const [leadsNew, dealsActive, dealsWon, dealsLost, clientsActive, tasksUpcoming, tasksOverdue, wonAmount, wonMonthly, activeAmount, activeMonthly] =
       await Promise.all([
         prisma.lead.count({ where: { tenantId, ...owner, status: 'NEW' } }),
         prisma.deal.count({ where: { tenantId, ...owner, stage: { in: DEAL_STAGE_GROUPS.active as unknown as DealStage[] } } }),
@@ -46,8 +47,10 @@ export const DashboardService = {
         prisma.company.count({ where: { tenantId, ...owner } }),
         prisma.task.count({ where: { tenantId, ...taskOwner, status: { not: 'DONE' }, dueDate: { gte: today } } }),
         prisma.task.count({ where: { tenantId, ...taskOwner, status: { not: 'DONE' }, dueDate: { lt: today } } }),
-        amountByCurrency(tenantId, owner, DEAL_STAGE_GROUPS.won),
-        amountByCurrency(tenantId, owner, DEAL_STAGE_GROUPS.active),
+        amountByCurrency(tenantId, owner, DEAL_STAGE_GROUPS.won, 'ONE_TIME'),
+        amountByCurrency(tenantId, owner, DEAL_STAGE_GROUPS.won, 'MONTHLY'),
+        amountByCurrency(tenantId, owner, DEAL_STAGE_GROUPS.active, 'ONE_TIME'),
+        amountByCurrency(tenantId, owner, DEAL_STAGE_GROUPS.active, 'MONTHLY'),
       ]);
 
     return {
@@ -56,7 +59,9 @@ export const DashboardService = {
       dealsWon,
       dealsLost,
       wonAmount,
+      wonMonthly,
       activeAmount,
+      activeMonthly,
       clientsActive,
       tasksUpcoming,
       tasksOverdue,

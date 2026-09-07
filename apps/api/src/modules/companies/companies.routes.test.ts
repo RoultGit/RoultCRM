@@ -161,6 +161,20 @@ describe('/companies routes', () => {
     expect(res.status).toBe(401);
   });
 
+  it('saves the legal representative and the new business lines', async () => {
+    for (const line of ['AUTOMATIZACION', 'SERVICIO'] as const) {
+      const res = await request(app)
+        .post('/companies')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: `Cliente ${line}`, line, representativeName: 'Quien firma' });
+      expect(res.status).toBe(201);
+      expect(res.body.line).toBe(line);
+      // El create enumera los campos a mano, así que un campo nuevo se pierde en silencio si nadie
+      // lo agrega ahí. Este test es el que avisa.
+      expect(res.body.representativeName).toBe('Quien firma');
+    }
+  });
+
   it('creates a company', async () => {
     const res = await request(app)
       .post('/companies')

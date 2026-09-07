@@ -1,4 +1,4 @@
-import type { UserDTO, createUserSchema, updateUserSchema } from '@ventry/shared';
+import type { UserDTO, createUserSchema, updateUserSchema } from '@roult/shared';
 import type { z } from 'zod';
 import { UsersRepository } from './users.repository.js';
 import { hashPassword } from '../../lib/password.js';

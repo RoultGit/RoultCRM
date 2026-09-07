@@ -7,7 +7,7 @@ import type {
   updateLeadSchema,
   setLeadStatusSchema,
   convertLeadSchema,
-} from '@ventry/shared';
+} from '@roult/shared';
 import type { z } from 'zod';
 import type { Lead, Prisma } from '@prisma/client';
 import { LeadsRepository, type LeadFilters } from './leads.repository.js';
@@ -28,10 +28,12 @@ export function toDTO(lead: Lead): LeadDTO {
     id: lead.id,
     businessName: lead.businessName,
     contactName: lead.contactName,
+    representativeName: lead.representativeName,
     phone: lead.phone,
     whatsapp: lead.whatsapp,
     email: lead.email,
     line: lead.line,
+    billingType: lead.billingType,
     source: lead.source,
     assignedUserId: lead.assignedUserId,
     status: lead.status,
@@ -65,10 +67,12 @@ export const LeadsService = {
       tenantId: actor.tenantId,
       businessName: input.businessName,
       contactName: input.contactName,
+      representativeName: input.representativeName,
       phone: input.phone,
       whatsapp: input.whatsapp,
       email: input.email,
       line: input.line,
+      billingType: input.billingType,
       source: input.source,
       assignedUserId,
       notes: input.notes,
@@ -148,6 +152,7 @@ export const LeadsService = {
         {
           tenantId,
           name: lead.businessName,
+          representativeName: lead.representativeName,
           line: lead.line,
           whatsapp: lead.whatsapp,
           email: lead.email,
@@ -182,6 +187,7 @@ export const LeadsService = {
               title: input.deal.title,
               amount: input.deal.amount,
               currency: input.deal.currency,
+              billingType: input.deal.billingType ?? lead.billingType,
               assignedUserId: lead.assignedUserId,
             },
             tx

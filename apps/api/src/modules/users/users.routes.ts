@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createUserSchema, updateUserSchema, setUserStatusSchema, userFiltersSchema } from '@ventry/shared';
+import { createUserSchema, updateUserSchema, setUserStatusSchema, userFiltersSchema } from '@roult/shared';
 import { UsersService } from './users.service.js';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createCompanySchema, updateCompanySchema, companyFiltersSchema } from '@ventry/shared';
+import { createCompanySchema, updateCompanySchema, companyFiltersSchema } from '@roult/shared';
 import { CompaniesService } from './companies.service.js';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
@@ -28,6 +28,7 @@ companiesRouter.get('/export', async (req, res, next) => {
     const rows = await CompaniesService.list(req.user!, parsed.data);
     const csv = toCsv(rows as unknown as Record<string, unknown>[], [
       { key: 'name', header: 'Empresa' },
+      { key: 'representativeName', header: 'Representante' },
       { key: 'line', header: 'Línea' },
       { key: 'city', header: 'Ciudad' },
       { key: 'email', header: 'Correo' },

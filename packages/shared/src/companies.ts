@@ -3,6 +3,7 @@ import { lineSchema, optionalText } from './common.js';
 
 export const createCompanySchema = z.object({
   name: z.string().min(1, 'Ingresa el nombre de la empresa'),
+  representativeName: optionalText(z.string()),
   line: lineSchema,
   city: optionalText(z.string()),
   source: optionalText(z.string()),
@@ -23,7 +24,8 @@ export const updateCompanySchema = createCompanySchema.omit({ confirmDuplicate: 
 export interface CompanyDTO {
   id: string;
   name: string;
-  line: 'WEB' | 'SOFTWARE';
+  representativeName: string | null;
+  line: z.infer<typeof lineSchema>;
   city: string | null;
   source: string | null;
   whatsapp: string | null;

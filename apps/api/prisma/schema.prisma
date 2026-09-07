@@ -86,6 +86,16 @@ model AuditLog {
 enum Line {
   WEB
   SOFTWARE
+  AUTOMATIZACION
+  SERVICIO
+}
+
+// Qué se cobra: una vez, o todos los meses. No es un detalle del monto sino su unidad — 8000 de
+// pago único y 8000 al mes son números incomparables, y sumarlos daría un total que no existe.
+// Mismo criterio que PEN y USD: nunca se mezclan.
+enum BillingType {
+  ONE_TIME
+  MONTHLY
 }
 
 enum LeadStatus {
@@ -101,6 +111,9 @@ model Company {
   id             String   @id @default(uuid())
   tenantId       String
   name           String
+  // Quién firma y con quién se habla en serio. En Perú es el representante legal del RUC, y es dato
+  // distinto del contacto operativo del día a día, que vive en Contact.
+  representativeName String?
   line           Line
   city           String?
   source         String?
@@ -140,13 +153,17 @@ model Lead {
   id                 String     @id @default(uuid())
   tenantId           String
   businessName       String
+  // contactName es quien atendió el teléfono; representativeName es quien firma. Pueden ser la
+  // misma persona, pero cuando no lo son, perder el segundo cuesta la venta.
   contactName        String
+  representativeName String?
   phone              String?
   whatsapp           String?
   email              String?
   line               Line
   source             String?
   assignedUserId     String?
+  billingType        BillingType @default(ONE_TIME)
   status             LeadStatus @default(NEW)
   notes              String?
   convertedCompanyId String?
@@ -189,6 +206,8 @@ model Deal {
   title               String
   amount              Decimal   @db.Decimal(12, 2)
   currency            Currency
+  // ONE_TIME: `amount` es el total. MONTHLY: `amount` es lo que se cobra CADA MES.
+  billingType         BillingType @default(ONE_TIME)
   stage               DealStage @default(CONTACTO)
   assignedUserId      String?
   expectedCloseDate   DateTime?
@@ -226,6 +245,9 @@ model Task {
   // zona horaria en una columna que todo el código trata como fecha pelada.
   dueTime     String?
   status      TaskStatus   @default(TODO)
+  // Cuánto va hecho, de 0 a 100. El rango se valida en el schema compartido, no solo acá: la base
+  // acepta cualquier entero y un -20 o un 500 romperían la barra de progreso en silencio.
+  progress    Int          @default(0)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 

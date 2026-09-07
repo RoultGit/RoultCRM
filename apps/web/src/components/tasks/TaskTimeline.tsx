@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { TaskDTO, UserDTO } from '@ventry/shared';
+import type { TaskDTO, UserDTO } from '@roult/shared';
 import { Card } from '../ui/card.js';
-import { OwnerAvatar, STATUS_META, isTaskOverdue } from './shared.js';
+import { OwnerAvatar, ProgressBar, STATUS_META, isTaskOverdue } from './shared.js';
 import { todayAsUTC } from '../../lib/date.js';
 
 const DAY_WIDTH = 42;
@@ -183,6 +183,7 @@ export function TaskTimeline({ tasks, users }: { tasks: TaskDTO[]; users?: UserD
                           >
                             {task.title}
                           </span>
+                          {task.progress > 0 && <ProgressBar value={task.progress} className="w-20 shrink-0" />}
                           <span className="ml-auto flex shrink-0 items-center gap-1.5">
                             {overdue && <span className="text-[10px] font-medium text-red-600">vencida</span>}
                             <OwnerAvatar ownerId={task.ownerId} users={users} />
