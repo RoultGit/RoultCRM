@@ -26,24 +26,31 @@ Todo el trabajo vive en el worktree `.claude/worktrees/ventry-plan1-foundation`,
 - **1 bug real encontrado y corregido** (commit 433fe61): los campos opcionales vacíos (`""`) rompían la validación Zod (`Invalid email`) y bloqueaban el envío de los tres diálogos — el flujo completo de aviso de duplicado en Empresas era inalcanzable. Se agregó `optionalText()` en `@ventry/shared` y mensajes de validación en español.
 - Estado verde: `npm run build` limpio, 63 tests de API + 7 de web pasando.
 
-## Decisiones pendientes del usuario (bloquean cerrar Plan 2 al 100%)
+**Plan 3 — Deals, Pipeline, Asignación y Tareas: ✅ COMPLETO, con 1 bug conocido abierto.**
+- Plan: `docs/superpowers/plans/2026-09-06-deals-pipeline-tareas.md` (10 tareas)
+- Entregado: modelos `Deal`/`Task`/`AssignmentHistory`; scoping por dueño en leads, empresas, contactos y deals (un VENDEDOR solo ve lo suyo); pipeline de 8 etapas con motivo de pérdida obligatorio; asignación con historial; `GET /auth/me` + `useSession`; tablero kanban; página "Mi día"; asignación de vendedor en Leads y Empresas.
+- Verde: `npm run build` limpio, 103 tests de API + 13 de web.
+- **Revisión de subagente (Tarea 2, la de seguridad): 1 Critical real encontrado y corregido.** `findPossibleDuplicate` devolvía el DTO completo de una empresa o contacto de otro vendedor en el 409 de duplicado — un oráculo de datos por el flujo normal de uso. Ahora el choque se avisa sin mostrar la ficha ajena (`canSee()` en `lib/scope.ts`).
+- Otros arreglos de esa ronda: leads no validaba `assignedUserId`; contactos no tenía ningún test de scoping; la suite de API fallaba 1 de cada 3 corridas por paralelismo entre archivos sobre el mismo Postgres (`fileParallelism: false`).
+- Bug encontrado en la verificación manual y corregido: las fechas se mostraban un día antes (fecha de calendario guardada como medianoche UTC, leída en zona local). `lib/date.ts` + tests.
 
-1. **No se puede descartar un lead desde la UI.** El backend acepta `UNQUALIFIED` y `LOST`, pero `NEXT_STATUS` en `LeadsPage.tsx` solo ofrece el camino lineal Nuevo → Contactado → Calificado → Convertir. Un vendedor no tiene forma de marcar un lead como perdido. El plan lo especificó así; es un hueco del plan, no del código.
-2. **Un lead cuyo nombre choca con una empresa existente no se puede convertir desde la UI.** `LeadsPage` muestra el error pero no ofrece "convertir de todas formas" (`confirmDuplicate: true`), que el backend sí soporta. En Empresas y Contactos ese botón sí existe.
+## Bug conocido abierto
+
+**Soltar una card del pipeline sobre otra columna resuelve la columna equivocada.** Arrastrando el cursor hasta Adelanto, dnd-kit reporta PERDIDO. Reproduce igual con `closestCorners` y con `pointerWithin`, así que no es el algoritmo de colisión: algo anda mal en los rects que dnd-kit mide para las columnas. Está marcado con un comentario `ponytail:` en `apps/web/src/pages/DealsPage.tsx`. Mientras tanto el selector de etapa de cada card hace lo mismo por el mismo camino (`moveTo`) y funciona, así que la función está cubierta.
 
 ## Qué falta para terminar el goal
 
-1. Resolver los dos puntos de arriba (son ~30 líneas de UI entre los dos).
-2. **Plan 3** — Deals, Pipeline, Asignación de vendedor, Actividades, Tareas/próximo paso (por escribir).
-3. **Plan 4** — Búsqueda global, Filtros, Import/Export, Dashboard operativo, Auditoría (por escribir).
-4. Testing end-to-end final del MVP F1 completo.
+1. Investigar el bug del drop en el tablero (arriba).
+2. **Plan 4** — Búsqueda global, Filtros, Import/Export, Dashboard operativo, Auditoría (por escribir).
+3. Testing end-to-end final del MVP F1 completo.
 
 ## Cómo retomar
 
 1. Leer este archivo. No hace falta releer el spec ni el PDF.
 2. Postgres de pruebas: `docker compose up -d db-test` (puerto 55432). `apps/api/.env` y `apps/web/.env` existen localmente y están gitignoreados.
 3. Servidores: `npm run dev:api` (4000) y `npm run dev:web` (5173). Seed: `npm run db:seed -w @ventry/api` → `admin@roult.pe` / `RoultDemo2026!`.
-4. Rutas web en inglés (`/companies`, `/contacts`, `/leads`, `/team`) aunque el sidebar esté en español.
+4. Rutas web en inglés (`/companies`, `/contacts`, `/leads`, `/deals`, `/tasks`, `/team`) aunque el sidebar esté en español.
+5. Usuarios de prueba: `admin@roult.pe` / `RoultDemo2026!` (ADMIN) y `juan@roult.pe` / `JuanDemo2026!` (VENDEDOR, para probar el aislamiento).
 
 ## Modo de trabajo
 
