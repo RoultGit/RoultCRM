@@ -11,12 +11,14 @@ import { AuditPage } from '../pages/AuditPage.js';
 import { DashboardPage } from '../pages/DashboardPage.js';
 import { ImportPage } from '../pages/ImportPage.js';
 import { AdminOnly } from '../components/AdminOnly.js';
+import { NotFoundPage } from '../pages/NotFoundPage.js';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   {
     path: '/',
     element: <AppShell />,
+    errorElement: <NotFoundPage />,
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'team', element: <TeamPage /> },
@@ -33,6 +35,7 @@ export const router = createBrowserRouter([
           </AdminOnly>
         ),
       },
+      { path: '*', element: <NotFoundPage /> },
       {
         path: 'import',
         element: (

@@ -9,10 +9,10 @@ import {
   CalendarClock,
   History,
   Upload,
-  Settings,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
-import { useSession } from '../../hooks/useAuth.js';
+import { useSession, useLogout } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
 
 const NAV_ITEMS = [
@@ -23,8 +23,9 @@ const NAV_ITEMS = [
   { to: '/contacts', label: 'Contactos', icon: Contact },
   { to: '/team', label: 'Vendedores', icon: Users },
   { to: '/tasks', label: 'Tareas', icon: CalendarClock },
-  { to: '/settings', label: 'Configuración', icon: Settings },
 ];
+// ponytail: sin entrada de Configuración hasta que haya algo que configurar. Un link que lleva a
+// un 404 es peor que no tener el link.
 
 // Estas rutas responden 403 a un VENDEDOR, así que mostrarle el link sería ofrecerle una puerta
 // cerrada.
@@ -39,6 +40,7 @@ export function AppShell() {
   // indistinguible de "no hay datos". useSession pasa por apiClient, así que un token de acceso
   // caído se renueva solo y solo llega acá si tampoco hay refresh válido.
   const session = useSession();
+  const logout = useLogout();
   if (session.isLoading) return <div className="p-6 text-sm text-gray-500">Cargando…</div>;
   if (session.isError) return <Navigate to="/login" replace />;
 
@@ -68,9 +70,20 @@ export function AppShell() {
       <main className="min-w-0 flex-1">
         <header className="flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 py-3">
           <GlobalSearch />
-          <span className="text-sm text-gray-600">
-            {session.data?.firstName} {session.data?.lastName}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600">
+              {session.data?.firstName} {session.data?.lastName}
+            </span>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+              disabled={logout.isPending}
+              onClick={() => logout.mutate()}
+            >
+              <LogOut size={16} />
+              Salir
+            </button>
+          </div>
         </header>
         <div className="p-6">
           <Outlet />

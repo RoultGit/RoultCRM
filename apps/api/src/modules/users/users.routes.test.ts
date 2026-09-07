@@ -111,4 +111,22 @@ describe('/users routes', () => {
       .send({ status: 'INACTIVE' });
     expect(res.status).toBe(403);
   });
+  it('answers 409, not 500, when the email is already taken', async () => {
+    const body = {
+      email: 'repetido@test.com',
+      password: 'secret123',
+      firstName: 'Uno',
+      lastName: 'Primero',
+      role: 'VENDEDOR' as const,
+    };
+    const first = await request(app).post('/users').set('Authorization', `Bearer ${adminToken}`).send(body);
+    expect(first.status).toBe(201);
+
+    const second = await request(app)
+      .post('/users')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...body, firstName: 'Dos' });
+    expect(second.status).toBe(409);
+    expect(second.body.error).toContain('email');
+  });
 });

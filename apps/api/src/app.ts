@@ -1,6 +1,7 @@
 import express, { type Express, type ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { Prisma } from '@prisma/client';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { companiesRouter } from './modules/companies/companies.routes.js';
@@ -44,6 +45,17 @@ export function createApp(): Express {
     // el 500 genérico y el usuario no tenía forma de saber que el problema era el tamaño.
     if (err instanceof Error && 'type' in err && err.type === 'entity.too.large') {
       res.status(413).json({ error: 'El archivo es demasiado grande. Importá menos filas por vez.' });
+      return;
+    }
+    // Prisma tira P2002 cuando se viola una restricción única. Sin este caso, dar de alta un
+    // vendedor con un correo que ya existe devolvía "Internal server error": el admin no tenía forma
+    // de saber que el problema era el correo repetido. Va acá y no en cada servicio para que cubra
+    // cualquier restricción única que se agregue después.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      const fields = Array.isArray(err.meta?.target) ? (err.meta.target as string[]).join(', ') : null;
+      res.status(409).json({
+        error: fields ? `Ya existe un registro con ese ${fields}.` : 'Ya existe un registro con esos datos.',
+      });
       return;
     }
     if (err instanceof AppError) {
