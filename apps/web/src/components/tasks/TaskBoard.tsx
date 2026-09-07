@@ -53,7 +53,7 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
           <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${meta.dot}`} />
           <p
             className={`min-w-0 flex-1 pr-5 text-sm font-medium ${
-              task.status === 'DONE' ? 'text-gray-400 line-through' : 'text-gray-900'
+              task.status === 'DONE' ? 'text-gray-500 line-through' : 'text-gray-900'
             }`}
           >
             {task.title}

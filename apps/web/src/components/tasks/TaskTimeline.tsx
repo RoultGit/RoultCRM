@@ -178,7 +178,7 @@ export function TaskTimeline({ tasks, users }: { tasks: TaskDTO[]; users?: UserD
                         <>
                           <span
                             className={`truncate text-xs ${
-                              task.status === 'DONE' ? 'text-gray-400 line-through' : 'text-gray-900'
+                              task.status === 'DONE' ? 'text-gray-500 line-through' : 'text-gray-900'
                             }`}
                           >
                             {task.title}
@@ -199,7 +199,7 @@ export function TaskTimeline({ tasks, users }: { tasks: TaskDTO[]; users?: UserD
                       >
                         <span
                           className={`text-xs ${
-                            task.status === 'DONE' ? 'text-gray-400 line-through' : 'text-gray-900'
+                            task.status === 'DONE' ? 'text-gray-500 line-through' : 'text-gray-900'
                           }`}
                         >
                           {task.title}

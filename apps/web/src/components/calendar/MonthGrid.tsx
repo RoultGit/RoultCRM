@@ -52,12 +52,15 @@ export function MonthGrid({
               } ${index % 7 === 6 ? 'border-r-0' : ''}`}
             >
               <span
+                // gray-300 sobre el fondo gris de las celdas de relleno daba 1.41:1 de contraste:
+                // el número quedaba prácticamente invisible. La jerarquía entre el mes actual y sus
+                // vecinos ahora la marca el salto gray-900 / gray-500, que sí pasa WCAG AA.
                 className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs ${
                   isToday
                     ? 'bg-gray-900 font-medium text-white'
                     : outside
-                      ? 'text-gray-300'
-                      : 'text-gray-600'
+                      ? 'text-gray-500'
+                      : 'font-medium text-gray-900'
                 }`}
               >
                 {dayNumber(iso)}
