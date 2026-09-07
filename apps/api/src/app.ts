@@ -18,38 +18,45 @@ import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
   const app = express();
-  // WEB_ORIGIN acepta varios orígenes separados por coma: en Vercel conviven el dominio de
-  // producción y el de cada preview, y la cookie de refresh necesita que el origen esté permitido
-  // explícitamente porque va con credentials.
-  // Cabeceras de seguridad. La API devuelve JSON, así que la CSP restrictiva de helmet no molesta
-  // a nada; el frontend lo sirve Vercel y tiene sus propias cabeceras en vercel.json.
+  // El frontend y la API comparten dominio en Vercel, así que lo normal es que el Origin del
+  // request sea el propio host: eso se permite siempre y ninguna URL de preview necesita lista
+  // blanca. WEB_ORIGIN queda para orígenes extra (un dominio propio, o el Vite local).
+  const extraOrigins = (process.env.WEB_ORIGIN ?? 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  app.use(
+    cors((req, callback) => {
+      const origin = req.headers.origin;
+      // Sin cabecera Origin (curl, health checks) no hay nada que bloquear.
+      if (!origin) return callback(null, { origin: true, credentials: true });
+
+      const sameOrigin = (() => {
+        try {
+          return new URL(origin).host === req.headers.host;
+        } catch {
+          return false;
+        }
+      })();
+
+      callback(null, { origin: sameOrigin || extraOrigins.includes(origin), credentials: true });
+    })
+  );
+
+  // Cabeceras de seguridad. La API devuelve JSON, así que la CSP restrictiva no molesta a nada; el
+  // frontend lo sirve Vercel y tiene sus propias cabeceras en vercel.json.
   app.use(
     helmet({
-      // Sin esto un navegador podría embeber la API en un iframe de otro sitio.
       frameguard: { action: 'deny' },
-      // HSTS solo tiene sentido sobre HTTPS; en local se apaga para no ensuciar el navegador.
       hsts: process.env.NODE_ENV === 'production' ? { maxAge: 31_536_000, includeSubDomains: true } : false,
-      // La API no sirve HTML, así que no hay recursos que declarar más allá de negar todo.
       contentSecurityPolicy: { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
-      // No filtrar a qué sitio venías al hacer un request saliente.
       referrerPolicy: { policy: 'no-referrer' },
     })
   );
 
-  const allowedOrigins = (process.env.WEB_ORIGIN ?? 'http://localhost:5173').split(',').map((o) => o.trim());
-  app.use(
-    cors({
-      origin(origin, callback) {
-        // Sin cabecera Origin (curl, health checks del propio Vercel) no hay nada que bloquear.
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-        callback(new Error(`Origen no permitido: ${origin}`));
-      },
-      credentials: true,
-    })
-  );
   // El default de express.json son 100KB, pero el tope declarado de importación es de 1000 filas y
-  // un archivo de contactos de ese tamaño pesa ~320KB. Con el default, usar la función tal como está
-  // documentada devolvía un 500 genérico sin decir que el archivo era grande.
+  // un archivo de contactos de ese tamaño pesa ~320KB.
   app.use(express.json({ limit: '5mb' }));
   app.use(cookieParser());
 

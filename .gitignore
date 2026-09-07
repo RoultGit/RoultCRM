@@ -5,3 +5,5 @@ build/
 .env.local
 *.local
 .gstack/
+.vercel
+.env*

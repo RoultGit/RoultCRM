@@ -1,0 +1,4 @@
+{
+  "//": "Vercel decide CommonJS o ESM según el package.json más cercano a la función. El de la raíz no declara type, así que compilaba este handler como CJS y el require() de la app (que es ESM) fallaba con ERR_REQUIRE_ESM. Esto lo declara solo para esta carpeta, sin tocar la raíz.",
+  "type": "module"
+}
