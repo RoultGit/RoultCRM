@@ -50,18 +50,22 @@ export function useSetDealStage() {
   return useMutation({
     mutationFn: async ({ id, stage, lostReason }: { id: string; stage: DealDTO['stage']; lostReason?: string }) =>
       (await apiClient.patch<DealDTO>(`/deals/${id}/stage`, { stage, lostReason })).data,
-    // Update optimista: sin esto la card vuelve a saltar a su columna vieja entre que se suelta y
-    // que responde el refetch, y el arrastre se siente roto aunque haya funcionado.
+    // Update optimista: sin esto la card se queda en su columna vieja hasta que vuelve el refetch,
+    // y el arrastre se siente lento aunque haya funcionado.
+    // OJO con la key: la query real es ['deals', filters], no ['deals']. setQueryData(DEALS_KEY)
+    // escribía en una entrada de caché que no lee nadie, así que el update optimista no hacía nada
+    // y la card recién se movía cuando respondía el servidor. setQueriesData hace match por
+    // prefijo, o sea que alcanza a la lista con cualquier combinación de filtros activa.
     onMutate: async ({ id, stage }) => {
       await queryClient.cancelQueries({ queryKey: DEALS_KEY });
-      const previous = queryClient.getQueryData<DealDTO[]>(DEALS_KEY);
-      queryClient.setQueryData<DealDTO[]>(DEALS_KEY, (deals) =>
+      const previous = queryClient.getQueriesData<DealDTO[]>({ queryKey: DEALS_KEY });
+      queryClient.setQueriesData<DealDTO[]>({ queryKey: DEALS_KEY }, (deals) =>
         deals?.map((deal) => (deal.id === id ? { ...deal, stage } : deal))
       );
       return { previous };
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) queryClient.setQueryData(DEALS_KEY, context.previous);
+      context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: DEALS_KEY }),
   });
