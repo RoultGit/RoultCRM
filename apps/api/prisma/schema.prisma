@@ -205,6 +205,12 @@ model Deal {
   @@index([companyId])
 }
 
+enum TaskStatus {
+  TODO
+  DOING
+  DONE
+}
+
 model Task {
   id          String       @id @default(uuid())
   tenantId    String
@@ -214,12 +220,17 @@ model Task {
   relatedType RelatedType?
   relatedId   String?
   dueDate     DateTime
-  done        Boolean      @default(false)
+  // dueDate sigue siendo medianoche UTC, como el resto de las fechas del sistema. La hora va aparte
+  // como "HH:mm" y es opcional: null significa "todo el día", que es como el calendario la ubica en
+  // su fila de arriba en vez de en una hora concreta. Guardarla dentro de dueDate habría metido
+  // zona horaria en una columna que todo el código trata como fecha pelada.
+  dueTime     String?
+  status      TaskStatus   @default(TODO)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
   @@index([tenantId])
-  @@index([tenantId, ownerId, done])
+  @@index([tenantId, ownerId, status])
 }
 
 model AssignmentHistory {

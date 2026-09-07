@@ -15,7 +15,8 @@ export function toDTO(task: Task): TaskDTO {
     relatedType: task.relatedType,
     relatedId: task.relatedId,
     dueDate: task.dueDate.toISOString(),
-    done: task.done,
+    dueTime: task.dueTime,
+    status: task.status,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
   };
@@ -30,6 +31,16 @@ export const TasksService = {
   async list(actor: Actor): Promise<TaskDTO[]> {
     const tasks = await TasksRepository.findManyByTenant(actor.tenantId, taskOwnerFilter(actor));
     return tasks.map(toDTO);
+  },
+
+  // El tablero mueve tareas de columna arrastrando, igual que el pipeline. Es el mismo update, pero
+  // con su propia ruta para que el frontend pueda hacerlo optimista sin mandar el resto del form.
+  async setStatus(actor: Actor, id: string, status: TaskDTO['status']): Promise<TaskDTO> {
+    const existing = await TasksRepository.findByIdAndTenant(id, actor.tenantId, taskOwnerFilter(actor));
+    if (!existing) throw new NotFoundError('Task not found');
+    await TasksRepository.updateByIdAndTenant(id, actor.tenantId, { status });
+    const updated = await TasksRepository.findByIdAndTenant(id, actor.tenantId);
+    return toDTO(updated!);
   },
 
   async create(actor: Actor, input: z.infer<typeof createTaskSchema>): Promise<TaskDTO> {
@@ -47,6 +58,8 @@ export const TasksService = {
       relatedType: input.relatedType,
       relatedId: input.relatedId,
       dueDate: new Date(input.dueDate),
+      dueTime: input.dueTime,
+      status: input.status,
     });
     return toDTO(task);
   },
@@ -61,7 +74,8 @@ export const TasksService = {
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.dueDate !== undefined ? { dueDate: new Date(input.dueDate) } : {}),
-      ...(input.done !== undefined ? { done: input.done } : {}),
+      ...(input.dueTime !== undefined ? { dueTime: input.dueTime ?? null } : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
     });
     const updated = await TasksRepository.findByIdAndTenant(id, actor.tenantId);
     return toDTO(updated!);

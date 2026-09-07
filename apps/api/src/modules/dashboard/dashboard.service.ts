@@ -44,8 +44,8 @@ export const DashboardService = {
         prisma.deal.count({ where: { tenantId, ...owner, stage: { in: DEAL_STAGE_GROUPS.won as unknown as DealStage[] } } }),
         prisma.deal.count({ where: { tenantId, ...owner, stage: { in: DEAL_STAGE_GROUPS.lost as unknown as DealStage[] } } }),
         prisma.company.count({ where: { tenantId, ...owner } }),
-        prisma.task.count({ where: { tenantId, ...taskOwner, done: false, dueDate: { gte: today } } }),
-        prisma.task.count({ where: { tenantId, ...taskOwner, done: false, dueDate: { lt: today } } }),
+        prisma.task.count({ where: { tenantId, ...taskOwner, status: { not: 'DONE' }, dueDate: { gte: today } } }),
+        prisma.task.count({ where: { tenantId, ...taskOwner, status: { not: 'DONE' }, dueDate: { lt: today } } }),
         amountByCurrency(tenantId, owner, DEAL_STAGE_GROUPS.won),
         amountByCurrency(tenantId, owner, DEAL_STAGE_GROUPS.active),
       ]);

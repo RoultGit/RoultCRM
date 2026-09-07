@@ -98,7 +98,7 @@ describe('/dashboard routes', () => {
       data: [
         { tenantId, title: 'Vencida', ownerId: 'admin-1', dueDate: yesterday },
         { tenantId, title: 'Próxima', ownerId: 'admin-1', dueDate: tomorrow },
-        { tenantId, title: 'Hecha y vencida', ownerId: 'admin-1', dueDate: yesterday, done: true },
+        { tenantId, title: 'Hecha y vencida', ownerId: 'admin-1', dueDate: yesterday, status: 'DONE' },
       ],
     });
 

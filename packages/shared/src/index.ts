@@ -9,3 +9,5 @@ export * from './tasks.js';
 export * from './search.js';
 export * from './audit.js';
 export * from './import.js';
+export * from './calendar.js';
+export * from './charts.js';

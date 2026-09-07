@@ -3,11 +3,13 @@ import type { Prisma } from '@prisma/client';
 
 export const TasksRepository = {
   // El orden es el que quiere la vista "Mi día": lo pendiente primero, y dentro de eso lo más
-  // vencido arriba.
+  // vencido arriba. El enum TaskStatus está declarado TODO, DOING, DONE justamente para que ese
+  // orden alfabético... no sirva: Postgres ordena los enum por su orden de declaración, no
+  // alfabético, así que 'asc' da TODO → DOING → DONE, que es el orden de las columnas.
   findManyByTenant(tenantId: string, owner: { ownerId?: string } = {}) {
     return prisma.task.findMany({
       where: { tenantId, ...owner },
-      orderBy: [{ done: 'asc' }, { dueDate: 'asc' }],
+      orderBy: [{ status: 'asc' }, { dueDate: 'asc' }, { dueTime: 'asc' }],
     });
   },
 

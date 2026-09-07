@@ -39,7 +39,7 @@ describe('/tasks routes', () => {
       .send({ title: 'Llamar a ABC SAC', dueDate: '2026-09-08' });
     expect(res.status).toBe(201);
     expect(res.body.ownerId).toBe('seller-1');
-    expect(res.body.done).toBe(false);
+    expect(res.body.status).toBe('TODO');
     expect(res.body.dueDate).toBe('2026-09-08T00:00:00.000Z');
   });
 
@@ -73,18 +73,38 @@ describe('/tasks routes', () => {
     expect(res.body).toHaveLength(1);
   });
 
-  it('marks a task as done', async () => {
+  it('moves a task across the board', async () => {
     const created = await request(app)
       .post('/tasks')
       .set('Authorization', `Bearer ${sellerToken}`)
       .send({ title: 'Llamar a ABC SAC', dueDate: '2026-09-08' });
 
     const res = await request(app)
-      .patch(`/tasks/${created.body.id}`)
+      .patch(`/tasks/${created.body.id}/status`)
       .set('Authorization', `Bearer ${sellerToken}`)
-      .send({ done: true });
+      .send({ status: 'DOING' });
     expect(res.status).toBe(200);
-    expect(res.body.done).toBe(true);
+    expect(res.body.status).toBe('DOING');
+  });
+
+  it('saves an optional time and keeps null for an all-day task', async () => {
+    const timed = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Reunión', dueDate: '2026-09-08', dueTime: '09:30' });
+    expect(timed.body.dueTime).toBe('09:30');
+
+    const allDay = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Todo el día', dueDate: '2026-09-08', dueTime: '' });
+    expect(allDay.body.dueTime).toBeNull();
+
+    const bad = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Hora imposible', dueDate: '2026-09-08', dueTime: '25:00' });
+    expect(bad.status).toBe(400);
   });
 
   it('refuses to let a vendedor touch another user’s task', async () => {
@@ -96,7 +116,7 @@ describe('/tasks routes', () => {
     const res = await request(app)
       .patch(`/tasks/${created.body.id}`)
       .set('Authorization', `Bearer ${sellerToken}`)
-      .send({ done: true });
+      .send({ status: 'DONE' });
     expect(res.status).toBe(404);
   });
 
