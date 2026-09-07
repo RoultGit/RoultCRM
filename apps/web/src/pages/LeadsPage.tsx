@@ -9,6 +9,8 @@ import { CreateLeadDialog } from '../components/leads/CreateLeadDialog.js';
 import { useLeads, useSetLeadStatus, useConvertLead, useUpdateLead } from '../hooks/useLeads.js';
 import { AssigneeCell } from '../components/AssigneeCell.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
+import { EditDialog } from '../components/EditDialog.js';
+import { updateLeadSchema } from '@ventry/shared';
 
 const STATUS_TONE: Record<LeadDTO['status'], 'info' | 'neutral' | 'warning' | 'success' | 'danger'> = {
   NEW: 'info',
@@ -96,6 +98,33 @@ export function LeadsPage() {
         if (lead.status === 'CONVERTED') return <span className="text-xs text-gray-400">—</span>;
         return (
           <div className="flex items-center gap-2">
+            <EditDialog
+              title="Editar lead"
+              schema={updateLeadSchema}
+              isPending={updateLead.isPending}
+              isError={updateLead.isError}
+              values={{
+                businessName: lead.businessName,
+                contactName: lead.contactName,
+                line: lead.line,
+                email: lead.email ?? '',
+                phone: lead.phone ?? '',
+                whatsapp: lead.whatsapp ?? '',
+                source: lead.source ?? '',
+                notes: lead.notes ?? '',
+              }}
+              fields={[
+                { key: 'businessName', label: 'Empresa / persona' },
+                { key: 'contactName', label: 'Nombre de contacto' },
+                { key: 'line', label: 'Línea', options: [{ value: 'WEB', label: 'Web' }, { value: 'SOFTWARE', label: 'Software' }] },
+                { key: 'email', label: 'Correo', type: 'email' },
+                { key: 'phone', label: 'Teléfono' },
+                { key: 'whatsapp', label: 'WhatsApp' },
+                { key: 'source', label: 'Origen' },
+                { key: 'notes', label: 'Notas', type: 'textarea' },
+              ]}
+              onSubmit={(data, close) => updateLead.mutate({ id: lead.id, ...data }, { onSuccess: close })}
+            />
             <select
               className="rounded-lg border border-gray-200 px-2 py-1 text-sm"
               value={lead.status}

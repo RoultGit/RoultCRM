@@ -4,13 +4,16 @@ import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import { CreateVendedorDialog } from '../components/team/CreateVendedorDialog.js';
-import { useUsers, useSetUserStatus } from '../hooks/useUsers.js';
+import { useUsers, useSetUserStatus, useUpdateUser } from '../hooks/useUsers.js';
+import { EditDialog } from '../components/EditDialog.js';
+import { updateUserSchema } from '@ventry/shared';
 
 const columnHelper = createColumnHelper<UserDTO>();
 
 export function TeamPage() {
   const { data: users, isLoading } = useUsers();
   const setStatus = useSetUserStatus();
+  const updateUser = useUpdateUser();
 
   const columns = [
     columnHelper.accessor((row) => `${row.firstName} ${row.lastName}`, {
@@ -30,6 +33,32 @@ export function TeamPage() {
       id: 'actions',
       header: 'Acciones',
       cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+        <EditDialog
+          title="Editar vendedor"
+          schema={updateUserSchema}
+          isPending={updateUser.isPending}
+          isError={updateUser.isError}
+          values={{
+            firstName: row.original.firstName,
+            lastName: row.original.lastName,
+            phone: row.original.phone ?? '',
+            commissionPct: row.original.commissionPct,
+          }}
+          fields={[
+            { key: 'firstName', label: 'Nombre' },
+            { key: 'lastName', label: 'Apellido' },
+            { key: 'phone', label: 'Teléfono' },
+            { key: 'commissionPct', label: 'Comisión (%)' },
+          ]}
+          onSubmit={(data, close) =>
+            updateUser.mutate(
+              // El input devuelve texto; commissionPct es numérico en el schema.
+              { id: row.original.id, ...data, commissionPct: Number(data.commissionPct) },
+              { onSuccess: close }
+            )
+          }
+        />
         <Button
           variant="outline"
           size="sm"
@@ -40,6 +69,7 @@ export function TeamPage() {
         >
           {row.original.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
         </Button>
+        </div>
       ),
     }),
   ];

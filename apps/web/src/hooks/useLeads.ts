@@ -39,7 +39,7 @@ export function useCreateLead() {
 export function useUpdateLead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...input }: { id: string; assignedUserId?: string }) =>
+    mutationFn: async ({ id, ...input }: { id: string } & Partial<CreateLeadInput>) =>
       (await apiClient.patch<LeadDTO>(`/leads/${id}`, input)).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: LEADS_KEY }),
   });

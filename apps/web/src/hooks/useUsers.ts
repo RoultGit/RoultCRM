@@ -37,3 +37,20 @@ export function useSetUserStatus() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
   });
 }
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...input
+    }: {
+      id: string;
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      commissionPct?: number;
+    }) => (await apiClient.patch<UserDTO>(`/users/${id}`, input)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+  });
+}

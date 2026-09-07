@@ -29,3 +29,14 @@ export function useCreateContact() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CONTACTS_KEY }),
   });
 }
+
+export function useUpdateContact() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    // companyId no se puede cambiar: updateContactSchema lo omite a propósito, porque mover un
+    // contacto de empresa cambia también de quién es y eso merece su propia acción.
+    mutationFn: async ({ id, ...input }: { id: string } & Partial<Omit<CreateContactInput, 'companyId'>>) =>
+      (await apiClient.patch<ContactDTO>(`/contacts/${id}`, input)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CONTACTS_KEY }),
+  });
+}

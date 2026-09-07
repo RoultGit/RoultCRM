@@ -39,7 +39,7 @@ export function useCreateCompany() {
 export function useUpdateCompany() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...input }: { id: string; assignedUserId?: string }) =>
+    mutationFn: async ({ id, ...input }: { id: string } & Partial<CreateCompanyInput>) =>
       (await apiClient.patch<CompanyDTO>(`/companies/${id}`, input)).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: COMPANIES_KEY }),
   });

@@ -3,6 +3,8 @@ import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { useTasks, useUpdateTask } from '../hooks/useTasks.js';
 import { CreateTaskDialog } from '../components/tasks/CreateTaskDialog.js';
+import { EditDialog } from '../components/EditDialog.js';
+import { updateTaskSchema } from '@ventry/shared';
 import { formatDate, isOverdue as isDateOverdue, isToday as isDateToday } from '../lib/date.js';
 
 function isOverdue(task: TaskDTO): boolean {
@@ -30,6 +32,24 @@ function TaskRow({ task }: { task: TaskDTO }) {
         {task.description && <p className="text-xs text-gray-500">{task.description}</p>}
       </div>
       <Badge tone={isOverdue(task) ? 'danger' : 'neutral'}>{formatDate(task.dueDate)}</Badge>
+      <EditDialog
+        title="Editar tarea"
+        schema={updateTaskSchema}
+        isPending={update.isPending}
+        isError={update.isError}
+        values={{
+          title: task.title,
+          description: task.description ?? '',
+          // El <input type="date"> quiere YYYY-MM-DD, y la fecha se guarda como medianoche UTC.
+          dueDate: task.dueDate.slice(0, 10),
+        }}
+        fields={[
+          { key: 'title', label: 'Título' },
+          { key: 'dueDate', label: 'Fecha límite', type: 'date' },
+          { key: 'description', label: 'Detalle', type: 'textarea' },
+        ]}
+        onSubmit={(data, close) => update.mutate({ id: task.id, ...data }, { onSuccess: close })}
+      />
     </li>
   );
 }

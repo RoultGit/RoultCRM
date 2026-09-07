@@ -2,12 +2,15 @@ import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '
 import type { ContactDTO } from '@ventry/shared';
 import { Card } from '../components/ui/card.js';
 import { CreateContactDialog } from '../components/contacts/CreateContactDialog.js';
-import { useContacts } from '../hooks/useContacts.js';
+import { useContacts, useUpdateContact } from '../hooks/useContacts.js';
+import { EditDialog } from '../components/EditDialog.js';
+import { updateContactSchema } from '@ventry/shared';
 
 const columnHelper = createColumnHelper<ContactDTO>();
 
 export function ContactsPage() {
   const { data: contacts, isLoading } = useContacts();
+  const updateContact = useUpdateContact();
 
   const columns = [
     columnHelper.accessor('name', { header: 'Contacto' }),
@@ -15,6 +18,35 @@ export function ContactsPage() {
     columnHelper.accessor('position', { header: 'Cargo', cell: (info) => info.getValue() ?? '—' }),
     columnHelper.accessor('email', { header: 'Correo', cell: (info) => info.getValue() ?? '—' }),
     columnHelper.accessor('phone', { header: 'Teléfono', cell: (info) => info.getValue() ?? '—' }),
+    columnHelper.display({
+      id: 'acciones',
+      header: 'Acciones',
+      cell: ({ row }) => (
+        <EditDialog
+          title="Editar contacto"
+          schema={updateContactSchema}
+          isPending={updateContact.isPending}
+          isError={updateContact.isError}
+          values={{
+            name: row.original.name,
+            position: row.original.position ?? '',
+            email: row.original.email ?? '',
+            phone: row.original.phone ?? '',
+            whatsapp: row.original.whatsapp ?? '',
+            notes: row.original.notes ?? '',
+          }}
+          fields={[
+            { key: 'name', label: 'Nombre' },
+            { key: 'position', label: 'Cargo' },
+            { key: 'email', label: 'Correo', type: 'email' },
+            { key: 'phone', label: 'Teléfono' },
+            { key: 'whatsapp', label: 'WhatsApp' },
+            { key: 'notes', label: 'Notas', type: 'textarea' },
+          ]}
+          onSubmit={(data, close) => updateContact.mutate({ id: row.original.id, ...data }, { onSuccess: close })}
+        />
+      ),
+    }),
   ];
 
   const table = useReactTable({ data: contacts ?? [], columns, getCoreRowModel: getCoreRowModel() });

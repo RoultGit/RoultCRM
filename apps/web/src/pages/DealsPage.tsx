@@ -14,15 +14,16 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import type { DealDTO, UserDTO } from '@ventry/shared';
+import { updateDealSchema, type DealDTO, type UserDTO } from '@ventry/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
-import { useDeals, useSetDealStage, useAssignDeal } from '../hooks/useDeals.js';
+import { useDeals, useSetDealStage, useAssignDeal, useUpdateDeal } from '../hooks/useDeals.js';
 import { useUsers } from '../hooks/useUsers.js';
 import { useSession } from '../hooks/useAuth.js';
 import { formatMoney } from '../lib/money.js';
 import { formatDate, isOverdue } from '../lib/date.js';
 import { CreateDealDialog } from '../components/deals/CreateDealDialog.js';
+import { EditDialog } from '../components/EditDialog.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { LostReasonDialog } from '../components/deals/LostReasonDialog.js';
 
@@ -74,6 +75,7 @@ function DealCard({
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
   const assign = useAssignDeal();
+  const update = useUpdateDeal();
 
   // Ojo: la card NO lleva el transform de dnd-kit. Moviendo el mismo nodo que la librería mide, el
   // rect se re-medía ya desplazado y el delta se contaba dos veces, así que la columna detectada
@@ -97,6 +99,39 @@ function DealCard({
         {deal.stage === 'PERDIDO' && deal.lostReason && (
           <p className="mt-2 text-xs text-gray-500">Motivo: {deal.lostReason}</p>
         )}
+      </div>
+      {/* El botón no puede quedar bajo los listeners de arrastre: un click ahí abriría un drag. */}
+      <div className="mt-2" onPointerDown={(e) => e.stopPropagation()}>
+        <EditDialog
+          title="Editar deal"
+          schema={updateDealSchema}
+          isPending={update.isPending}
+          isError={update.isError}
+          values={{
+            title: deal.title,
+            amount: deal.amount,
+            currency: deal.currency,
+            expectedCloseDate: deal.expectedCloseDate?.slice(0, 10) ?? '',
+            nextStepDescription: deal.nextStepDescription ?? '',
+            nextStepDate: deal.nextStepDate?.slice(0, 10) ?? '',
+          }}
+          fields={[
+            { key: 'title', label: 'Título' },
+            { key: 'amount', label: 'Monto' },
+            {
+              key: 'currency',
+              label: 'Moneda',
+              options: [
+                { value: 'PEN', label: 'PEN' },
+                { value: 'USD', label: 'USD' },
+              ],
+            },
+            { key: 'expectedCloseDate', label: 'Cierre estimado', type: 'date' },
+            { key: 'nextStepDescription', label: 'Próximo paso' },
+            { key: 'nextStepDate', label: 'Fecha del próximo paso', type: 'date' },
+          ]}
+          onSubmit={(data, close) => update.mutate({ id: deal.id, ...data }, { onSuccess: close })}
+        />
       </div>
       {/* El arrastre es solo para mouse: el KeyboardSensor de dnd-kit desplaza la card de a 25px y
           nunca llega a la columna de al lado sin acoplar el código al ancho exacto del layout. Este

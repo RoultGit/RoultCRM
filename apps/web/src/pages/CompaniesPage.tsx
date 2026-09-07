@@ -6,6 +6,8 @@ import { CreateCompanyDialog } from '../components/companies/CreateCompanyDialog
 import { useCompanies, useUpdateCompany } from '../hooks/useCompanies.js';
 import { AssigneeCell } from '../components/AssigneeCell.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
+import { EditDialog } from '../components/EditDialog.js';
+import { updateCompanySchema } from '@ventry/shared';
 import { useState } from 'react';
 
 const columnHelper = createColumnHelper<CompanyDTO>();
@@ -24,6 +26,37 @@ export function CompaniesPage() {
     columnHelper.accessor('city', { header: 'Ciudad', cell: (info) => info.getValue() ?? '—' }),
     columnHelper.accessor('email', { header: 'Correo', cell: (info) => info.getValue() ?? '—' }),
     columnHelper.accessor('whatsapp', { header: 'WhatsApp', cell: (info) => info.getValue() ?? '—' }),
+    columnHelper.display({
+      id: 'acciones',
+      header: 'Acciones',
+      cell: ({ row }) => (
+        <EditDialog
+          title="Editar empresa"
+          schema={updateCompanySchema}
+          isPending={updateCompany.isPending}
+          isError={updateCompany.isError}
+          values={{
+            name: row.original.name,
+            line: row.original.line,
+            city: row.original.city ?? '',
+            email: row.original.email ?? '',
+            whatsapp: row.original.whatsapp ?? '',
+            source: row.original.source ?? '',
+            notes: row.original.notes ?? '',
+          }}
+          fields={[
+            { key: 'name', label: 'Nombre' },
+            { key: 'line', label: 'Línea', options: [{ value: 'WEB', label: 'Web' }, { value: 'SOFTWARE', label: 'Software' }] },
+            { key: 'city', label: 'Ciudad' },
+            { key: 'email', label: 'Correo', type: 'email' },
+            { key: 'whatsapp', label: 'WhatsApp' },
+            { key: 'source', label: 'Origen' },
+            { key: 'notes', label: 'Notas', type: 'textarea' },
+          ]}
+          onSubmit={(data, close) => updateCompany.mutate({ id: row.original.id, ...data }, { onSuccess: close })}
+        />
+      ),
+    }),
     columnHelper.accessor('assignedUserId', {
       header: 'Vendedor',
       cell: ({ row }) => (

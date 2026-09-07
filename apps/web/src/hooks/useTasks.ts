@@ -29,7 +29,7 @@ export function useCreateTask() {
 export function useUpdateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...input }: { id: string; done?: boolean; title?: string; dueDate?: string }) =>
+    mutationFn: async ({ id, ...input }: { id: string; done?: boolean } & Partial<CreateTaskInput>) =>
       (await apiClient.patch<TaskDTO>(`/tasks/${id}`, input)).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: TASKS_KEY }),
   });
