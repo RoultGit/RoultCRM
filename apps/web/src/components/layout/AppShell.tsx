@@ -1,6 +1,7 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import { LayoutDashboard, Users, Building2, Contact, Handshake, ListChecks, CalendarClock, Settings } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
+import { useSession } from '../../hooks/useAuth.js';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -14,6 +15,14 @@ const NAV_ITEMS = [
 ];
 
 export function AppShell() {
+  // Sin esto, entrar a cualquier ruta sin sesión (o tras vencer el refresh token) pintaba la app
+  // entera vacía y en silencio: las queries daban 401 y cada tabla mostraba cero filas, que es
+  // indistinguible de "no hay datos". useSession pasa por apiClient, así que un token de acceso
+  // caído se renueva solo y solo llega acá si tampoco hay refresh válido.
+  const session = useSession();
+  if (session.isLoading) return <div className="p-6 text-sm text-gray-500">Cargando…</div>;
+  if (session.isError) return <Navigate to="/login" replace />;
+
   return (
     <div className="flex min-h-screen bg-surface">
       <aside className="w-60 shrink-0 border-r border-gray-200 bg-white p-4">
