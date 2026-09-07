@@ -2,6 +2,7 @@ import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import { LayoutDashboard, Users, Building2, Contact, Handshake, ListChecks, CalendarClock, Settings } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
 import { useSession } from '../../hooks/useAuth.js';
+import { GlobalSearch } from './GlobalSearch.js';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -46,8 +47,16 @@ export function AppShell() {
           ))}
         </nav>
       </aside>
-      <main className="min-w-0 flex-1 p-6">
-        <Outlet />
+      <main className="min-w-0 flex-1">
+        <header className="flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-6 py-3">
+          <GlobalSearch />
+          <span className="text-sm text-gray-600">
+            {session.data?.firstName} {session.data?.lastName}
+          </span>
+        </header>
+        <div className="p-6">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
