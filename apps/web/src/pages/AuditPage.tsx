@@ -2,6 +2,7 @@ import type { AuditEntryDTO } from '@ventry/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { useAudit } from '../hooks/useAudit.js';
+import { formatMoney } from '../lib/money.js';
 
 const ACTION_LABEL: Record<string, string> = {
   CREATE: 'Creó',
@@ -10,6 +11,7 @@ const ACTION_LABEL: Record<string, string> = {
   ASSIGN: 'Reasignó',
   STATUS_CHANGE: 'Cambió el estado',
   CONVERT: 'Convirtió',
+  DELETE: 'Eliminó',
 };
 
 const ENTITY_LABEL: Record<string, string> = {
@@ -27,6 +29,13 @@ function detail(entry: AuditEntryDTO): string | null {
   const after = entry.after as Record<string, unknown> | null;
   if (entry.action === 'STAGE_CHANGE') return `${before?.stage ?? '—'} → ${after?.stage ?? '—'}`;
   if (entry.action === 'STATUS_CHANGE') return `${before?.status ?? '—'} → ${after?.status ?? '—'}`;
+  // Un DELETE es el único caso donde el registro ya no existe en ningún lado: el resumen tiene que
+  // decir qué era, o la línea de auditoría no sirve para nada.
+  if (entry.action === 'DELETE' && before) {
+    const amount =
+      before.amount && formatMoney(before.amount as string, before.currency as 'PEN' | 'USD');
+    return [before.title, before.companyName, amount].filter(Boolean).join(' · ');
+  }
   if (entry.action === 'ASSIGN') {
     return `${before?.assignedUserId ?? 'sin asignar'} → ${after?.assignedUserId ?? 'sin asignar'}`;
   }

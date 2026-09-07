@@ -93,6 +93,47 @@ describe('/deals routes', () => {
     await prisma.tenant.delete({ where: { id: otherTenant.id } });
   });
 
+  describe('DELETE /deals/:id', () => {
+    it('deletes the deal and leaves the audit trail behind', async () => {
+      const deal = await createDeal();
+      const res = await request(app).delete(`/deals/${deal.id}`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(204);
+      expect(await prisma.deal.findUnique({ where: { id: deal.id } })).toBeNull();
+
+      const log = await prisma.auditLog.findFirst({ where: { tenantId, entityId: deal.id, action: 'DELETE' } });
+      // Lo que se borró tiene que seguir siendo reconstruible: si el log no guarda el contenido, no
+      // queda ningún rastro de que ese deal existió.
+      expect(log).not.toBeNull();
+      expect((log!.before as { title: string }).title).toBe('Web corporativa');
+      expect((log!.before as { amount: string }).amount).toBe('8000');
+    });
+
+    it('does not let a vendedor delete a deal', async () => {
+      const deal = await createDeal();
+      const sellerToken = signAccessToken({ userId: sellerId, tenantId, role: 'VENDEDOR' });
+      const res = await request(app).delete(`/deals/${deal.id}`).set('Authorization', `Bearer ${sellerToken}`);
+      expect(res.status).toBe(403);
+      // Y sobre todo: el deal sigue ahí. Un 403 que igual borra sería peor que no tener el chequeo.
+      expect(await prisma.deal.findUnique({ where: { id: deal.id } })).not.toBeNull();
+    });
+
+    it('does not let an admin delete a deal from another tenant', async () => {
+      const otherTenant = await prisma.tenant.create({ data: { name: 'Otro borrar' } });
+      const otherCompany = await prisma.company.create({
+        data: { tenantId: otherTenant.id, name: 'Ajena', line: 'WEB' },
+      });
+      const otherDeal = await prisma.deal.create({
+        data: { tenantId: otherTenant.id, companyId: otherCompany.id, title: 'Ajeno', amount: '1', currency: 'PEN' },
+      });
+      const res = await request(app).delete(`/deals/${otherDeal.id}`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(404);
+      expect(await prisma.deal.findUnique({ where: { id: otherDeal.id } })).not.toBeNull();
+      await prisma.deal.delete({ where: { id: otherDeal.id } });
+      await prisma.company.delete({ where: { id: otherCompany.id } });
+      await prisma.tenant.delete({ where: { id: otherTenant.id } });
+    });
+  });
+
   it('saves the next step on a deal', async () => {
     const deal = await createDeal();
     const res = await request(app)

@@ -55,6 +55,12 @@ export const DealsRepository = {
     return prisma.deal.updateMany({ where: { id, tenantId }, data });
   },
 
+  // deleteMany y no delete: `where` acepta el tenantId, así que un id de otro tenant borra cero
+  // filas en vez de borrar la fila ajena. El count que devuelve dice si existía.
+  deleteByIdAndTenant(id: string, tenantId: string) {
+    return prisma.deal.deleteMany({ where: { id, tenantId } });
+  },
+
   recordAssignment(data: Prisma.AssignmentHistoryUncheckedCreateInput) {
     return prisma.assignmentHistory.create({ data });
   },

@@ -122,6 +122,30 @@ export const DealsService = {
     return toDTO(updated!);
   },
 
+  // Borrar es para el deal cargado por error (empresa equivocada, monto mal tipeado, duplicado). Un
+  // deal que no se cerró NO se borra: se marca PERDIDO, que es un resultado de negocio y tiene que
+  // seguir contando en el pipeline y en las métricas. Por eso queda solo para ADMIN: un vendedor
+  // podría hacer desaparecer los deals que no le salieron y su tasa de cierre mentiría.
+  async remove(actor: Actor, id: string): Promise<void> {
+    if (actor.role !== 'ADMIN') throw new ForbiddenError('Solo un administrador puede eliminar un deal');
+
+    const existing = await DealsRepository.findByIdAndTenant(id, actor.tenantId);
+    if (!existing) throw new NotFoundError('Deal not found');
+
+    const { count } = await DealsRepository.deleteByIdAndTenant(id, actor.tenantId);
+    if (count === 0) throw new NotFoundError('Deal not found');
+
+    // La fila del deal se va, la línea de auditoría queda: AuditLog no tiene FK contra Deal
+    // justamente para esto. `before` guarda el DTO entero, que es lo único que va a quedar de este
+    // deal, así que después se puede ver qué decía y quién lo borró.
+    await recordAudit(actor, {
+      action: 'DELETE',
+      entityType: 'DEAL',
+      entityId: id,
+      before: toDTO(existing) as unknown as Prisma.InputJsonValue,
+    });
+  },
+
   async assign(actor: Actor, id: string, assignedUserId?: string): Promise<DealDTO> {
     if (actor.role !== 'ADMIN') throw new ForbiddenError('Solo un administrador puede asignar un deal');
 

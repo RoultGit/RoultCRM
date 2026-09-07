@@ -15,7 +15,9 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { updateDealSchema, type DealDTO, type UserDTO } from '@ventry/shared';
+import { Trash2 } from 'lucide-react';
 import { Card } from '../components/ui/card.js';
+import { Button } from '../components/ui/button.js';
 import { Badge } from '../components/ui/badge.js';
 import { useDeals, useSetDealStage, useAssignDeal, useUpdateDeal } from '../hooks/useDeals.js';
 import { useUsers } from '../hooks/useUsers.js';
@@ -26,6 +28,7 @@ import { CreateDealDialog } from '../components/deals/CreateDealDialog.js';
 import { EditDialog } from '../components/EditDialog.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { LostReasonDialog } from '../components/deals/LostReasonDialog.js';
+import { DeleteDealDialog } from '../components/deals/DeleteDealDialog.js';
 
 // El orden del pipeline es el del spec de negocio, sección 22. PERDIDO va al final y fuera de la
 // secuencia: es una salida, no un paso.
@@ -67,11 +70,15 @@ function DealCard({
   canAssign,
   users,
   onStageChange,
+  // Sin onDelete no se dibuja el botón. Es lo que deja el borrado fuera de la vista del vendedor:
+  // la página solo lo pasa si el usuario es ADMIN, y el backend lo vuelve a exigir igual.
+  onDelete,
 }: {
   deal: DealDTO;
   canAssign: boolean;
   users?: UserDTO[];
   onStageChange: (deal: DealDTO, stage: DealDTO['stage']) => void;
+  onDelete?: (deal: DealDTO) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
   const assign = useAssignDeal();
@@ -104,8 +111,8 @@ function DealCard({
           <p className="mt-2 text-xs text-gray-500">Motivo: {deal.lostReason}</p>
         )}
       </div>
-      {/* El botón no puede quedar bajo los listeners de arrastre: un click ahí abriría un drag. */}
-      <div className="mt-2" onPointerDown={(e) => e.stopPropagation()}>
+      {/* Los botones no pueden quedar bajo los listeners de arrastre: un click ahí abriría un drag. */}
+      <div className="mt-2 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
         <EditDialog
           title="Editar deal"
           schema={updateDealSchema}
@@ -136,6 +143,18 @@ function DealCard({
           ]}
           onSubmit={(data, close) => update.mutate({ id: deal.id, ...data }, { onSuccess: close })}
         />
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="px-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
+            aria-label={`Eliminar ${deal.title}`}
+            title="Eliminar deal"
+            onClick={() => onDelete(deal)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </div>
       {/* El arrastre es solo para mouse: el KeyboardSensor de dnd-kit desplaza la card de a 25px y
           nunca llega a la columna de al lado sin acoplar el código al ancho exacto del layout. Este
@@ -181,12 +200,14 @@ function StageColumn({
   canAssign,
   users,
   onStageChange,
+  onDelete,
 }: {
   stage: DealDTO['stage'];
   deals: DealDTO[];
   canAssign: boolean;
   users?: UserDTO[];
   onStageChange: (deal: DealDTO, stage: DealDTO['stage']) => void;
+  onDelete?: (deal: DealDTO) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   return (
@@ -202,7 +223,14 @@ function StageColumn({
         }`}
       >
         {deals.map((deal) => (
-          <DealCard key={deal.id} deal={deal} canAssign={canAssign} users={users} onStageChange={onStageChange} />
+          <DealCard
+            key={deal.id}
+            deal={deal}
+            canAssign={canAssign}
+            users={users}
+            onStageChange={onStageChange}
+            onDelete={onDelete}
+          />
         ))}
       </div>
     </div>
@@ -217,6 +245,7 @@ export function DealsPage() {
   const canAssign = useSession().data?.role === 'ADMIN';
   const [lostDeal, setLostDeal] = useState<DealDTO | null>(null);
   const [activeDeal, setActiveDeal] = useState<DealDTO | null>(null);
+  const [dealToDelete, setDealToDelete] = useState<DealDTO | null>(null);
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
 
@@ -276,6 +305,7 @@ export function DealsPage() {
                 canAssign={canAssign}
                 users={users}
                 onStageChange={moveTo}
+                onDelete={canAssign ? setDealToDelete : undefined}
               />
             ))}
           </div>
@@ -298,6 +328,7 @@ export function DealsPage() {
         </DndContext>
       )}
       <LostReasonDialog deal={lostDeal} onClose={() => setLostDeal(null)} />
+      <DeleteDealDialog deal={dealToDelete} onClose={() => setDealToDelete(null)} />
     </div>
   );
 }

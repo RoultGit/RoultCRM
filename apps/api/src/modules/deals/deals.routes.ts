@@ -7,7 +7,7 @@ import {
   dealFiltersSchema,
 } from '@ventry/shared';
 import { DealsService } from './deals.service.js';
-import { requireAuth } from '../../middleware/auth.js';
+import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
 import { toCsv, UTF8_BOM } from '../../lib/csv.js';
 
@@ -77,6 +77,17 @@ dealsRouter.patch('/:id/stage', async (req, res, next) => {
     const parsed = setDealStageSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
     res.json(await DealsService.setStage(req.user!, req.params.id, parsed.data));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// requireRole acá además del chequeo en el service: el rol se corta en el borde, antes de tocar la
+// base, y el service igual lo revalida por si alguna vez se lo llama desde otro lado.
+dealsRouter.delete<{ id: string }>('/:id', requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    await DealsService.remove(req.user!, req.params.id);
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

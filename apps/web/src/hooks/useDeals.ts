@@ -75,6 +75,29 @@ export function useSetDealStage() {
   });
 }
 
+// Mismo criterio que al arrastrar: la card se va de la pantalla en el acto y el servidor se entera
+// después. Si el borrado falla, la lista vuelve a como estaba.
+export function useDeleteDeal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/deals/${id}`);
+    },
+    onMutate: async (id) => {
+      const previous = queryClient.getQueriesData<DealDTO[]>({ queryKey: DEALS_KEY });
+      queryClient.setQueriesData<DealDTO[]>({ queryKey: DEALS_KEY }, (deals) =>
+        deals?.filter((deal) => deal.id !== id)
+      );
+      await queryClient.cancelQueries({ queryKey: DEALS_KEY });
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: DEALS_KEY }),
+  });
+}
+
 export function useAssignDeal() {
   const queryClient = useQueryClient();
   return useMutation({

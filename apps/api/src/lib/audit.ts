@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from './prisma.js';
 import type { Actor } from './scope.js';
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'STAGE_CHANGE' | 'ASSIGN' | 'STATUS_CHANGE' | 'CONVERT';
+export type AuditAction = 'CREATE' | 'UPDATE' | 'STAGE_CHANGE' | 'ASSIGN' | 'STATUS_CHANGE' | 'CONVERT' | 'DELETE';
 export type AuditEntity = 'COMPANY' | 'CONTACT' | 'LEAD' | 'DEAL' | 'USER';
 
 export async function recordAudit(
