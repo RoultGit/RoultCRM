@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
-import type { LeadDTO } from '@ventry/shared';
+import { isAxiosError } from 'axios';
+import type { LeadDTO, CompanyDTO } from '@ventry/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
@@ -24,10 +26,15 @@ const STATUS_LABEL: Record<LeadDTO['status'], string> = {
   LOST: 'Perdido',
 };
 
-const NEXT_STATUS: Partial<Record<LeadDTO['status'], Exclude<LeadDTO['status'], 'CONVERTED'>>> = {
-  NEW: 'CONTACTED',
-  CONTACTED: 'QUALIFIED',
-};
+// Every status a lead can be moved to by hand. CONVERTED is absent on purpose: it is only
+// reachable through /convert, which also creates the Empresa and the Contacto.
+const SELECTABLE_STATUS: Exclude<LeadDTO['status'], 'CONVERTED'>[] = [
+  'NEW',
+  'CONTACTED',
+  'QUALIFIED',
+  'UNQUALIFIED',
+  'LOST',
+];
 
 const columnHelper = createColumnHelper<LeadDTO>();
 
@@ -35,6 +42,20 @@ export function LeadsPage() {
   const { data: leads, isLoading } = useLeads();
   const setStatus = useSetLeadStatus();
   const convert = useConvertLead();
+  const [duplicate, setDuplicate] = useState<{ lead: LeadDTO; company: CompanyDTO } | null>(null);
+
+  const runConvert = (lead: LeadDTO, confirmDuplicate = false) =>
+    convert.mutate(
+      { id: lead.id, confirmDuplicate },
+      {
+        onSuccess: () => setDuplicate(null),
+        onError: (err) => {
+          if (isAxiosError(err) && err.response?.status === 409) {
+            setDuplicate({ lead, company: err.response.data.details.duplicate as CompanyDTO });
+          }
+        },
+      }
+    );
 
   const columns = [
     columnHelper.accessor('businessName', { header: 'Empresa / persona' }),
@@ -49,20 +70,28 @@ export function LeadsPage() {
       header: 'Acciones',
       cell: ({ row }) => {
         const lead = row.original;
-        const next = NEXT_STATUS[lead.status];
         const busy =
           (setStatus.isPending && setStatus.variables?.id === lead.id) ||
           (convert.isPending && convert.variables?.id === lead.id);
         if (lead.status === 'CONVERTED') return <span className="text-xs text-gray-400">—</span>;
         return (
-          <div className="flex gap-2">
-            {next && (
-              <Button variant="outline" size="sm" disabled={busy} onClick={() => setStatus.mutate({ id: lead.id, status: next })}>
-                Marcar {STATUS_LABEL[next]}
-              </Button>
-            )}
+          <div className="flex items-center gap-2">
+            <select
+              className="rounded-lg border border-gray-200 px-2 py-1 text-sm"
+              value={lead.status}
+              disabled={busy}
+              onChange={(e) =>
+                setStatus.mutate({ id: lead.id, status: e.target.value as Exclude<LeadDTO['status'], 'CONVERTED'> })
+              }
+            >
+              {SELECTABLE_STATUS.map((status) => (
+                <option key={status} value={status}>
+                  {STATUS_LABEL[status]}
+                </option>
+              ))}
+            </select>
             {lead.status === 'QUALIFIED' && (
-              <Button size="sm" disabled={busy} onClick={() => convert.mutate({ id: lead.id })}>
+              <Button size="sm" disabled={busy} onClick={() => runConvert(lead)}>
                 Convertir
               </Button>
             )}
@@ -80,9 +109,25 @@ export function LeadsPage() {
         <h1 className="text-xl font-semibold">Leads</h1>
         <CreateLeadDialog />
       </div>
-      {convert.isError && (
-        <p className="mb-4 text-sm text-red-600">No se pudo convertir el lead (puede que ya exista una empresa parecida).</p>
+      {duplicate ? (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span>
+            Ya existe una empresa parecida a <strong>{duplicate.lead.businessName}</strong>: {duplicate.company.name} (
+            {duplicate.company.email ?? duplicate.company.whatsapp ?? 'sin contacto'}).
+          </span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDuplicate(null)}>
+              Cancelar
+            </Button>
+            <Button size="sm" disabled={convert.isPending} onClick={() => runConvert(duplicate.lead, true)}>
+              Convertir de todas formas
+            </Button>
+          </div>
+        </div>
+      ) : (
+        convert.isError && <p className="mb-4 text-sm text-red-600">No se pudo convertir el lead.</p>
       )}
+      {setStatus.isError && <p className="mb-4 text-sm text-red-600">No se pudo cambiar el estado del lead.</p>}
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>
