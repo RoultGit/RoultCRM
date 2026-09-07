@@ -7,6 +7,7 @@ import { companiesRouter } from './modules/companies/companies.routes.js';
 import { contactsRouter } from './modules/contacts/contacts.routes.js';
 import { leadsRouter } from './modules/leads/leads.routes.js';
 import { dealsRouter } from './modules/deals/deals.routes.js';
+import { tasksRouter } from './modules/tasks/tasks.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -25,6 +26,7 @@ export function createApp(): Express {
   app.use('/contacts', contactsRouter);
   app.use('/leads', leadsRouter);
   app.use('/deals', dealsRouter);
+  app.use('/tasks', tasksRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     if (err instanceof AppError) {
