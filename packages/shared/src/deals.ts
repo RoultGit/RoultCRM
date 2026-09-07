@@ -68,3 +68,29 @@ export interface DealDTO {
   createdAt: string;
   updatedAt: string;
 }
+
+// El pipeline no tiene etapa "Ganado", así que hay que definir qué cuenta como tal. Se toma el
+// momento en que el cliente pone plata: del adelanto en adelante el deal está ganado, antes está
+// todavía en juego. Cambiar estas listas cambia el dashboard entero, que es justamente la idea.
+export const DEAL_STAGE_GROUPS = {
+  active: ['CONTACTO', 'PROPUESTA', 'NEGOCIACION'],
+  won: ['ADELANTO', 'PRODUCCION', 'ENTREGADO', 'MANTENIMIENTO'],
+  lost: ['PERDIDO'],
+} as const;
+
+export interface MoneyByCurrency {
+  PEN: string;
+  USD: string;
+}
+
+export interface DashboardDTO {
+  leadsNew: number;
+  dealsActive: number;
+  dealsWon: number;
+  dealsLost: number;
+  wonAmount: MoneyByCurrency;
+  activeAmount: MoneyByCurrency;
+  clientsActive: number;
+  tasksUpcoming: number;
+  tasksOverdue: number;
+}

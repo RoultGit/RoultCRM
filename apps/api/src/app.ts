@@ -11,6 +11,7 @@ import { tasksRouter } from './modules/tasks/tasks.routes.js';
 import { searchRouter } from './modules/search/search.routes.js';
 import { auditRouter } from './modules/audit/audit.routes.js';
 import { importRouter } from './modules/import/import.routes.js';
+import { dashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -33,6 +34,7 @@ export function createApp(): Express {
   app.use('/search', searchRouter);
   app.use('/audit', auditRouter);
   app.use('/import', importRouter);
+  app.use('/dashboard', dashboardRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     if (err instanceof AppError) {

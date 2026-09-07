@@ -8,6 +8,7 @@ import { LeadsPage } from '../pages/LeadsPage.js';
 import { DealsPage } from '../pages/DealsPage.js';
 import { TasksPage } from '../pages/TasksPage.js';
 import { AuditPage } from '../pages/AuditPage.js';
+import { DashboardPage } from '../pages/DashboardPage.js';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -15,7 +16,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppShell />,
     children: [
-      { index: true, element: <div>Dashboard (próximamente)</div> },
+      { index: true, element: <DashboardPage /> },
       { path: 'team', element: <TeamPage /> },
       { path: 'companies', element: <CompaniesPage /> },
       { path: 'contacts', element: <ContactsPage /> },
