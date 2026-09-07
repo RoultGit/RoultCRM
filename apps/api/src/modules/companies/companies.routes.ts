@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { createCompanySchema, updateCompanySchema, companyFiltersSchema } from '@ventry/shared';
 import { CompaniesService } from './companies.service.js';
-import { requireAuth } from '../../middleware/auth.js';
+import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
 import { toCsv, UTF8_BOM } from '../../lib/csv.js';
 
@@ -60,6 +60,16 @@ companiesRouter.patch('/:id', async (req, res, next) => {
     if (!parsed.success) throw new ValidationError(parsed.error.message);
     const company = await CompaniesService.update(req.user!, req.params.id, parsed.data);
     res.json(company);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// requireRole acá además del chequeo en el service: el rol se corta en el borde, antes de tocar la
+// base, y el service igual lo revalida por si alguna vez se lo llama desde otro lado.
+companiesRouter.delete<{ id: string }>('/:id', requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    res.json(await CompaniesService.remove(req.user!, req.params.id));
   } catch (err) {
     next(err);
   }

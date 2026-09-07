@@ -77,6 +77,46 @@ export const CompaniesService = {
     return toDTO(company);
   },
 
+  /**
+   * Eliminar es para la empresa cargada por error: nombre mal escrito, duplicada, creada sobre el
+   * cliente equivocado. NO es la salida para un cliente que se perdió — para eso está marcar sus
+   * ventas como Perdidas, que conserva el historial.
+   *
+   * Solo ADMIN. Es justamente el caso "un empleado se equivocó": el que se equivoca es el vendedor
+   * y el que arregla es quien manda.
+   */
+  async remove(actor: Actor, id: string): Promise<{ contactsDeleted: number }> {
+    if (actor.role !== 'ADMIN') throw new ForbiddenError('Solo un administrador puede eliminar una empresa');
+
+    const existing = await CompaniesRepository.findByIdAndTenant(id, actor.tenantId);
+    if (!existing) throw new NotFoundError('Company not found');
+
+    // Una empresa con ventas no es un error de tipeo: tiene plata e historia detrás. Borrarla se
+    // llevaría puestos el pipeline, el dashboard y las comisiones sin dejar rastro de cuánto se
+    // vendió. Se frena y se dice cuántas ventas hay, para que la decisión sea sobre las ventas.
+    const deals = await CompaniesRepository.countDeals(id, actor.tenantId);
+    if (deals > 0) {
+      throw new AppError(
+        `No se puede eliminar: la empresa tiene ${deals} ${deals === 1 ? 'venta asociada' : 'ventas asociadas'}. ` +
+          'Eliminá o reasigná esas ventas primero.',
+        409
+      );
+    }
+
+    const { companies, contacts } = await CompaniesRepository.deleteWithDependents(id, actor.tenantId);
+    if (companies === 0) throw new NotFoundError('Company not found');
+
+    // Lo borrado tiene que seguir siendo reconstruible: AuditLog no tiene FK contra Company
+    // justamente para esto, y `before` guarda el DTO entero.
+    await recordAudit(actor, {
+      action: 'DELETE',
+      entityType: 'COMPANY',
+      entityId: id,
+      before: { ...toDTO(existing), contactsDeleted: contacts } as unknown as Prisma.InputJsonValue,
+    });
+    return { contactsDeleted: contacts };
+  },
+
   async update(actor: Actor, id: string, input: z.infer<typeof updateCompanySchema>): Promise<CompanyDTO> {
     const tenantId = actor.tenantId;
     const existing = await CompaniesRepository.findByIdAndTenant(id, tenantId, ownerFilter(actor));

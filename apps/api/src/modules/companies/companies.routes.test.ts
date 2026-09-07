@@ -43,6 +43,9 @@ describe('/companies routes', () => {
   });
 
   afterAll(async () => {
+    await prisma.deal.deleteMany({ where: { tenantId } });
+    await prisma.contact.deleteMany({ where: { tenantId } });
+    await prisma.lead.deleteMany({ where: { tenantId } });
     await prisma.company.deleteMany({ where: { tenantId } });
     await prisma.auditLog.deleteMany({ where: { tenantId } });
     await prisma.user.deleteMany({ where: { tenantId } });
@@ -51,7 +54,106 @@ describe('/companies routes', () => {
   });
 
   beforeEach(async () => {
+    await prisma.deal.deleteMany({ where: { tenantId } });
+    await prisma.contact.deleteMany({ where: { tenantId } });
+    await prisma.lead.deleteMany({ where: { tenantId } });
     await prisma.company.deleteMany({ where: { tenantId } });
+  });
+
+  describe('DELETE /companies/:id', () => {
+    const createCompany = () =>
+      request(app)
+        .post('/companies')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Tipeada Mal SAC', line: 'WEB' })
+        .then((res) => res.body.id as string);
+
+    it('deletes an empty company and leaves the audit trail behind', async () => {
+      const id = await createCompany();
+      const res = await request(app).delete(`/companies/${id}`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(await prisma.company.findUnique({ where: { id } })).toBeNull();
+
+      const log = await prisma.auditLog.findFirst({ where: { tenantId, entityId: id, action: 'DELETE' } });
+      expect((log?.before as { name: string } | null)?.name).toBe('Tipeada Mal SAC');
+    });
+
+    it('refuses to delete a company that has deals', async () => {
+      const id = await createCompany();
+      await prisma.deal.create({
+        data: { tenantId, companyId: id, title: 'Web corporativa', amount: '8000', currency: 'PEN' },
+      });
+
+      const res = await request(app).delete(`/companies/${id}`).set('Authorization', `Bearer ${token}`);
+      // Una empresa con ventas tiene plata e historia detrás: borrarla se llevaría puestos el
+      // pipeline y las comisiones. El mensaje dice cuántas ventas hay para que se pueda decidir.
+      expect(res.status).toBe(409);
+      expect(res.body.error).toContain('1 venta asociada');
+      expect(await prisma.company.findUnique({ where: { id } })).not.toBeNull();
+    });
+
+    it('takes the contacts with it, in one transaction', async () => {
+      const id = await createCompany();
+      await prisma.contact.createMany({
+        data: [
+          { tenantId, companyId: id, name: 'Ana Quispe' },
+          { tenantId, companyId: id, name: 'Luis Rojas' },
+        ],
+      });
+
+      const res = await request(app).delete(`/companies/${id}`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.contactsDeleted).toBe(2);
+      // Un contacto sin empresa es una fila rota: companyId es obligatorio y no hay a dónde moverlo.
+      expect(await prisma.contact.count({ where: { companyId: id } })).toBe(0);
+    });
+
+    it('frees the converted lead instead of deleting it', async () => {
+      const id = await createCompany();
+      const lead = await prisma.lead.create({
+        data: {
+          tenantId,
+          businessName: 'Tipeada Mal',
+          contactName: 'Ana',
+          line: 'WEB',
+          status: 'CONVERTED',
+          convertedCompanyId: id,
+          convertedAt: new Date(),
+        },
+      });
+
+      expect((await request(app).delete(`/companies/${id}`).set('Authorization', `Bearer ${token}`)).status).toBe(200);
+
+      // El lead es la prueba de que el prospecto existió: borrarlo escondería de dónde vino el
+      // error. Vuelve a Calificado, el estado justo anterior a la conversión equivocada.
+      const after = await prisma.lead.findUnique({ where: { id: lead.id } });
+      expect(after).not.toBeNull();
+      expect(after?.status).toBe('QUALIFIED');
+      expect(after?.convertedCompanyId).toBeNull();
+      expect(after?.convertedAt).toBeNull();
+    });
+
+    it('does not let a vendedor delete a company', async () => {
+      const id = await createCompany();
+      const sellerToken = signAccessToken({ userId: sellerAId, tenantId, role: 'VENDEDOR' });
+      const res = await request(app).delete(`/companies/${id}`).set('Authorization', `Bearer ${sellerToken}`);
+      expect(res.status).toBe(403);
+      expect(await prisma.company.findUnique({ where: { id } })).not.toBeNull();
+    });
+
+    it('does not let an admin delete a company from another tenant', async () => {
+      const otherTenant = await prisma.tenant.create({ data: { name: 'Otro empresa' } });
+      const otherCompany = await prisma.company.create({
+        data: { tenantId: otherTenant.id, name: 'Ajena', line: 'WEB' },
+      });
+
+      const res = await request(app).delete(`/companies/${otherCompany.id}`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(404);
+      expect(await prisma.company.findUnique({ where: { id: otherCompany.id } })).not.toBeNull();
+
+      await prisma.company.delete({ where: { id: otherCompany.id } });
+      await prisma.tenant.delete({ where: { id: otherTenant.id } });
+    });
   });
 
   it('rejects unauthenticated requests', async () => {

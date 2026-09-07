@@ -48,4 +48,32 @@ export const CompaniesRepository = {
   updateByIdAndTenant(id: string, tenantId: string, data: Prisma.CompanyUpdateInput) {
     return prisma.company.updateMany({ where: { id, tenantId }, data });
   },
+
+  countDeals(companyId: string, tenantId: string) {
+    return prisma.deal.count({ where: { companyId, tenantId } });
+  },
+
+  /**
+   * Borra la empresa junto con lo que no puede existir sin ella. Va todo en una transacción: si
+   * cualquiera de los pasos falla, no queda una empresa a medio borrar con contactos huérfanos.
+   *
+   * - Contactos: se van con la empresa. Un contacto sin empresa no es un dato, es una fila rota —
+   *   la columna companyId es obligatoria y no hay a dónde moverlo.
+   * - Leads convertidos: NO se borran. El lead es la prueba de que el prospecto existió, y borrarlo
+   *   escondería de dónde vino el error. Se les suelta el vínculo y vuelven a "Calificado", que es
+   *   el estado en el que estaban justo antes de la conversión equivocada.
+   *
+   * Las ventas no se tocan acá: el servicio se niega a borrar si hay alguna.
+   */
+  deleteWithDependents(id: string, tenantId: string) {
+    return prisma.$transaction(async (tx) => {
+      await tx.lead.updateMany({
+        where: { tenantId, convertedCompanyId: id },
+        data: { convertedCompanyId: null, convertedAt: null, status: 'QUALIFIED' },
+      });
+      const contacts = await tx.contact.deleteMany({ where: { tenantId, companyId: id } });
+      const company = await tx.company.deleteMany({ where: { id, tenantId } });
+      return { contacts: contacts.count, companies: company.count };
+    });
+  },
 };

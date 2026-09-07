@@ -1,9 +1,13 @@
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
+import { Trash2 } from 'lucide-react';
 import type { CompanyDTO } from '@ventry/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { CreateCompanyDialog } from '../components/companies/CreateCompanyDialog.js';
 import { useCompanies, useUpdateCompany } from '../hooks/useCompanies.js';
+import { useSession } from '../hooks/useAuth.js';
+import { Button } from '../components/ui/button.js';
+import { DeleteCompanyDialog } from '../components/companies/DeleteCompanyDialog.js';
 import { AssigneeCell } from '../components/AssigneeCell.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { EditDialog } from '../components/EditDialog.js';
@@ -16,6 +20,10 @@ export function CompaniesPage() {
   const [filters, setFilters] = useState<FilterValue>({});
   const { data: companies, isLoading } = useCompanies(filters);
   const updateCompany = useUpdateCompany();
+  // Solo ADMIN. Es el caso "un empleado se equivocó": el vendedor carga mal la empresa y quien
+  // manda la borra. El backend lo exige igual, esconder el botón no alcanza como control.
+  const isAdmin = useSession().data?.role === 'ADMIN';
+  const [companyToDelete, setCompanyToDelete] = useState<CompanyDTO | null>(null);
 
   const columns = [
     columnHelper.accessor('name', { header: 'Empresa' }),
@@ -30,6 +38,7 @@ export function CompaniesPage() {
       id: 'acciones',
       header: 'Acciones',
       cell: ({ row }) => (
+        <div className="flex items-center gap-2">
         <EditDialog
           title="Editar empresa"
           schema={updateCompanySchema}
@@ -55,6 +64,19 @@ export function CompaniesPage() {
           ]}
           onSubmit={(data, close) => updateCompany.mutate({ id: row.original.id, ...data }, { onSuccess: close })}
         />
+        {isAdmin && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="px-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
+            aria-label={`Eliminar ${row.original.name}`}
+            title="Eliminar empresa"
+            onClick={() => setCompanyToDelete(row.original)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+        </div>
       ),
     }),
     columnHelper.accessor('assignedUserId', {
@@ -90,6 +112,7 @@ export function CompaniesPage() {
       {updateCompany.isError && (
         <p className="mb-4 text-sm text-red-600">No se pudo cambiar el vendedor asignado.</p>
       )}
+      <DeleteCompanyDialog company={companyToDelete} onClose={() => setCompanyToDelete(null)} />
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>

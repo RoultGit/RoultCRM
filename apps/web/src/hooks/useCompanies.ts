@@ -44,3 +44,18 @@ export function useUpdateCompany() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: COMPANIES_KEY }),
   });
 }
+
+// Borrar una empresa toca varias tablas a la vez (se lleva sus contactos y suelta el lead que la
+// creó), así que se invalida todo lo que pudo haber cambiado, no solo la lista de empresas.
+export function useDeleteCompany() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) =>
+      (await apiClient.delete<{ contactsDeleted: number }>(`/companies/${id}`)).data,
+    onSuccess: () => {
+      for (const key of [COMPANIES_KEY, ['contacts'], ['leads'], ['deals'], ['dashboard'], ['calendar']]) {
+        queryClient.invalidateQueries({ queryKey: key });
+      }
+    },
+  });
+}
