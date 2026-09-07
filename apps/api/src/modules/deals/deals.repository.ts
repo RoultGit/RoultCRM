@@ -47,8 +47,8 @@ export const DealsRepository = {
     return prisma.deal.findFirst({ where: { id, tenantId, ...owner }, ...withCompany });
   },
 
-  create(data: Prisma.DealUncheckedCreateInput) {
-    return prisma.deal.create({ data, ...withCompany });
+  create(data: Prisma.DealUncheckedCreateInput, client: Prisma.TransactionClient = prisma) {
+    return client.deal.create({ data, ...withCompany });
   },
 
   updateByIdAndTenant(id: string, tenantId: string, data: Prisma.DealUpdateInput) {

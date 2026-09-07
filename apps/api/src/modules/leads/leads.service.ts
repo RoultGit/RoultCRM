@@ -1,4 +1,13 @@
-import type { LeadDTO, CompanyDTO, ContactDTO, createLeadSchema, updateLeadSchema, setLeadStatusSchema } from '@ventry/shared';
+import type {
+  LeadDTO,
+  CompanyDTO,
+  ContactDTO,
+  DealDTO,
+  createLeadSchema,
+  updateLeadSchema,
+  setLeadStatusSchema,
+  convertLeadSchema,
+} from '@ventry/shared';
 import type { z } from 'zod';
 import type { Lead, Prisma } from '@prisma/client';
 import { LeadsRepository, type LeadFilters } from './leads.repository.js';
@@ -6,6 +15,8 @@ import { UsersRepository } from '../users/users.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
 import { toDTO as companyToDTO } from '../companies/companies.service.js';
 import { ContactsRepository } from '../contacts/contacts.repository.js';
+import { DealsRepository } from '../deals/deals.repository.js';
+import { toDTO as dealToDTO } from '../deals/deals.service.js';
 import { toDTO as contactToDTO } from '../contacts/contacts.service.js';
 import { AppError, NotFoundError, ValidationError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
 import { ownerFilter, defaultAssignee, canSee, type Actor } from '../../lib/scope.js';
@@ -104,8 +115,9 @@ export const LeadsService = {
   async convert(
     actor: Actor,
     id: string,
-    confirmDuplicate: boolean
-  ): Promise<{ lead: LeadDTO; company: CompanyDTO; contact: ContactDTO }> {
+    input: z.infer<typeof convertLeadSchema>
+  ): Promise<{ lead: LeadDTO; company: CompanyDTO; contact: ContactDTO; deal: DealDTO | null }> {
+    const confirmDuplicate = input.confirmDuplicate ?? false;
     const tenantId = actor.tenantId;
     const lead = await LeadsRepository.findByIdAndTenant(id, tenantId, ownerFilter(actor));
     if (!lead) throw new NotFoundError('Lead not found');
@@ -131,7 +143,7 @@ export const LeadsService = {
     // markConverted's `status: { not: 'CONVERTED' }` guard makes double-conversion impossible even
     // if two convert requests for the same lead race each other: whichever transaction commits
     // second finds 0 rows to update and rolls back its own Company/Contact inserts too.
-    const { company, contact } = await prisma.$transaction(async (tx) => {
+    const { company, contact, deal } = await prisma.$transaction(async (tx) => {
       const company = await CompaniesRepository.create(
         {
           tenantId,
@@ -160,7 +172,23 @@ export const LeadsService = {
       const claimed = await LeadsRepository.markConverted(id, tenantId, company.id, tx);
       if (claimed.count === 0) throw new ValidationError('Lead is already converted');
 
-      return { company, contact };
+      // La oportunidad de venta entra en la misma transacción: si algo falla, no queda un cliente
+      // a medio crear sin su deal, ni un deal huérfano.
+      const deal = input.deal
+        ? await DealsRepository.create(
+            {
+              tenantId,
+              companyId: company.id,
+              title: input.deal.title,
+              amount: input.deal.amount,
+              currency: input.deal.currency,
+              assignedUserId: lead.assignedUserId,
+            },
+            tx
+          )
+        : null;
+
+      return { company, contact, deal };
     });
 
     const updatedLead = await LeadsRepository.findByIdAndTenant(id, tenantId);
@@ -168,8 +196,13 @@ export const LeadsService = {
       action: 'CONVERT',
       entityType: 'LEAD',
       entityId: id,
-      after: { companyId: company.id, contactId: contact.id },
+      after: { companyId: company.id, contactId: contact.id, dealId: deal?.id ?? null },
     });
-    return { lead: toDTO(updatedLead!), company: companyToDTO(company), contact: contactToDTO(contact) };
+    return {
+      lead: toDTO(updatedLead!),
+      company: companyToDTO(company),
+      contact: contactToDTO(contact),
+      deal: deal ? dealToDTO(deal) : null,
+    };
   },
 };

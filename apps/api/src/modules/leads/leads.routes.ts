@@ -88,7 +88,7 @@ leadsRouter.post('/:id/convert', async (req, res, next) => {
   try {
     const parsed = convertLeadSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const result = await LeadsService.convert(req.user!, req.params.id, parsed.data.confirmDuplicate ?? false);
+    const result = await LeadsService.convert(req.user!, req.params.id, parsed.data);
     res.status(201).json(result);
   } catch (err) {
     next(err);

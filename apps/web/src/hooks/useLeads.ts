@@ -57,8 +57,21 @@ export function useSetLeadStatus() {
 export function useConvertLead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, confirmDuplicate }: { id: string; confirmDuplicate?: boolean }) =>
-      (await apiClient.post(`/leads/${id}/convert`, { confirmDuplicate })).data,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: LEADS_KEY }),
+    mutationFn: async ({
+      id,
+      confirmDuplicate,
+      deal,
+    }: {
+      id: string;
+      confirmDuplicate?: boolean;
+      deal?: { title: string; amount: string; currency: 'PEN' | 'USD' };
+    }) => (await apiClient.post(`/leads/${id}/convert`, { confirmDuplicate, deal })).data,
+    // Convertir toca cinco cosas a la vez: el lead, la empresa, el contacto, el deal y los números
+    // del dashboard. Sin esto el pipeline no muestra la venta recién creada hasta recargar.
+    onSuccess: () => {
+      for (const key of [['leads'], ['companies'], ['contacts'], ['deals'], ['dashboard']]) {
+        queryClient.invalidateQueries({ queryKey: key });
+      }
+    },
   });
 }

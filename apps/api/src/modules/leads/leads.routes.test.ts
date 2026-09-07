@@ -238,4 +238,58 @@ describe('/leads routes', () => {
       .set('Authorization', `Bearer ${sellerB}`);
     expect(res.body.map((l: { id: string }) => l.id)).not.toContain(created.body.id);
   });
+  it('creates the deal in the same step as the conversion', async () => {
+    const created = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ businessName: 'Panadería del Centro', contactName: 'Rosa', line: 'WEB' });
+
+    const res = await request(app)
+      .post(`/leads/${created.body.id}/convert`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ deal: { title: 'Web para Panadería', amount: '8000', currency: 'PEN' } });
+
+    expect(res.status).toBe(201);
+    expect(res.body.deal.title).toBe('Web para Panadería');
+    expect(res.body.deal.amount).toBe('8000');
+    expect(res.body.deal.stage).toBe('CONTACTO');
+    // El deal cuelga de la empresa recién creada, no del lead.
+    expect(res.body.deal.companyId).toBe(res.body.company.id);
+    // Y hereda el vendedor del lead.
+    expect(res.body.deal.assignedUserId).toBe(res.body.lead.assignedUserId);
+
+    await prisma.deal.deleteMany({ where: { tenantId } });
+  });
+
+  it('still converts without a deal when none is given', async () => {
+    const created = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ businessName: 'Sin Oportunidad', contactName: 'Luis', line: 'WEB' });
+
+    const res = await request(app)
+      .post(`/leads/${created.body.id}/convert`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+    expect(res.status).toBe(201);
+    expect(res.body.deal).toBeNull();
+  });
+
+  it('writes nothing at all when the deal is invalid', async () => {
+    const created = await request(app)
+      .post('/leads')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ businessName: 'Monto Malo', contactName: 'Eva', line: 'WEB' });
+
+    const res = await request(app)
+      .post(`/leads/${created.body.id}/convert`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ deal: { title: 'X', amount: '10.999', currency: 'PEN' } });
+    expect(res.status).toBe(400);
+
+    // Todo o nada: ni empresa, ni contacto, ni lead convertido.
+    const lead = await prisma.lead.findUnique({ where: { id: created.body.id } });
+    expect(lead?.status).toBe('NEW');
+    expect(await prisma.company.count({ where: { tenantId, name: 'Monto Malo' } })).toBe(0);
+  });
 });

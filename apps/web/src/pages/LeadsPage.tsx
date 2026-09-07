@@ -6,6 +6,7 @@ import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import { CreateLeadDialog } from '../components/leads/CreateLeadDialog.js';
+import { QualifyLeadDialog } from '../components/leads/QualifyLeadDialog.js';
 import { useLeads, useSetLeadStatus, useConvertLead, useUpdateLead } from '../hooks/useLeads.js';
 import { AssigneeCell } from '../components/AssigneeCell.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
@@ -50,6 +51,7 @@ export function LeadsPage() {
   const updateLead = useUpdateLead();
   const [duplicate, setDuplicate] = useState<{ lead: LeadDTO; company: CompanyDTO } | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
+  const [qualifying, setQualifying] = useState<LeadDTO | null>(null);
 
   const runConvert = (lead: LeadDTO, confirmDuplicate = false) =>
     convert.mutate(
@@ -129,9 +131,16 @@ export function LeadsPage() {
               className="rounded-lg border border-gray-200 px-2 py-1 text-sm"
               value={lead.status}
               disabled={busy}
-              onChange={(e) =>
-                setStatus.mutate({ id: lead.id, status: e.target.value as Exclude<LeadDTO['status'], 'CONVERTED'> })
-              }
+              onChange={(e) => {
+                const next = e.target.value as Exclude<LeadDTO['status'], 'CONVERTED'>;
+                // Calificar es decir "esto es una venta": abre el paso que crea cliente y
+                // oportunidad de una vez, en lugar de dejar el lead a mitad de camino.
+                if (next === 'QUALIFIED') {
+                  setQualifying(lead);
+                  return;
+                }
+                setStatus.mutate({ id: lead.id, status: next });
+              }}
             >
               {SELECTABLE_STATUS.map((status) => (
                 <option key={status} value={status}>
@@ -201,6 +210,7 @@ export function LeadsPage() {
       )}
       {setStatus.isError && <p className="mb-4 text-sm text-red-600">No se pudo cambiar el estado del lead.</p>}
       {updateLead.isError && <p className="mb-4 text-sm text-red-600">No se pudo cambiar el vendedor asignado.</p>}
+      <QualifyLeadDialog lead={qualifying} onClose={() => setQualifying(null)} />
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>
