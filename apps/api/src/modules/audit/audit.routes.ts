@@ -19,12 +19,21 @@ auditRouter.get('/', async (req, res, next) => {
       where: { tenantId: req.user!.tenantId },
       orderBy: { createdAt: 'desc' },
       take: LIMIT,
-      include: { user: { select: { firstName: true, lastName: true } } },
     });
+
+    // AuditLog.userId no tiene relación en la base a propósito (ver el comentario en schema.prisma),
+    // así que el nombre se resuelve acá: una consulta para todos los actores de la página.
+    const actors = await prisma.user.findMany({
+      where: { id: { in: [...new Set(rows.map((row) => row.userId))] } },
+      select: { id: true, firstName: true, lastName: true },
+    });
+    const nameById = new Map(actors.map((a) => [a.id, `${a.firstName} ${a.lastName}`]));
+
     const entries: AuditEntryDTO[] = rows.map((row) => ({
       id: row.id,
       userId: row.userId,
-      userName: `${row.user.firstName} ${row.user.lastName}`,
+      // Un usuario borrado no debe hacer desaparecer su rastro: la entrada queda con el id crudo.
+      userName: nameById.get(row.userId) ?? row.userId,
       action: row.action,
       entityType: row.entityType,
       entityId: row.entityId,

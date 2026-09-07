@@ -43,7 +43,6 @@ model User {
   updatedAt      DateTime   @updatedAt
 
   refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
 
   @@index([tenantId])
 }
@@ -66,8 +65,10 @@ model RefreshToken {
 model AuditLog {
   id         String   @id @default(uuid())
   tenantId   String
+  // userId sin @relation, mismo criterio que tenantId en el resto del schema. Un log de auditoría
+  // es un registro histórico: no puede depender de que la fila del usuario siga existiendo, ni
+  // bloquear su borrado, ni desaparecer con él. El nombre se resuelve en la capa de aplicación.
   userId     String
-  user       User     @relation(fields: [userId], references: [id])
   action     String
   entityType String
   entityId   String

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../../app.js';
 import { prisma } from '../../lib/prisma.js';
@@ -30,6 +30,8 @@ describe('/import routes', () => {
 
   afterAll(async () => {
     await prisma.auditLog.deleteMany({ where: { tenantId } });
+    await prisma.contact.deleteMany({ where: { tenantId } });
+    await prisma.lead.deleteMany({ where: { tenantId } });
     await prisma.company.deleteMany({ where: { tenantId } });
     await prisma.user.deleteMany({ where: { tenantId } });
     await prisma.tenant.delete({ where: { id: tenantId } });
@@ -38,6 +40,7 @@ describe('/import routes', () => {
 
   beforeEach(async () => {
     await prisma.auditLog.deleteMany({ where: { tenantId } });
+    await prisma.contact.deleteMany({ where: { tenantId } });
     await prisma.company.deleteMany({ where: { tenantId } });
   });
 
@@ -169,5 +172,110 @@ describe('/import routes', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ rows, skipIndexes: [] });
     expect(res.status).toBe(400);
+  });
+  // Contactos y leads no tenían ningún test: la fuga entre tenants vivía justo ahí.
+  describe('contacts', () => {
+    let companyId: string;
+    let otherTenantId: string;
+    let otherCompanyId: string;
+
+    beforeEach(async () => {
+      await prisma.contact.deleteMany({ where: { tenantId } });
+      companyId = (await prisma.company.create({ data: { tenantId, name: 'Propia SAC', line: 'WEB' } })).id;
+      otherTenantId = (await prisma.tenant.create({ data: { name: `Ajeno ${Date.now()}` } })).id;
+      otherCompanyId = (
+        await prisma.company.create({ data: { tenantId: otherTenantId, name: 'Ajena SAC', line: 'WEB' } })
+      ).id;
+    });
+
+    afterEach(async () => {
+      await prisma.contact.deleteMany({ where: { tenantId: otherTenantId } });
+      await prisma.company.deleteMany({ where: { tenantId: otherTenantId } });
+      await prisma.tenant.delete({ where: { id: otherTenantId } });
+    });
+
+    it('imports a contact into a company of the caller’s tenant', async () => {
+      const res = await request(app)
+        .post('/import/contacts/commit')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ rows: [{ companyId, name: 'Carlos' }], skipIndexes: [] });
+      expect(res.status).toBe(201);
+      expect(res.body.created).toBe(1);
+    });
+
+    it('refuses a contact pointing at another tenant’s company', async () => {
+      const preview = await request(app)
+        .post('/import/contacts/preview')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ rows: [{ companyId: otherCompanyId, name: 'Colado' }] });
+      expect(preview.body.rows[0].status).toBe('INVALID');
+
+      const res = await request(app)
+        .post('/import/contacts/commit')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ rows: [{ companyId: otherCompanyId, name: 'Colado' }], skipIndexes: [] });
+      expect(res.status).toBe(400);
+      expect(await prisma.contact.count({ where: { tenantId } })).toBe(0);
+    });
+
+    it('flags a company id that does not exist at all, instead of dying in the commit', async () => {
+      const preview = await request(app)
+        .post('/import/contacts/preview')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ rows: [{ companyId: '00000000-0000-0000-0000-000000000000', name: 'Fantasma' }] });
+      expect(preview.body.rows[0].status).toBe('INVALID');
+      expect(preview.body.rows[0].message).toContain('empresa');
+
+      const res = await request(app)
+        .post('/import/contacts/commit')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          rows: [
+            { companyId, name: 'Buena' },
+            { companyId: '00000000-0000-0000-0000-000000000000', name: 'Fantasma' },
+          ],
+          skipIndexes: [],
+        });
+      // 400 con el número de fila, no un 500 opaco, y sin escribir la fila buena.
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('Fila 2');
+      expect(await prisma.contact.count({ where: { tenantId } })).toBe(0);
+    });
+  });
+
+  describe('leads', () => {
+    beforeEach(async () => {
+      await prisma.lead.deleteMany({ where: { tenantId } });
+    });
+
+    afterEach(async () => {
+      await prisma.lead.deleteMany({ where: { tenantId } });
+    });
+
+    it('imports leads and flags an existing business name as duplicate', async () => {
+      await prisma.lead.create({ data: { tenantId, businessName: 'Repetido SAC', contactName: 'X', line: 'WEB' } });
+
+      const res = await request(app)
+        .post('/import/leads/preview')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          rows: [
+            { businessName: 'Nuevo SAC', contactName: 'Ana', line: 'WEB' },
+            { businessName: 'repetido sac', contactName: 'Beto', line: 'WEB' },
+          ],
+        });
+      expect(res.body.rows[0].status).toBe('NEW');
+      // La comparación no distingue mayúsculas.
+      expect(res.body.rows[1].status).toBe('DUPLICATE');
+    });
+
+    it('creates the leads it was asked for', async () => {
+      const res = await request(app)
+        .post('/import/leads/commit')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ rows: [{ businessName: 'Nuevo SAC', contactName: 'Ana', line: 'WEB' }], skipIndexes: [] });
+      expect(res.status).toBe(201);
+      expect(await prisma.lead.count({ where: { tenantId } })).toBe(1);
+    });
   });
 });

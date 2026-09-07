@@ -17,7 +17,10 @@ import { AppError } from './lib/errors.js';
 export function createApp(): Express {
   const app = express();
   app.use(cors({ origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173', credentials: true }));
-  app.use(express.json());
+  // El default de express.json son 100KB, pero el tope declarado de importación es de 1000 filas y
+  // un archivo de contactos de ese tamaño pesa ~320KB. Con el default, usar la función tal como está
+  // documentada devolvía un 500 genérico sin decir que el archivo era grande.
+  app.use(express.json({ limit: '5mb' }));
   app.use(cookieParser());
 
   app.get('/health', (_req, res) => {
@@ -37,6 +40,12 @@ export function createApp(): Express {
   app.use('/dashboard', dashboardRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+    // body-parser tira este error fuera de la jerarquía de AppError, así que sin este caso caía en
+    // el 500 genérico y el usuario no tenía forma de saber que el problema era el tamaño.
+    if (err instanceof Error && 'type' in err && err.type === 'entity.too.large') {
+      res.status(413).json({ error: 'El archivo es demasiado grande. Importá menos filas por vez.' });
+      return;
+    }
     if (err instanceof AppError) {
       res.status(err.statusCode).json({ error: err.message, ...(err.details ? { details: err.details } : {}) });
       return;
