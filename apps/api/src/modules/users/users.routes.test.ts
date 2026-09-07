@@ -38,7 +38,7 @@ describe('/users routes', () => {
     const res = await request(app)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ email: 'new@test.com', password: 'secret123', firstName: 'New', lastName: 'Guy', role: 'VENDEDOR' });
+      .send({ email: 'new@test.com', password: 'secret123456', firstName: 'New', lastName: 'Guy', role: 'VENDEDOR' });
     expect(res.status).toBe(201);
     expect(res.body.commissionPct).toBe(20);
   });
@@ -47,7 +47,7 @@ describe('/users routes', () => {
     const res = await request(app)
       .post('/users')
       .set('Authorization', `Bearer ${vendedorToken}`)
-      .send({ email: 'new2@test.com', password: 'secret123', firstName: 'New', lastName: 'Guy', role: 'VENDEDOR' });
+      .send({ email: 'new2@test.com', password: 'secret123456', firstName: 'New', lastName: 'Guy', role: 'VENDEDOR' });
     expect(res.status).toBe(403);
   });
 
@@ -55,7 +55,7 @@ describe('/users routes', () => {
     await request(app)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ email: 'list@test.com', password: 'secret123', firstName: 'List', lastName: 'Me', role: 'VENDEDOR' });
+      .send({ email: 'list@test.com', password: 'secret123456', firstName: 'List', lastName: 'Me', role: 'VENDEDOR' });
     const res = await request(app).get('/users').set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
@@ -65,7 +65,7 @@ describe('/users routes', () => {
     const created = await request(app)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ email: 'patch@test.com', password: 'secret123', firstName: 'Pat', lastName: 'Ch', role: 'VENDEDOR' });
+      .send({ email: 'patch@test.com', password: 'secret123456', firstName: 'Pat', lastName: 'Ch', role: 'VENDEDOR' });
     const res = await request(app)
       .patch(`/users/${created.body.id}`)
       .set('Authorization', `Bearer ${adminToken}`)
@@ -79,7 +79,7 @@ describe('/users routes', () => {
     const created = await request(app)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ email: 'patch2@test.com', password: 'secret123', firstName: 'Pat', lastName: 'Ch', role: 'VENDEDOR' });
+      .send({ email: 'patch2@test.com', password: 'secret123456', firstName: 'Pat', lastName: 'Ch', role: 'VENDEDOR' });
     const res = await request(app)
       .patch(`/users/${created.body.id}`)
       .set('Authorization', `Bearer ${vendedorToken}`)
@@ -91,7 +91,7 @@ describe('/users routes', () => {
     const created = await request(app)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ email: 'status@test.com', password: 'secret123', firstName: 'Stat', lastName: 'Us', role: 'VENDEDOR' });
+      .send({ email: 'status@test.com', password: 'secret123456', firstName: 'Stat', lastName: 'Us', role: 'VENDEDOR' });
     const res = await request(app)
       .patch(`/users/${created.body.id}/status`)
       .set('Authorization', `Bearer ${adminToken}`)
@@ -104,7 +104,7 @@ describe('/users routes', () => {
     const created = await request(app)
       .post('/users')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ email: 'status2@test.com', password: 'secret123', firstName: 'Stat', lastName: 'Us', role: 'VENDEDOR' });
+      .send({ email: 'status2@test.com', password: 'secret123456', firstName: 'Stat', lastName: 'Us', role: 'VENDEDOR' });
     const res = await request(app)
       .patch(`/users/${created.body.id}/status`)
       .set('Authorization', `Bearer ${vendedorToken}`)
@@ -114,7 +114,7 @@ describe('/users routes', () => {
   it('answers 409, not 500, when the email is already taken', async () => {
     const body = {
       email: 'repetido@test.com',
-      password: 'secret123',
+      password: 'secret123456',
       firstName: 'Uno',
       lastName: 'Primero',
       role: 'VENDEDOR' as const,

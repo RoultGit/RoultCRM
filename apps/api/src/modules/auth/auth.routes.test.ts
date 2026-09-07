@@ -29,7 +29,7 @@ describe('POST /auth/login', () => {
       data: {
         tenantId,
         email: 'route@test.com',
-        passwordHash: await hashPassword('secret123'),
+        passwordHash: await hashPassword('secret123456'),
         firstName: 'Route',
         lastName: 'Test',
         role: 'ADMIN',
@@ -38,7 +38,7 @@ describe('POST /auth/login', () => {
   });
 
   it('returns 200 and sets a refresh cookie on valid credentials', async () => {
-    const res = await request(app).post('/auth/login').send({ email: 'route@test.com', password: 'secret123' });
+    const res = await request(app).post('/auth/login').send({ email: 'route@test.com', password: 'secret123456' });
     expect(res.status).toBe(200);
     expect(res.body.accessToken).toBeTypeOf('string');
     expect(res.headers['set-cookie']?.[0]).toMatch(/refreshToken=/);
@@ -54,7 +54,7 @@ describe('POST /auth/login', () => {
     expect(res.status).toBe(400);
   });
   it('returns the logged-in user from /auth/me', async () => {
-    const login = await request(app).post('/auth/login').send({ email: 'route@test.com', password: 'secret123' });
+    const login = await request(app).post('/auth/login').send({ email: 'route@test.com', password: 'secret123456' });
     const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`);
     expect(res.status).toBe(200);
     expect(res.body.email).toBe('route@test.com');

@@ -30,7 +30,7 @@ usersRouter.post('/', requireRole('ADMIN'), async (req, res, next) => {
   }
 });
 
-usersRouter.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
+usersRouter.patch<{ id: string }>('/:id', requireRole('ADMIN'), async (req, res, next) => {
   try {
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
@@ -41,7 +41,7 @@ usersRouter.patch('/:id', requireRole('ADMIN'), async (req, res, next) => {
   }
 });
 
-usersRouter.patch('/:id/status', requireRole('ADMIN'), async (req, res, next) => {
+usersRouter.patch<{ id: string }>('/:id/status', requireRole('ADMIN'), async (req, res, next) => {
   try {
     const parsed = setUserStatusSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);

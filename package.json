@@ -1,7 +1,10 @@
 {
   "name": "ventry-crm",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev:api": "npm run dev -w @ventry/api",
     "dev:web": "npm run dev -w @ventry/web",
@@ -10,5 +13,8 @@
   },
   "devDependencies": {
     "typescript": "^5.5.4"
+  },
+  "overrides": {
+    "qs": "^6.16.0"
   }
 }

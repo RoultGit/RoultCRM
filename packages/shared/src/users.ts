@@ -3,7 +3,9 @@ import { optionalText } from './common.js';
 
 export const createUserSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  // 12 y no 8: la longitud es lo que más pesa contra fuerza bruta, y esto guarda datos de
+  // clientes de otras empresas.
+  password: z.string().min(12, 'La contraseña debe tener al menos 12 caracteres'),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   role: z.enum(['ADMIN', 'VENDEDOR']),

@@ -25,7 +25,7 @@ describe('UsersService', () => {
   it('creates a VENDEDOR with default 20% commission', async () => {
     const user = await UsersService.create(tenantId, {
       email: 'juan@test.com',
-      password: 'secret123',
+      password: 'secret123456',
       firstName: 'Juan',
       lastName: 'Perez',
       role: 'VENDEDOR',
@@ -35,15 +35,15 @@ describe('UsersService', () => {
   });
 
   it('lists only users from the given tenant', async () => {
-    await UsersService.create(tenantId, { email: 'a@test.com', password: 'secret123', firstName: 'A', lastName: 'A', role: 'VENDEDOR' });
-    await UsersService.create(otherTenantId, { email: 'b@test.com', password: 'secret123', firstName: 'B', lastName: 'B', role: 'VENDEDOR' });
+    await UsersService.create(tenantId, { email: 'a@test.com', password: 'secret123456', firstName: 'A', lastName: 'A', role: 'VENDEDOR' });
+    await UsersService.create(otherTenantId, { email: 'b@test.com', password: 'secret123456', firstName: 'B', lastName: 'B', role: 'VENDEDOR' });
     const list = await UsersService.list(tenantId);
     expect(list).toHaveLength(1);
     expect(list[0].email).toBe('a@test.com');
   });
 
   it('setStatus deactivates a user without deleting it', async () => {
-    const user = await UsersService.create(tenantId, { email: 'c@test.com', password: 'secret123', firstName: 'C', lastName: 'C', role: 'VENDEDOR' });
+    const user = await UsersService.create(tenantId, { email: 'c@test.com', password: 'secret123456', firstName: 'C', lastName: 'C', role: 'VENDEDOR' });
     const updated = await UsersService.setStatus(tenantId, user.id, 'INACTIVE');
     expect(updated.status).toBe('INACTIVE');
     const stillThere = await UsersService.list(tenantId);
@@ -51,12 +51,12 @@ describe('UsersService', () => {
   });
 
   it('throws NotFoundError when updating a user from another tenant', async () => {
-    const user = await UsersService.create(otherTenantId, { email: 'd@test.com', password: 'secret123', firstName: 'D', lastName: 'D', role: 'VENDEDOR' });
+    const user = await UsersService.create(otherTenantId, { email: 'd@test.com', password: 'secret123456', firstName: 'D', lastName: 'D', role: 'VENDEDOR' });
     await expect(UsersService.setStatus(tenantId, user.id, 'INACTIVE')).rejects.toThrow(NotFoundError);
   });
 
   it('update changes the given fields', async () => {
-    const user = await UsersService.create(tenantId, { email: 'e@test.com', password: 'secret123', firstName: 'E', lastName: 'E', role: 'VENDEDOR' });
+    const user = await UsersService.create(tenantId, { email: 'e@test.com', password: 'secret123456', firstName: 'E', lastName: 'E', role: 'VENDEDOR' });
     const updated = await UsersService.update(tenantId, user.id, { firstName: 'Eduardo', phone: '555-1234' });
     expect(updated.firstName).toBe('Eduardo');
     expect(updated.phone).toBe('555-1234');
@@ -67,7 +67,7 @@ describe('UsersService', () => {
   });
 
   it('throws NotFoundError when calling update() on a user from another tenant', async () => {
-    const user = await UsersService.create(otherTenantId, { email: 'f@test.com', password: 'secret123', firstName: 'F', lastName: 'F', role: 'VENDEDOR' });
+    const user = await UsersService.create(otherTenantId, { email: 'f@test.com', password: 'secret123456', firstName: 'F', lastName: 'F', role: 'VENDEDOR' });
     await expect(UsersService.update(tenantId, user.id, { firstName: 'Hacked' })).rejects.toThrow(NotFoundError);
   });
 });

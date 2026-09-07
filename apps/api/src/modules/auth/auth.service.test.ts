@@ -28,7 +28,7 @@ describe('AuthService', () => {
       data: {
         tenantId,
         email: 'admin@test.com',
-        passwordHash: await hashPassword('secret123'),
+        passwordHash: await hashPassword('secret123456'),
         firstName: 'Admin',
         lastName: 'Test',
         role: 'ADMIN',
@@ -37,13 +37,13 @@ describe('AuthService', () => {
   });
 
   it('logs in with correct credentials and returns tokens', async () => {
-    const result = await AuthService.login('admin@test.com', 'secret123');
+    const result = await AuthService.login('admin@test.com', 'secret123456');
     expect(result.accessToken).toBeTypeOf('string');
     expect(result.refreshToken).toBeTypeOf('string');
   });
 
   it('rejects an unknown email', async () => {
-    await expect(AuthService.login('nobody@test.com', 'secret123')).rejects.toThrow(UnauthorizedError);
+    await expect(AuthService.login('nobody@test.com', 'secret123456')).rejects.toThrow(UnauthorizedError);
   });
 
   it('rejects a wrong password', async () => {
@@ -57,7 +57,7 @@ describe('AuthService', () => {
     let unknownEmailError: unknown;
     let wrongPasswordError: unknown;
     try {
-      await AuthService.login('nobody@test.com', 'secret123');
+      await AuthService.login('nobody@test.com', 'secret123456');
     } catch (err) {
       unknownEmailError = err;
     }
@@ -72,14 +72,14 @@ describe('AuthService', () => {
   });
 
   it('refreshes and rotates the refresh token, invalidating the old one', async () => {
-    const { refreshToken } = await AuthService.login('admin@test.com', 'secret123');
+    const { refreshToken } = await AuthService.login('admin@test.com', 'secret123456');
     const rotated = await AuthService.refresh(refreshToken);
     expect(rotated.refreshToken).not.toBe(refreshToken);
     await expect(AuthService.refresh(refreshToken)).rejects.toThrow(UnauthorizedError);
   });
 
   it('closes the refresh-token reuse race: concurrent refreshes of the same token yield exactly one winner', async () => {
-    const { refreshToken } = await AuthService.login('admin@test.com', 'secret123');
+    const { refreshToken } = await AuthService.login('admin@test.com', 'secret123456');
 
     // Prime the shared PrismaClient's connection pool with two concurrent no-op
     // reads so both "lanes" already have a warm connection before the real race —
@@ -100,7 +100,7 @@ describe('AuthService', () => {
   });
 
   it('logout revokes the refresh token', async () => {
-    const { refreshToken } = await AuthService.login('admin@test.com', 'secret123');
+    const { refreshToken } = await AuthService.login('admin@test.com', 'secret123456');
     await AuthService.logout(refreshToken);
     await expect(AuthService.refresh(refreshToken)).rejects.toThrow(UnauthorizedError);
   });
