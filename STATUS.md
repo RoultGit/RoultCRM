@@ -32,17 +32,15 @@ Todo el trabajo vive en el worktree `.claude/worktrees/ventry-plan1-foundation`,
 - Verde: `npm run build` limpio, 103 tests de API + 13 de web.
 - **Revisión de subagente (Tarea 2, la de seguridad): 1 Critical real encontrado y corregido.** `findPossibleDuplicate` devolvía el DTO completo de una empresa o contacto de otro vendedor en el 409 de duplicado — un oráculo de datos por el flujo normal de uso. Ahora el choque se avisa sin mostrar la ficha ajena (`canSee()` en `lib/scope.ts`).
 - Otros arreglos de esa ronda: leads no validaba `assignedUserId`; contactos no tenía ningún test de scoping; la suite de API fallaba 1 de cada 3 corridas por paralelismo entre archivos sobre el mismo Postgres (`fileParallelism: false`).
-- Bug encontrado en la verificación manual y corregido: las fechas se mostraban un día antes (fecha de calendario guardada como medianoche UTC, leída en zona local). `lib/date.ts` + tests.
-
-## Bug conocido abierto
-
-**Soltar una card del pipeline sobre otra columna resuelve la columna equivocada.** Arrastrando el cursor hasta Adelanto, dnd-kit reporta PERDIDO. Reproduce igual con `closestCorners` y con `pointerWithin`, así que no es el algoritmo de colisión: algo anda mal en los rects que dnd-kit mide para las columnas. Está marcado con un comentario `ponytail:` en `apps/web/src/pages/DealsPage.tsx`. Mientras tanto el selector de etapa de cada card hace lo mismo por el mismo camino (`moveTo`) y funciona, así que la función está cubierta.
+- Bugs encontrados en la verificación manual y corregidos:
+  - Fechas mostradas un día antes (fecha de calendario guardada como medianoche UTC, leída en zona local). `lib/date.ts` + tests.
+  - **Sin guard de ruta**: entrar a cualquier página sin sesión pintaba todo vacío en silencio en vez de mandar al login. Era un pendiente de Plan 1.
+  - **El tablero scrolleaba la página entera de costado** en vez de su propio strip (faltaba `min-w-0` en el `<main>` del AppShell), así que durante un arrastre la página se movía debajo del cursor y el deal caía varias columnas más allá. Además la detección de colisión ahora va por cursor (`pointerWithin`) y no por el rectángulo de la card, y la card arrastrada usa `DragOverlay`.
 
 ## Qué falta para terminar el goal
 
-1. Investigar el bug del drop en el tablero (arriba).
-2. **Plan 4** — Búsqueda global, Filtros, Import/Export, Dashboard operativo, Auditoría (por escribir).
-3. Testing end-to-end final del MVP F1 completo.
+1. **Plan 4** — Búsqueda global, Filtros, Import/Export, Dashboard operativo, Auditoría (por escribir).
+2. Testing end-to-end final del MVP F1 completo.
 
 ## Cómo retomar
 
