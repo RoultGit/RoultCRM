@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
 import type { UserDTO } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
@@ -7,10 +8,13 @@ import { CreateVendedorDialog } from '../components/team/CreateVendedorDialog.js
 import { useUsers, useSetUserStatus, useUpdateUser } from '../hooks/useUsers.js';
 import { EditDialog } from '../components/EditDialog.js';
 import { updateUserSchema } from '@roult/shared';
+import { KeyRound } from 'lucide-react';
+import { ResetPasswordDialog } from '../components/team/ResetPasswordDialog.js';
 
 const columnHelper = createColumnHelper<UserDTO>();
 
 export function TeamPage() {
+  const [resetting, setResetting] = useState<UserDTO | null>(null);
   const { data: users, isLoading } = useUsers();
   const setStatus = useSetUserStatus();
   const updateUser = useUpdateUser();
@@ -69,6 +73,18 @@ export function TeamPage() {
         >
           {row.original.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
         </Button>
+        {/* Restablecer no borra nada pero deja a una persona afuera hasta que se le pase la
+            contraseña nueva: por eso es un botón con ícono y no una acción de un solo click. */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="px-2 text-gray-400 hover:bg-gray-100 hover:text-gray-900"
+          aria-label={`Restablecer contraseña de ${row.original.firstName} ${row.original.lastName}`}
+          title="Restablecer contraseña"
+          onClick={() => setResetting(row.original)}
+        >
+          <KeyRound className="h-4 w-4" />
+        </Button>
         </div>
       ),
     }),
@@ -85,6 +101,7 @@ export function TeamPage() {
       {setStatus.isError && (
         <p className="mb-4 text-sm text-red-600">No se pudo actualizar el estado del vendedor. Intenta de nuevo.</p>
       )}
+      <ResetPasswordDialog user={resetting} onClose={() => setResetting(null)} />
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>

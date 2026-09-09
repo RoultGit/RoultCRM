@@ -1,6 +1,7 @@
-import { verifyPassword } from '../../lib/password.js';
+import { hashPassword, verifyPassword } from '../../lib/password.js';
 import { signAccessToken, generateRefreshToken, hashRefreshToken } from '../../lib/tokens.js';
 import { UnauthorizedError } from '../../lib/errors.js';
+import { UsersRepository } from '../users/users.repository.js';
 import { AuthRepository } from './auth.repository.js';
 
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -48,6 +49,33 @@ export const AuthService = {
     const stored = await AuthRepository.findByTokenHash(tokenHash);
     if (!stored) throw new UnauthorizedError('Invalid refresh token');
     return issueTokens(stored.user);
+  },
+
+  /**
+   * Cambio de contraseña por el propio usuario.
+   *
+   * Devuelve tokens nuevos porque cierra TODAS las sesiones, incluida la que hizo el cambio: es la
+   * única forma de garantizar que no queda ninguna sesión vieja viva. Al que cambió la contraseña
+   * se le entrega un par nuevo en el acto, así no se lo echa de la app por haberse protegido.
+   */
+  async changePassword(
+    userId: string,
+    tenantId: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<TokenPair> {
+    const user = await UsersRepository.findByIdAndTenant(userId, tenantId);
+    if (!user) throw new UnauthorizedError('Invalid credentials');
+    if (!(await verifyPassword(currentPassword, user.passwordHash))) {
+      throw new UnauthorizedError('La contraseña actual no es correcta');
+    }
+
+    await UsersRepository.updateCredentials(userId, tenantId, {
+      passwordHash: await hashPassword(newPassword),
+      mustChangePassword: false,
+    });
+    await AuthRepository.revokeAllForUser(userId);
+    return issueTokens(user);
   },
 
   async logout(refreshToken: string): Promise<void> {

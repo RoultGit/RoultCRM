@@ -23,6 +23,20 @@ export const AuthRepository = {
     return prisma.refreshToken.findUnique({ where: { tokenHash }, include: { user: true } });
   },
 
+  /**
+   * Corta TODAS las sesiones abiertas de una persona.
+   *
+   * Es la mitad que importa de un cambio de contraseña. Sin esto, cambiarla no echa a nadie: quien
+   * te robó la sesión sigue adentro con su refresh token, y la víctima cree que se protegió. Se
+   * llama tanto al cambio propio como al reseteo del admin.
+   */
+  revokeAllForUser(userId: string) {
+    return prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  },
+
   revokeRefreshToken(tokenHash: string) {
     return prisma.refreshToken.updateMany({
       where: { tokenHash, revokedAt: null },

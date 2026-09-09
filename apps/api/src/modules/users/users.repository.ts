@@ -21,6 +21,16 @@ export const UsersRepository = {
     return prisma.user.updateMany({ where: { id, tenantId }, data });
   },
 
+  // Método propio y no updateByIdAndTenant: las credenciales no pueden viajar por el mismo camino
+  // que nombre y teléfono, donde un spread del body podría arrastrar un passwordHash puesto a mano.
+  updateCredentials(
+    id: string,
+    tenantId: string,
+    data: { passwordHash: string; mustChangePassword: boolean }
+  ) {
+    return prisma.user.updateMany({ where: { id, tenantId }, data });
+  },
+
   updateStatus(id: string, tenantId: string, status: UserStatus) {
     return prisma.user.updateMany({ where: { id, tenantId }, data: { status } });
   },

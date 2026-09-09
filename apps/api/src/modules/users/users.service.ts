@@ -1,9 +1,12 @@
-import type { UserDTO, createUserSchema, updateUserSchema } from '@roult/shared';
+import type { ResetPasswordDTO, UserDTO, createUserSchema, updateUserSchema } from '@roult/shared';
 import type { z } from 'zod';
 import { UsersRepository } from './users.repository.js';
-import { hashPassword } from '../../lib/password.js';
+import { hashPassword, generatePassword } from '../../lib/password.js';
 import { NotFoundError } from '../../lib/errors.js';
 import type { User } from '@prisma/client';
+import { AuthRepository } from '../auth/auth.repository.js';
+import { recordAudit } from '../../lib/audit.js';
+import type { Actor } from '../../lib/scope.js';
 
 export function toDTO(user: User): UserDTO {
   return {
@@ -13,6 +16,7 @@ export function toDTO(user: User): UserDTO {
     lastName: user.lastName,
     role: user.role,
     isPlatformOwner: user.isPlatformOwner,
+    mustChangePassword: user.mustChangePassword,
     status: user.status,
     phone: user.phone,
     commissionPct: Number(user.commissionPct),
@@ -25,6 +29,35 @@ export const UsersService = {
     const user = await UsersRepository.findByIdAndTenant(actor.userId, actor.tenantId);
     if (!user) throw new NotFoundError('User not found');
     return toDTO(user);
+  },
+
+  /**
+   * Un ADMIN le resetea la contraseña a alguien de su equipo.
+   *
+   * Genera una provisoria, la devuelve UNA vez y marca la cuenta para que su dueño la cambie al
+   * entrar: la contraseña que se pasa por WhatsApp no puede quedar viva para siempre. También corta
+   * las sesiones abiertas de esa persona, que es el caso de uso real — alguien perdió el teléfono o
+   * se fue de la empresa.
+   */
+  async resetPassword(actor: Actor, userId: string): Promise<ResetPasswordDTO> {
+    const user = await UsersRepository.findByIdAndTenant(userId, actor.tenantId);
+    if (!user) throw new NotFoundError('User not found');
+
+    const temporaryPassword = generatePassword();
+    await UsersRepository.updateCredentials(userId, actor.tenantId, {
+      passwordHash: await hashPassword(temporaryPassword),
+      mustChangePassword: true,
+    });
+    await AuthRepository.revokeAllForUser(userId);
+    await recordAudit(actor, {
+      action: 'UPDATE',
+      entityType: 'USER',
+      entityId: userId,
+      // La contraseña NO va al log de auditoría. Lo que importa registrar es que alguien reseteó
+      // el acceso de otro, no cuál fue el valor.
+      after: { passwordReset: true, by: actor.userId },
+    });
+    return { userId, email: user.email, temporaryPassword };
   },
 
   async list(tenantId: string, filters: { status?: 'ACTIVE' | 'INACTIVE' } = {}): Promise<UserDTO[]> {

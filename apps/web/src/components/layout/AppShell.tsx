@@ -5,6 +5,7 @@ import { Building2, CalendarClock, CalendarDays, Contact, Handshake, History, La
 import { cn } from '../../lib/cn.js';
 import { useSession, useLogout } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
+import { ChangePasswordDialog } from '../ChangePasswordDialog.js';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -75,6 +76,7 @@ export function AppShell() {
   const session = useSession();
   const logout = useLogout();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   if (session.isLoading) return <div className="p-6 text-sm text-gray-500">Cargando…</div>;
   if (session.isError) return <Navigate to="/login" replace />;
 
@@ -120,9 +122,16 @@ export function AppShell() {
           <GlobalSearch />
           <div className="ml-auto flex shrink-0 items-center gap-3">
             {/* El nombre se oculta en pantalla chica: el botón de salir es lo que hace falta ahí. */}
-            <span className="hidden text-sm text-gray-600 sm:inline">
+            {/* El nombre es el acceso a la propia cuenta: es donde la gente busca "mis datos", y
+                evita agregar otro ícono más a la barra. */}
+            <button
+              type="button"
+              onClick={() => setPasswordOpen(true)}
+              className="hidden rounded-lg px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 sm:inline"
+              title="Cambiar mi contraseña"
+            >
               {session.data?.firstName} {session.data?.lastName}
-            </span>
+            </button>
             <button
               type="button"
               className="flex min-h-11 items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-900"
@@ -137,6 +146,14 @@ export function AppShell() {
         <div className="p-4 sm:p-6">
           <Outlet />
         </div>
+
+        {/* forced: con una contraseña provisoria el diálogo no se puede cerrar. Si se pudiera
+            esquivar, la contraseña que se pasó por WhatsApp quedaría viva y nada de esto serviría. */}
+        <ChangePasswordDialog
+          open={passwordOpen || session.data?.mustChangePassword === true}
+          forced={session.data?.mustChangePassword === true}
+          onClose={() => setPasswordOpen(false)}
+        />
       </main>
     </div>
   );

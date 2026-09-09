@@ -51,3 +51,13 @@ usersRouter.patch<{ id: string }>('/:id/status', requireRole('ADMIN'), async (re
     next(err);
   }
 });
+
+// Resetear el acceso de alguien es de ADMIN, y solo dentro de su propia empresa: findByIdAndTenant
+// se encarga de que un id de otra entidad no exista para este actor.
+usersRouter.post<{ id: string }>('/:id/password/reset', requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    res.json(await UsersService.resetPassword(req.user!, req.params.id));
+  } catch (err) {
+    next(err);
+  }
+});

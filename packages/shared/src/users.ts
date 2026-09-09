@@ -24,6 +24,25 @@ export const userFiltersSchema = z.object({
   status: optionalText(z.enum(['ACTIVE', 'INACTIVE'])),
 });
 
+// Cambiar la propia contraseña. Pide la actual a propósito: si alcanzara con estar logueado, una
+// sesión robada (una laptop abierta, una cookie afanada) podría dejar afuera al dueño de la cuenta.
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Ingresa tu contraseña actual'),
+    newPassword: z.string().min(12, 'La contraseña nueva debe tener al menos 12 caracteres'),
+  })
+  .refine((v) => v.currentPassword !== v.newPassword, {
+    message: 'La contraseña nueva tiene que ser distinta de la actual',
+    path: ['newPassword'],
+  });
+
+export interface ResetPasswordDTO {
+  userId: string;
+  email: string;
+  // Viaja una sola vez, igual que al crear una entidad. No se guarda en claro en ningún lado.
+  temporaryPassword: string;
+}
+
 export const setUserStatusSchema = z.object({
   status: z.enum(['ACTIVE', 'INACTIVE']),
 });
@@ -35,6 +54,7 @@ export interface UserDTO {
   lastName: string;
   role: 'ADMIN' | 'VENDEDOR';
   isPlatformOwner: boolean;
+  mustChangePassword: boolean;
   status: 'ACTIVE' | 'INACTIVE';
   phone: string | null;
   commissionPct: number;

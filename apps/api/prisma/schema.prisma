@@ -46,6 +46,10 @@ model User {
   // `role === 'ADMIN'` que ya existen dejarían afuera al dueño sin avisar, y hay que acordarse de
   // los quince. Así el dueño sigue siendo ADMIN de su propia empresa y solo suma este permiso.
   isPlatformOwner Boolean   @default(false)
+  // Contraseña provisoria pendiente de cambiar. Toda contraseña que genera el sistema y viaja por
+  // WhatsApp o correo nace marcada: quien entra la cambia antes de poder usar la app. Sin esto, la
+  // contraseña que el vendedor le pasó al cliente queda viva para siempre en un chat.
+  mustChangePassword Boolean @default(false)
   commissionPct  Decimal    @default(20) @db.Decimal(5, 2)
   hireDate       DateTime   @default(now())
   createdAt      DateTime   @default(now())

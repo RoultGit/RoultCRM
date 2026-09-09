@@ -4,6 +4,7 @@ import { AuthService } from './auth.service.js';
 import { ValidationError } from '../../lib/errors.js';
 import { UsersService } from '../users/users.service.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { changePasswordSchema } from '@roult/shared';
 import { rateLimit } from '../../middleware/rateLimit.js';
 
 const loginSchema = z.object({
@@ -69,6 +70,34 @@ authRouter.post('/logout', async (req, res, next) => {
 authRouter.get('/me', requireAuth, async (req, res, next) => {
   try {
     res.json(await UsersService.me(req.user!));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Mismo límite que el login: adivinar la contraseña actual a fuerza bruta desde una sesión robada
+// es el mismo ataque, solo que por otra puerta.
+const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Demasiados intentos. Probá de nuevo en unos minutos.',
+});
+
+authRouter.patch('/password', requireAuth, passwordLimiter, async (req, res, next) => {
+  try {
+    const parsed = changePasswordSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError(parsed.error.message);
+    const tokens = await AuthService.changePassword(
+      req.user!.userId,
+      req.user!.tenantId,
+      parsed.data.currentPassword,
+      parsed.data.newPassword
+    );
+    // El par nuevo reemplaza al viejo en la misma respuesta: como se cortaron TODAS las sesiones,
+    // sin esto el que acaba de cambiar su contraseña quedaría afuera de la app.
+    res.cookie(REFRESH_COOKIE, tokens.refreshToken, REFRESH_COOKIE_OPTS);
+    passwordLimiter.reset(req);
+    res.json({ accessToken: tokens.accessToken });
   } catch (err) {
     next(err);
   }
