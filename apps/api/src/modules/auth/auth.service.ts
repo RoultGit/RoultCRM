@@ -16,8 +16,18 @@ interface TokenPair {
   refreshToken: string;
 }
 
-async function issueTokens(user: { id: string; tenantId: string; role: 'ADMIN' | 'VENDEDOR' }): Promise<TokenPair> {
-  const accessToken = signAccessToken({ userId: user.id, tenantId: user.tenantId, role: user.role });
+async function issueTokens(user: {
+  id: string;
+  tenantId: string;
+  role: 'ADMIN' | 'VENDEDOR';
+  isPlatformOwner: boolean;
+}): Promise<TokenPair> {
+  const accessToken = signAccessToken({
+    userId: user.id,
+    tenantId: user.tenantId,
+    role: user.role,
+    isPlatformOwner: user.isPlatformOwner,
+  });
   const { token, tokenHash } = generateRefreshToken();
   await AuthRepository.storeRefreshToken(user.tenantId, user.id, tokenHash, new Date(Date.now() + REFRESH_TOKEN_TTL_MS));
   return { accessToken, refreshToken: token };

@@ -15,6 +15,7 @@ import { auditRouter } from './modules/audit/audit.routes.js';
 import { importRouter } from './modules/import/import.routes.js';
 import { dashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { calendarRouter } from './modules/calendar/calendar.routes.js';
+import { tenantsRouter } from './modules/tenants/tenants.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -77,6 +78,7 @@ export function createApp(): Express {
   app.use('/import', importRouter);
   app.use('/dashboard', dashboardRouter);
   app.use('/calendar', calendarRouter);
+  app.use('/tenants', tenantsRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     // body-parser tira este error fuera de la jerarquía de AppError, así que sin este caso caía en

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Building2, CalendarClock, CalendarDays, Contact, Handshake, History, LayoutDashboard, ListChecks, LogOut, Menu, Upload, Users } from 'lucide-react';
+import { Building2, CalendarClock, CalendarDays, Contact, Handshake, History, Landmark, LayoutDashboard, ListChecks, LogOut, Menu, Upload, Users } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
 import { useSession, useLogout } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
@@ -26,12 +26,25 @@ const ADMIN_ONLY_NAV = [
   { to: '/audit', label: 'Auditoría', icon: History },
 ];
 
+// Administrar empresas cliente es del dueño de la plataforma, no del admin de cada empresa: al
+// admin de un cliente, mostrarle este link sería contarle que hay otros clientes.
+const OWNER_ONLY_NAV = [{ to: '/tenants', label: 'Entidades', icon: Landmark }];
+
 // El menú lateral se usa en dos lugares: fijo a la izquierda en pantallas grandes y dentro del
 // cajón deslizante en el teléfono. Una sola definición para que no se desincronicen.
-function SidebarNav({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: () => void }) {
+function SidebarNav({
+  isAdmin,
+  isOwner,
+  onNavigate,
+}: {
+  isAdmin: boolean;
+  isOwner: boolean;
+  onNavigate?: () => void;
+}) {
   return (
     <nav className="space-y-1">
-      {[...NAV_ITEMS, ...(isAdmin ? ADMIN_ONLY_NAV : [])].map(({ to, label, icon: Icon }) => (
+      {[...NAV_ITEMS, ...(isAdmin ? ADMIN_ONLY_NAV : []), ...(isOwner ? OWNER_ONLY_NAV : [])].map(
+        ({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
           to={to}
@@ -48,7 +61,8 @@ function SidebarNav({ isAdmin, onNavigate }: { isAdmin: boolean; onNavigate?: ()
           <Icon size={18} />
           {label}
         </NavLink>
-      ))}
+        )
+      )}
     </nav>
   );
 }
@@ -65,6 +79,7 @@ export function AppShell() {
   if (session.isError) return <Navigate to="/login" replace />;
 
   const isAdmin = session.data?.role === 'ADMIN';
+  const isOwner = session.data?.isPlatformOwner === true;
 
   return (
     <div className="flex min-h-screen bg-surface">
@@ -73,7 +88,7 @@ export function AppShell() {
           costado. Abajo de lg, el mismo menú vive en el cajón deslizante. */}
       <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white p-4 lg:block">
         <div className="mb-6 px-2 text-lg font-semibold">RoultCRM</div>
-        <SidebarNav isAdmin={isAdmin} />
+        <SidebarNav isAdmin={isAdmin} isOwner={isOwner} />
       </aside>
 
       <main className="min-w-0 flex-1">
@@ -97,7 +112,7 @@ export function AppShell() {
                 <Dialog.Title className="mb-6 px-2 text-lg font-semibold">RoultCRM</Dialog.Title>
                 {/* Cerrar al navegar: si no, el cajón queda tapando la pantalla a la que acabás de
                     entrar y hay que cerrarlo a mano cada vez. */}
-                <SidebarNav isAdmin={isAdmin} onNavigate={() => setMenuOpen(false)} />
+                <SidebarNav isAdmin={isAdmin} isOwner={isOwner} onNavigate={() => setMenuOpen(false)} />
               </Dialog.Content>
             </Dialog.Portal>
           </Dialog.Root>

@@ -12,6 +12,7 @@ export function toDTO(user: User): UserDTO {
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
+    isPlatformOwner: user.isPlatformOwner,
     status: user.status,
     phone: user.phone,
     commissionPct: Number(user.commissionPct),

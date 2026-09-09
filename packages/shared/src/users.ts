@@ -34,6 +34,7 @@ export interface UserDTO {
   firstName: string;
   lastName: string;
   role: 'ADMIN' | 'VENDEDOR';
+  isPlatformOwner: boolean;
   status: 'ACTIVE' | 'INACTIVE';
   phone: string | null;
   commissionPct: number;

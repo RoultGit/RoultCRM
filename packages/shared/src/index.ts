@@ -11,3 +11,4 @@ export * from './audit.js';
 export * from './import.js';
 export * from './calendar.js';
 export * from './charts.js';
+export * from './tenants.js';

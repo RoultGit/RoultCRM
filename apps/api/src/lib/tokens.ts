@@ -5,6 +5,9 @@ export interface AccessTokenPayload {
   userId: string;
   tenantId: string;
   role: 'ADMIN' | 'VENDEDOR';
+  // Opcional: los tokens ya emitidos no lo traen, y sin `?` todos ellos dejarían de tipar. Un token
+  // viejo simplemente no es dueño de plataforma, que es la respuesta segura.
+  isPlatformOwner?: boolean;
 }
 
 const ACCESS_TOKEN_TTL = '15m';
