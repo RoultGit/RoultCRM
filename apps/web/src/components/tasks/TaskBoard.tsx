@@ -18,6 +18,7 @@ import { updateTaskSchema, PRIORITY_OPTIONS, type TaskDTO, type UserDTO } from '
 import { Badge } from '../ui/badge.js';
 import { EditDialog } from '../EditDialog.js';
 import { useSetTaskStatus, useUpdateTask } from '../../hooks/useTasks.js';
+import { useSession } from '../../hooks/useAuth.js';
 import { formatDate } from '../../lib/date.js';
 import {
   OwnerAvatar,
@@ -74,6 +75,7 @@ function TaskCard({
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id });
   const update = useUpdateTask();
+  const isAdmin = useSession().data?.role === 'ADMIN';
   const meta = STATUS_META[task.status];
   const Icon = meta.icon;
   const overdue = isTaskOverdue(task);
@@ -163,6 +165,7 @@ function TaskCard({
           values={{
             title: task.title,
             priority: task.priority,
+            ownerId: task.ownerId,
             description: task.description ?? '',
             dueDate: task.dueDate.slice(0, 10),
             dueTime: task.dueTime ?? '',
@@ -170,6 +173,9 @@ function TaskCard({
           fields={[
             { key: 'title', label: 'Título' },
             { key: 'priority', label: 'Prioridad', options: PRIORITY_OPTIONS },
+            // Reasignar es de admin. El backend responde 403 igual, así que el campo no se dibuja
+            // en vez de ofrecer algo que va a fallar.
+            ...(isAdmin ? [{ key: 'ownerId', label: 'Responsable', options: 'vendedores' as const }] : []),
             { key: 'dueDate', label: 'Fecha límite', type: 'date' },
             { key: 'dueTime', label: 'Hora (opcional)', type: 'time' },
             { key: 'description', label: 'Detalle', type: 'textarea' },

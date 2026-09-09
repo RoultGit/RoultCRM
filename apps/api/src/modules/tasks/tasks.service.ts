@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import type { Task, TaskUpdate } from '@prisma/client';
 import { TasksRepository } from './tasks.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
-import { NotFoundError } from '../../lib/errors.js';
+import { NotFoundError, ForbiddenError } from '../../lib/errors.js';
 import type { Actor } from '../../lib/scope.js';
 
 export function toDTO(task: Task): TaskDTO {
@@ -124,13 +124,22 @@ export const TasksService = {
     return toDTO(task);
   },
 
-  // Reasignar el dueño de una tarea existente queda fuera de alcance: update ignora ownerId a
-  // propósito. Una tarea mal asignada se cierra y se crea de nuevo.
+  // Reasignar una tarea es de ADMIN, igual que reasignar un lead o un deal. Si un vendedor pudiera
+  // hacerlo, le pasaría sus pendientes a un colega y desaparecerían de su propia lista.
   async update(actor: Actor, id: string, input: z.infer<typeof updateTaskSchema>): Promise<TaskDTO> {
     const existing = await TasksRepository.findByIdAndTenant(id, actor.tenantId, taskOwnerFilter(actor));
     if (!existing) throw new NotFoundError('Task not found');
 
+    if (input.ownerId !== undefined && input.ownerId !== existing.ownerId) {
+      if (actor.role !== 'ADMIN') throw new ForbiddenError('Solo un administrador puede reasignar una tarea');
+      // Que el destinatario exista Y sea de este tenant: sin el segundo chequeo se podría mandar
+      // una tarea al usuario de otra empresa, que después nunca la vería.
+      const owner = await UsersRepository.findByIdAndTenant(input.ownerId, actor.tenantId);
+      if (!owner) throw new NotFoundError('Task owner not found');
+    }
+
     await TasksRepository.updateByIdAndTenant(id, actor.tenantId, {
+      ...(input.ownerId !== undefined && actor.role === 'ADMIN' ? { ownerId: input.ownerId } : {}),
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.dueDate !== undefined ? { dueDate: new Date(input.dueDate) } : {}),

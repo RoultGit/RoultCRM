@@ -6,6 +6,8 @@ import { createTaskSchema, PRIORITY_OPTIONS } from '@roult/shared';
 import { z } from 'zod';
 import { Button } from '../ui/button.js';
 import { useCreateTask } from '../../hooks/useTasks.js';
+import { useUsers } from '../../hooks/useUsers.js';
+import { useSession } from '../../hooks/useAuth.js';
 
 type FormValues = z.infer<typeof createTaskSchema>;
 
@@ -23,6 +25,10 @@ export function CreateTaskDialog() {
     defaultValues: { priority: 'MEDIUM' },
   });
   const createTask = useCreateTask();
+  const { data: users } = useUsers();
+  // Solo el admin elige destinatario. Un vendedor crea tareas para sí mismo y el backend lo obliga
+  // igual, así que mostrarle un desplegable sería ofrecerle algo que no puede hacer.
+  const isAdmin = useSession().data?.role === 'ADMIN';
 
   const submit = (data: FormValues) =>
     createTask.mutate(data, {
@@ -47,6 +53,16 @@ export function CreateTaskDialog() {
               placeholder="¿Qué hay que hacer?"
               {...register('title')}
             />
+            {isAdmin && (
+              <select className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" {...register('ownerId')}>
+                <option value="">Para mí</option>
+                {users?.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    Para {user.firstName} {user.lastName}
+                  </option>
+                ))}
+              </select>
+            )}
             <select className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" {...register('priority')}>
               {PRIORITY_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>

@@ -20,6 +20,9 @@ describe('/tasks routes', () => {
   afterAll(async () => {
     await prisma.taskUpdate.deleteMany({ where: { tenantId } });
     await prisma.task.deleteMany({ where: { tenantId } });
+    // Los usuarios también: sin esto, borrar el tenant choca contra su clave foránea y el archivo
+    // falla entero aunque todas las pruebas hayan pasado.
+    await prisma.user.deleteMany({ where: { tenantId } });
     await prisma.tenant.delete({ where: { id: tenantId } });
     await prisma.$disconnect();
   });
@@ -308,6 +311,91 @@ describe('/tasks routes', () => {
             .send({ note: 'Intruso', progress: 99 })
         ).status
       ).toBe(404);
+    });
+  });
+
+  describe('asignación', () => {
+    let otherUserId: string;
+
+    beforeAll(async () => {
+      otherUserId = (
+        await prisma.user.create({
+          data: {
+            tenantId,
+            email: `task-owner-${Date.now()}@roult.pe`,
+            passwordHash: 'x',
+            firstName: 'Reghuel',
+            lastName: 'Ayala',
+            role: 'ADMIN',
+          },
+        })
+      ).id;
+    });
+
+    it('lets an admin create a task for someone else', async () => {
+      const res = await request(app)
+        .post('/tasks')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ title: 'Para Reghuel', dueDate: '2026-09-30', ownerId: otherUserId });
+      expect(res.status).toBe(201);
+      expect(res.body.ownerId).toBe(otherUserId);
+    });
+
+    it('lets an admin reassign an existing task', async () => {
+      const created = await request(app)
+        .post('/tasks')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ title: 'Cambia de dueño', dueDate: '2026-09-30' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.body.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ownerId: otherUserId });
+      expect(res.status).toBe(200);
+      expect(res.body.ownerId).toBe(otherUserId);
+    });
+
+    it('does not let a vendedor hand their task to a colleague', async () => {
+      const created = await request(app)
+        .post('/tasks')
+        .set('Authorization', `Bearer ${sellerToken}`)
+        .send({ title: 'Mía y mía', dueDate: '2026-09-30' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.body.id}`)
+        .set('Authorization', `Bearer ${sellerToken}`)
+        .send({ ownerId: otherUserId });
+      // Si pudiera, le pasaría sus pendientes a otro y desaparecerían de su propia lista.
+      expect(res.status).toBe(403);
+      expect((await prisma.task.findUnique({ where: { id: created.body.id } }))?.ownerId).toBe('seller-1');
+    });
+
+    it('refuses to hand a task to someone from another entity', async () => {
+      const otherTenant = await prisma.tenant.create({ data: { name: 'Otra empresa tareas' } });
+      const stranger = await prisma.user.create({
+        data: {
+          tenantId: otherTenant.id,
+          email: `stranger-${Date.now()}@otra.pe`,
+          passwordHash: 'x',
+          firstName: 'Ajeno',
+          lastName: 'Total',
+          role: 'ADMIN',
+        },
+      });
+      const created = await request(app)
+        .post('/tasks')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ title: 'No cruza la frontera', dueDate: '2026-09-30' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.body.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ ownerId: stranger.id });
+      // Una tarea mandada a otra empresa no la vería nadie nunca más.
+      expect(res.status).toBe(404);
+
+      await prisma.user.delete({ where: { id: stranger.id } });
+      await prisma.tenant.delete({ where: { id: otherTenant.id } });
     });
   });
 
