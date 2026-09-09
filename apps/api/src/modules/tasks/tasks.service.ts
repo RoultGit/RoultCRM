@@ -1,6 +1,6 @@
-import type { TaskDTO, createTaskSchema, updateTaskSchema } from '@roult/shared';
+import type { TaskDTO, TaskUpdateDTO, createTaskSchema, createTaskUpdateSchema, updateTaskSchema } from '@roult/shared';
 import type { z } from 'zod';
-import type { Task } from '@prisma/client';
+import type { Task, TaskUpdate } from '@prisma/client';
 import { TasksRepository } from './tasks.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { NotFoundError } from '../../lib/errors.js';
@@ -27,6 +27,17 @@ export function toDTO(task: Task): TaskDTO {
   };
 }
 
+function updateToDTO(update: TaskUpdate): TaskUpdateDTO {
+  return {
+    id: update.id,
+    taskId: update.taskId,
+    authorId: update.authorId,
+    note: update.note,
+    progress: update.progress,
+    createdAt: update.createdAt.toISOString(),
+  };
+}
+
 // Una Task se scopea por ownerId, no por assignedUserId, así que ownerFilter no aplica acá.
 function taskOwnerFilter(actor: Actor): { ownerId?: string } {
   return actor.role === 'ADMIN' ? {} : { ownerId: actor.userId };
@@ -36,6 +47,35 @@ export const TasksService = {
   async list(actor: Actor): Promise<TaskDTO[]> {
     const tasks = await TasksRepository.findManyByTenant(actor.tenantId, taskOwnerFilter(actor));
     return tasks.map(toDTO);
+  },
+
+  async listUpdates(actor: Actor, taskId: string): Promise<TaskUpdateDTO[]> {
+    // Se pasa por findByIdAndTenant con el scoping del actor a propósito: sin esto, un vendedor
+    // podría leer el historial de avances de una tarea ajena con solo tener su id.
+    const task = await TasksRepository.findByIdAndTenant(taskId, actor.tenantId, taskOwnerFilter(actor));
+    if (!task) throw new NotFoundError('Task not found');
+    const updates = await TasksRepository.findUpdates(taskId, actor.tenantId);
+    return updates.map(updateToDTO);
+  },
+
+  async addUpdate(
+    actor: Actor,
+    taskId: string,
+    input: z.infer<typeof createTaskUpdateSchema>
+  ): Promise<TaskUpdateDTO> {
+    const task = await TasksRepository.findByIdAndTenant(taskId, actor.tenantId, taskOwnerFilter(actor));
+    if (!task) throw new NotFoundError('Task not found');
+
+    const update = await TasksRepository.addUpdate({
+      tenantId: actor.tenantId,
+      taskId,
+      // El autor sale del token, nunca del body: si no, cualquiera podría firmar un avance con el
+      // nombre de otro.
+      authorId: actor.userId,
+      note: input.note,
+      progress: input.progress,
+    });
+    return updateToDTO(update);
   },
 
   // El tablero mueve tareas de columna arrastrando, igual que el pipeline. Es el mismo update, pero

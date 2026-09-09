@@ -63,7 +63,15 @@ function Authorship({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
   );
 }
 
-function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
+function TaskCard({
+  task,
+  users,
+  onOpenProgress,
+}: {
+  task: TaskDTO;
+  users?: UserDTO[];
+  onOpenProgress: (task: TaskDTO) => void;
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id });
   const update = useUpdateTask();
   const meta = STATUS_META[task.status];
@@ -99,10 +107,23 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
           </p>
         </div>
         {task.description && <p className="mt-1 pl-6 text-xs text-gray-500">{task.description}</p>}
-        {/* Solo si hay avance y la tarea sigue abierta: una barra en cero en cada tarjeta es ruido,
-            y en una tarea hecha el tilde y el tachado ya dicen que está al 100%. */}
-        {task.progress > 0 && task.status !== 'DONE' && (
-          <ProgressBar value={task.progress} className="mt-2 pl-6" />
+        {/* La barra es el acceso al historial: se toca donde ya se está mirando el avance, sin
+            buscar un botón aparte. Fuera de los listeners de arrastre, si no un click abre un drag.
+            En una tarea hecha no se dibuja: el tilde y el tachado ya dicen que está al 100%. */}
+        {task.status !== 'DONE' && (
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => onOpenProgress(task)}
+            aria-label={`Ver y registrar avance de ${task.title}`}
+            className="mt-2 block w-full rounded pl-6 pr-1 py-0.5 text-left transition-colors hover:bg-gray-50"
+          >
+            {task.progress > 0 ? (
+              <ProgressBar value={task.progress} />
+            ) : (
+              <span className="text-[11px] text-gray-400">Registrar avance</span>
+            )}
+          </button>
         )}
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-dashed border-gray-100 pt-2">
           <PriorityChip priority={task.priority} />
@@ -145,14 +166,12 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
             description: task.description ?? '',
             dueDate: task.dueDate.slice(0, 10),
             dueTime: task.dueTime ?? '',
-            progress: task.progress,
           }}
           fields={[
             { key: 'title', label: 'Título' },
             { key: 'priority', label: 'Prioridad', options: PRIORITY_OPTIONS },
             { key: 'dueDate', label: 'Fecha límite', type: 'date' },
             { key: 'dueTime', label: 'Hora (opcional)', type: 'time' },
-            { key: 'progress', label: 'Avance (%)', type: 'number' },
             { key: 'description', label: 'Detalle', type: 'textarea' },
           ]}
           onSubmit={(data, close) => update.mutate({ id: task.id, ...data }, { onSuccess: close })}
@@ -166,10 +185,12 @@ function StatusColumn({
   status,
   tasks,
   users,
+  onOpenProgress,
 }: {
   status: (typeof TASK_STATUS)[number];
   tasks: TaskDTO[];
   users?: UserDTO[];
+  onOpenProgress: (task: TaskDTO) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status.key });
   const Icon = status.icon;
@@ -187,7 +208,7 @@ function StatusColumn({
         }`}
       >
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} users={users} />
+          <TaskCard key={task.id} task={task} users={users} onOpenProgress={onOpenProgress} />
         ))}
         {tasks.length === 0 && (
           <p className="px-2 py-6 text-center text-xs text-gray-400">Arrastrá una tarea acá.</p>
@@ -197,7 +218,15 @@ function StatusColumn({
   );
 }
 
-export function TaskBoard({ tasks, users }: { tasks: TaskDTO[]; users?: UserDTO[] }) {
+export function TaskBoard({
+  tasks,
+  users,
+  onOpenProgress,
+}: {
+  tasks: TaskDTO[];
+  users?: UserDTO[];
+  onOpenProgress: (task: TaskDTO) => void;
+}) {
   const setStatus = useSetTaskStatus();
   const [active, setActive] = useState<TaskDTO | null>(null);
   const sensors = useSensors(useSensor(PointerSensor));
@@ -230,6 +259,7 @@ export function TaskBoard({ tasks, users }: { tasks: TaskDTO[]; users?: UserDTO[
             status={status}
             tasks={tasks.filter((task) => task.status === status.key)}
             users={users}
+            onOpenProgress={onOpenProgress}
           />
         ))}
       </div>

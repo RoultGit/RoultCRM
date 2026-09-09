@@ -12,8 +12,8 @@ const DAY_WIDTH = 42;
 const PRIORITY_BORDER: Record<string, string> = {
   URGENT: '#FECDD3',
   HIGH: '#FDE68A',
-  MEDIUM: '#E5E7EB',
-  LOW: '#E5E7EB',
+  MEDIUM: '#BAE6FD',
+  LOW: '#E2E8F0',
 };
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',

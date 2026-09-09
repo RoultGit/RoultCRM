@@ -59,6 +59,22 @@ export const taskFiltersSchema = z.object({
   ownerId: optionalText(z.string()),
 });
 
+// Registrar un avance: qué se hizo y en cuánto quedó. La nota es obligatoria — un avance sin
+// explicación es el mismo número suelto que este historial vino a reemplazar.
+export const createTaskUpdateSchema = z.object({
+  note: z.string().min(1, 'Contá qué avanzaste'),
+  progress: progressSchema,
+});
+
+export interface TaskUpdateDTO {
+  id: string;
+  taskId: string;
+  authorId: string;
+  note: string;
+  progress: number;
+  createdAt: string;
+}
+
 export interface TaskDTO {
   id: string;
   title: string;

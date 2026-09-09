@@ -18,12 +18,14 @@ describe('/tasks routes', () => {
   });
 
   afterAll(async () => {
+    await prisma.taskUpdate.deleteMany({ where: { tenantId } });
     await prisma.task.deleteMany({ where: { tenantId } });
     await prisma.tenant.delete({ where: { id: tenantId } });
     await prisma.$disconnect();
   });
 
   beforeEach(async () => {
+    await prisma.taskUpdate.deleteMany({ where: { tenantId } });
     await prisma.task.deleteMany({ where: { tenantId } });
   });
 
@@ -224,6 +226,89 @@ describe('/tasks routes', () => {
       .set('Authorization', `Bearer ${sellerToken}`)
       .send({ title: 'Prioridad inventada', dueDate: '2026-09-08', priority: 'ALTISIMA' });
     expect(bad.status).toBe(400);
+  });
+
+  describe('avances de una tarea', () => {
+    const makeTask = (token = sellerToken) =>
+      request(app)
+        .post('/tasks')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: 'Con historial', dueDate: '2026-09-30' })
+        .then((r) => r.body.id as string);
+
+    it('records the update and moves the task progress with it', async () => {
+      const id = await makeTask();
+      const res = await request(app)
+        .post(`/tasks/${id}/updates`)
+        .set('Authorization', `Bearer ${sellerToken}`)
+        .send({ note: 'Maqueta lista y aprobada', progress: 40 });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ note: 'Maqueta lista y aprobada', progress: 40, authorId: 'seller-1' });
+
+      // El progreso de la tarea y el del avance son el mismo hecho: si se separaran, la barra
+      // mostraría un número que ningún registro respalda.
+      const task = await prisma.task.findUnique({ where: { id } });
+      expect(task?.progress).toBe(40);
+    });
+
+    it('keeps the history newest first', async () => {
+      const id = await makeTask();
+      for (const [note, progress] of [['Arranque', 20], ['Mitad', 50], ['Casi', 90]] as const) {
+        await request(app)
+          .post(`/tasks/${id}/updates`)
+          .set('Authorization', `Bearer ${sellerToken}`)
+          .send({ note, progress });
+      }
+      const res = await request(app).get(`/tasks/${id}/updates`).set('Authorization', `Bearer ${sellerToken}`);
+      expect(res.body.map((u: { note: string }) => u.note)).toEqual(['Casi', 'Mitad', 'Arranque']);
+      expect((await prisma.task.findUnique({ where: { id } }))?.progress).toBe(90);
+    });
+
+    it('demands a note: a bare number is what this history replaces', async () => {
+      const id = await makeTask();
+      const res = await request(app)
+        .post(`/tasks/${id}/updates`)
+        .set('Authorization', `Bearer ${sellerToken}`)
+        .send({ note: '', progress: 50 });
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects progress outside 0-100', async () => {
+      const id = await makeTask();
+      for (const progress of [-5, 140]) {
+        const res = await request(app)
+          .post(`/tasks/${id}/updates`)
+          .set('Authorization', `Bearer ${sellerToken}`)
+          .send({ note: 'Imposible', progress });
+        expect(res.status).toBe(400);
+      }
+    });
+
+    it('signs the update with the token, not with the body', async () => {
+      const id = await makeTask();
+      const res = await request(app)
+        .post(`/tasks/${id}/updates`)
+        .set('Authorization', `Bearer ${sellerToken}`)
+        .send({ note: 'Firmado por otro', progress: 10, authorId: 'admin-1' });
+      expect(res.body.authorId).toBe('seller-1');
+    });
+
+    it('does not let a vendedor read or write the history of someone else task', async () => {
+      const otherTask = await makeTask(adminToken);
+      // Con solo tener el id, un vendedor no puede espiar ni escribir en una tarea ajena.
+      expect(
+        (await request(app).get(`/tasks/${otherTask}/updates`).set('Authorization', `Bearer ${sellerToken}`)).status
+      ).toBe(404);
+      expect(
+        (
+          await request(app)
+            .post(`/tasks/${otherTask}/updates`)
+            .set('Authorization', `Bearer ${sellerToken}`)
+            .send({ note: 'Intruso', progress: 99 })
+        ).status
+      ).toBe(404);
+    });
   });
 
   it('rejects a task with an invalid due date', async () => {

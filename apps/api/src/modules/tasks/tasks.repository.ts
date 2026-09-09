@@ -26,4 +26,30 @@ export const TasksRepository = {
   updateByIdAndTenant(id: string, tenantId: string, data: Prisma.TaskUpdateInput) {
     return prisma.task.updateMany({ where: { id, tenantId }, data });
   },
+
+  findUpdates(taskId: string, tenantId: string) {
+    // Del más nuevo al más viejo: lo último que pasó es lo que se quiere leer primero.
+    return prisma.taskUpdate.findMany({
+      where: { taskId, tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  },
+
+  /**
+   * Registra un avance y deja el progreso de la tarea en ese valor, en una transacción.
+   *
+   * Los dos escritos van juntos porque son el mismo hecho: si se guardara el avance y fallara la
+   * tarea, la barra mostraría un número que ningún registro respalda; y al revés, la tarea diría
+   * 70% sin que exista el avance que lo explica.
+   */
+  addUpdate(data: Prisma.TaskUpdateUncheckedCreateInput) {
+    return prisma.$transaction(async (tx) => {
+      const update = await tx.taskUpdate.create({ data });
+      await tx.task.updateMany({
+        where: { id: data.taskId, tenantId: data.tenantId },
+        data: { progress: data.progress },
+      });
+      return update;
+    });
+  },
 };

@@ -273,9 +273,30 @@ model Task {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  updates TaskUpdate[]
+
   @@index([tenantId])
   @@index([tenantId, ownerId, status])
   @@index([tenantId, completedById])
+}
+
+// Cada avance registrado sobre una tarea: qué se hizo y en cuánto quedó. El progreso deja de ser
+// un número suelto que alguien pisa y pasa a tener historia — se puede ver quién movió la aguja,
+// cuándo y por qué. Task.progress guarda el último valor para no tener que recorrer los avances
+// cada vez que se dibuja una tarjeta.
+model TaskUpdate {
+  id        String   @id @default(uuid())
+  tenantId  String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  // Sin @relation, mismo criterio que AuditLog: es un registro histórico y no puede desaparecer
+  // ni bloquear el borrado si la persona deja la empresa. El nombre se resuelve en la app.
+  authorId  String
+  note      String
+  progress  Int
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, taskId, createdAt])
 }
 
 model AssignmentHistory {

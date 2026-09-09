@@ -15,29 +15,25 @@ export const STATUS_META = Object.fromEntries(TASK_STATUS.map((s) => [s.key, s])
 >;
 
 /**
- * La escala de prioridades, en un solo lugar.
+ * La escala de prioridades. Las cuatro llevan su color y su chip.
  *
- * Decisión de diseño: NO todas las prioridades llevan color. Si las cuatro tienen el suyo, el color
- * deja de señalar y pasa a ser decoración — el ojo se acostumbra y ya no distingue. Así que Baja y
- * Media van en gris (recedan, que es lo que tienen que hacer) y solo Alta y Urgente se tiñen.
+ * La primera versión escondía Media (el valor por defecto) para que solo se viera lo que se sale de
+ * lo normal. Pero dejaba una escalera rara: Baja mostraba chip y Media, que es más importante, no
+ * mostraba nada. Entre "máximo silencio" y "orden coherente", gana el orden: una escala se lee por
+ * comparación, y le falta un escalón cuando uno de sus niveles es invisible.
  *
  * El tinte llega hasta el borde de la card, no a su fondo: un fondo de color en cada tarjeta compite
- * con el texto y ensucia el tablero. Y el borde es de todo el perímetro, no una barra de color a la
- * izquierda, que es el recurso más gastado de las plantillas.
+ * con el texto. Y es el perímetro completo, no una barra de color a la izquierda, que es el recurso
+ * más gastado de las plantillas.
  */
 export const PRIORITY_STYLE: Record<TaskPriority, { chip: string; card: string; dot: string }> = {
   URGENT: { chip: 'bg-rose-100 text-rose-700', card: 'border-rose-200', dot: 'bg-rose-400' },
   HIGH: { chip: 'bg-amber-100 text-amber-700', card: 'border-amber-200', dot: 'bg-amber-400' },
-  MEDIUM: { chip: 'bg-sky-50 text-sky-700', card: 'border-gray-200', dot: 'bg-sky-300' },
-  LOW: { chip: 'bg-gray-100 text-gray-600', card: 'border-gray-200', dot: 'bg-gray-300' },
+  MEDIUM: { chip: 'bg-sky-50 text-sky-700', card: 'border-sky-200', dot: 'bg-sky-400' },
+  LOW: { chip: 'bg-slate-100 text-slate-600', card: 'border-slate-200', dot: 'bg-slate-400' },
 };
 
 export function PriorityChip({ priority }: { priority: TaskPriority }) {
-  // Media no dibuja nada. Es el valor por defecto, así que aparecía en casi todas las tarjetas: una
-  // etiqueta presente en el 80% de los casos no distingue nada, solo agrega un objeto más que leer.
-  // Sin chip, "normal" es la ausencia de marca y lo que se ve es exactamente lo que se sale de lo
-  // normal — que es para lo que sirve una prioridad.
-  if (priority === 'MEDIUM') return null;
   const style = PRIORITY_STYLE[priority];
   return (
     <span

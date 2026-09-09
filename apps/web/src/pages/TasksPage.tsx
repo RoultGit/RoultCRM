@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Columns3, GanttChartSquare } from 'lucide-react';
-import { PRIORITY_OPTIONS, type TaskPriority } from '@roult/shared';
+import { PRIORITY_OPTIONS, type TaskDTO, type TaskPriority } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
 import { useTasks } from '../hooks/useTasks.js';
 import { useUsers } from '../hooks/useUsers.js';
 import { CreateTaskDialog } from '../components/tasks/CreateTaskDialog.js';
 import { TaskBoard } from '../components/tasks/TaskBoard.js';
 import { TaskTimeline } from '../components/tasks/TaskTimeline.js';
+import { TaskProgressDialog } from '../components/tasks/TaskProgressDialog.js';
 
 const VIEWS = [
   { key: 'board', label: 'Tablero', icon: Columns3 },
@@ -20,6 +21,7 @@ export function TasksPage() {
   // El filtro se aplica en el cliente y no en el servidor: la lista de tareas de una persona es
   // chica, ya está toda en memoria, y así el tablero responde sin ir y volver a la red.
   const [priority, setPriority] = useState<TaskPriority | ''>('');
+  const [progressTask, setProgressTask] = useState<TaskDTO | null>(null);
   const { data: tasks, isLoading } = useTasks();
   const { data: users } = useUsers();
   const all = (tasks ?? []).filter((task) => !priority || task.priority === priority);
@@ -75,10 +77,18 @@ export function TasksPage() {
             : 'No tenés tareas todavía. Creá la primera con “Agregar tarea”.'}
         </Card>
       ) : view === 'board' ? (
-        <TaskBoard tasks={all} users={users} />
+        <TaskBoard tasks={all} users={users} onOpenProgress={setProgressTask} />
       ) : (
         <TaskTimeline tasks={all} users={users} />
       )}
+
+      {/* Se le pasa la tarea recién leída de la lista y no la guardada en el estado: al registrar un
+          avance, la lista se refresca y el diálogo tiene que mostrar el número nuevo, no el viejo. */}
+      <TaskProgressDialog
+        task={progressTask ? (all.find((t) => t.id === progressTask.id) ?? progressTask) : null}
+        users={users}
+        onClose={() => setProgressTask(null)}
+      />
     </div>
   );
 }
