@@ -7,3 +7,11 @@ build/
 .gstack/
 .vercel
 .env*
+
+# Basura del sistema y config local de herramientas. Nada de esto es del producto:
+# .claude/ además contiene un worktree entero (una copia completa del repo dentro del repo).
+.DS_Store
+.idea/
+.claude/
+# Apunta al proyecto de Supabase de producción. Es config de la máquina, no del producto.
+.mcp.json
