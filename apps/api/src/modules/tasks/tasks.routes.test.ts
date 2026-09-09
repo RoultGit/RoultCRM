@@ -156,6 +156,76 @@ describe('/tasks routes', () => {
     expect(done.body.progress).toBe(100);
   });
 
+  it('records who created the task, from the token and not the body', async () => {
+    const res = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      // createdById en el body tiene que ser ignorado: si se respetara, cualquiera podría
+      // atribuirle a otro una tarea que él cargó.
+      .send({ title: 'Con autor', dueDate: '2026-09-08', createdById: 'otro-usuario' });
+    expect(res.status).toBe(201);
+    expect(res.body.createdById).toBe('seller-1');
+  });
+
+  it('records who closed it and forgets it when the task is reopened', async () => {
+    const created = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Para cerrar', dueDate: '2026-09-08' });
+    expect(created.body.completedById).toBeNull();
+
+    const done = await request(app)
+      .patch(`/tasks/${created.body.id}/status`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ status: 'DONE' });
+    expect(done.body.completedById).toBe('seller-1');
+    expect(done.body.completedAt).not.toBeNull();
+
+    const reopened = await request(app)
+      .patch(`/tasks/${created.body.id}/status`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ status: 'DOING' });
+    // Una tarea en curso que siga diciendo "completada por Ana" es peor que no decir nada.
+    expect(reopened.body.completedById).toBeNull();
+    expect(reopened.body.completedAt).toBeNull();
+  });
+
+  it('registers the closing the same way from the edit form as from the board', async () => {
+    const created = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Cerrada por formulario', dueDate: '2026-09-08' });
+
+    const res = await request(app)
+      .patch(`/tasks/${created.body.id}`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ status: 'DONE' });
+    // El dato no puede depender de por dónde entró el cambio.
+    expect(res.body.completedById).toBe('seller-1');
+  });
+
+  it('defaults priority to media and accepts the four levels', async () => {
+    const plain = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Sin prioridad declarada', dueDate: '2026-09-08' });
+    expect(plain.body.priority).toBe('MEDIUM');
+
+    for (const priority of ['URGENT', 'HIGH', 'MEDIUM', 'LOW'] as const) {
+      const res = await request(app)
+        .post('/tasks')
+        .set('Authorization', `Bearer ${sellerToken}`)
+        .send({ title: `Prioridad ${priority}`, dueDate: '2026-09-08', priority });
+      expect(res.body.priority).toBe(priority);
+    }
+
+    const bad = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Prioridad inventada', dueDate: '2026-09-08', priority: 'ALTISIMA' });
+    expect(bad.status).toBe(400);
+  });
+
   it('rejects a task with an invalid due date', async () => {
     const res = await request(app)
       .post('/tasks')

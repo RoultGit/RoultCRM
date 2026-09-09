@@ -38,6 +38,7 @@ describe('/dashboard/charts', () => {
   });
 
   afterAll(async () => {
+    await prisma.task.deleteMany({ where: { tenantId } });
     await prisma.deal.deleteMany({ where: { tenantId } });
     await prisma.lead.deleteMany({ where: { tenantId } });
     await prisma.company.deleteMany({ where: { tenantId } });
@@ -47,6 +48,7 @@ describe('/dashboard/charts', () => {
   });
 
   beforeEach(async () => {
+    await prisma.task.deleteMany({ where: { tenantId } });
     await prisma.deal.deleteMany({ where: { tenantId } });
     await prisma.lead.deleteMany({ where: { tenantId } });
     await prisma.company.deleteMany({ where: { tenantId } });
@@ -93,6 +95,45 @@ describe('/dashboard/charts', () => {
     const res = await get();
     expect(res.body.pipelineByStage).toHaveLength(8);
     expect(res.body.pipelineByStage.every((s: { count: number }) => s.count === 0)).toBe(true);
+  });
+
+  it('counts tasks by priority, listing every level even at zero', async () => {
+    await prisma.task.createMany({
+      data: [
+        { tenantId, title: 'Urgente pendiente', ownerId: 'admin-1', dueDate: new Date(), priority: 'URGENT' },
+        { tenantId, title: 'Alta hecha', ownerId: 'admin-1', dueDate: new Date(), priority: 'HIGH', status: 'DONE' },
+        { tenantId, title: 'Media pendiente', ownerId: 'admin-1', dueDate: new Date() },
+      ],
+    });
+
+    const res = await request(app).get('/dashboard/charts').set('Authorization', `Bearer ${adminToken}`);
+    const by = Object.fromEntries(
+      res.body.tasksByPriority.map((row: { priority: string }) => [row.priority, row])
+    );
+    // Los cuatro niveles siempre: una prioridad ausente del gráfico se lee como que no existe,
+    // cuando en realidad significa que no hay nada ahí.
+    expect(Object.keys(by).sort()).toEqual(['HIGH', 'LOW', 'MEDIUM', 'URGENT']);
+    expect(by.URGENT).toMatchObject({ pending: 1, done: 0 });
+    expect(by.HIGH).toMatchObject({ pending: 0, done: 1 });
+    expect(by.LOW).toMatchObject({ pending: 0, done: 0 });
+  });
+
+  it('reports who closed and who created tasks', async () => {
+    // El vendedor real y no el 'admin-1' del token: el gráfico cruza contra usuarios que existen,
+    // así que un id inventado no aparece — que es lo correcto, pero no sirve para probar el conteo.
+    const created = await request(app)
+      .post('/tasks')
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ title: 'Para el gráfico', dueDate: '2026-09-30' });
+    await request(app)
+      .patch(`/tasks/${created.body.id}/status`)
+      .set('Authorization', `Bearer ${sellerToken}`)
+      .send({ status: 'DONE' });
+
+    const res = await get(adminToken);
+    const row = res.body.taskPeople.find((r: { userId: string }) => r.userId === sellerId);
+    expect(row?.completed).toBe(1);
+    expect(row?.created).toBe(1);
   });
 
   it('keeps a vendedor out of the team numbers', async () => {

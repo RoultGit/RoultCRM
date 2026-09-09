@@ -6,6 +6,15 @@ import { OwnerAvatar, ProgressBar, STATUS_META, isTaskOverdue } from './shared.j
 import { todayAsUTC } from '../../lib/date.js';
 
 const DAY_WIDTH = 42;
+
+// Las mismas fichas que PRIORITY_STYLE, pero en hexadecimal: la barra se posiciona con estilos
+// en línea, así que su borde no puede venir de una clase de Tailwind.
+const PRIORITY_BORDER: Record<string, string> = {
+  URGENT: '#FECDD3',
+  HIGH: '#FDE68A',
+  MEDIUM: '#E5E7EB',
+  LOW: '#E5E7EB',
+};
 const MONTHS = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -169,7 +178,9 @@ export function TaskTimeline({ tasks, users }: { tasks: TaskDTO[]; users?: UserD
                         borderBottomLeftRadius: range.cutLeft ? 0 : 9999,
                         borderTopRightRadius: range.cutRight ? 0 : 9999,
                         borderBottomRightRadius: range.cutRight ? 0 : 9999,
-                        borderColor: overdue ? '#FCA5A5' : '#E5E7EB',
+                        // El mismo criterio que en el tablero: la barra toma el tinte de su prioridad,
+                        // y lo vencido pisa a la prioridad porque es más urgente que cualquier etiqueta.
+                        borderColor: overdue ? '#FCA5A5' : PRIORITY_BORDER[task.priority],
                       }}
                       title={`${task.title} · vence ${task.dueDate.slice(0, 10)}`}
                     >

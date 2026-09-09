@@ -101,13 +101,17 @@ describe('/tenants routes', () => {
   });
 
   it('does not leave a half-created entity when the admin cannot be created', async () => {
-    const before = await prisma.tenant.count();
+    // Se cuenta SOLO lo que crea este test, por su nombre. Con un count() global, cualquier otro
+    // archivo de test que cree su tenant en paralelo hacía fallar esta prueba de forma
+    // intermitente: vitest corre los archivos a la vez sobre la misma base.
+    const mine = { name: { startsWith: 'Cliente ' } };
+    const before = await prisma.tenant.count({ where: mine });
     await request(app)
       .post('/tenants')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send(newTenant({ adminEmail: 'no-es-un-correo' }));
     // Una entidad sin admin nace inaccesible: nadie podría entrar a arreglarla.
-    expect(await prisma.tenant.count()).toBe(before);
+    expect(await prisma.tenant.count({ where: mine })).toBe(before);
   });
 
   it('lists every entity for the platform owner', async () => {

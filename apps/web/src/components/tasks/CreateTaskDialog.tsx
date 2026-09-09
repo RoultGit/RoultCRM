@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createTaskSchema } from '@roult/shared';
+import { createTaskSchema, PRIORITY_OPTIONS } from '@roult/shared';
 import { z } from 'zod';
 import { Button } from '../ui/button.js';
 import { useCreateTask } from '../../hooks/useTasks.js';
@@ -18,6 +18,9 @@ export function CreateTaskDialog() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(createTaskSchema),
+    // Media por defecto: es lo neutro. Obligar a elegir prioridad en cada tarea agrega una decisión
+    // a la acción más frecuente del sistema.
+    defaultValues: { priority: 'MEDIUM' },
   });
   const createTask = useCreateTask();
 
@@ -44,6 +47,13 @@ export function CreateTaskDialog() {
               placeholder="¿Qué hay que hacer?"
               {...register('title')}
             />
+            <select className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" {...register('priority')}>
+              {PRIORITY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  Prioridad {o.label.toLowerCase()}
+                </option>
+              ))}
+            </select>
             <div className="flex gap-2">
               <input
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"

@@ -235,6 +235,15 @@ enum TaskStatus {
   DONE
 }
 
+// El orden de declaración importa: Postgres ordena los enum por él, así que 'asc' da de lo más
+// urgente a lo menos, que es como se quiere leer una lista de pendientes.
+enum TaskPriority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
 model Task {
   id          String       @id @default(uuid())
   tenantId    String
@@ -250,6 +259,14 @@ model Task {
   // zona horaria en una columna que todo el código trata como fecha pelada.
   dueTime     String?
   status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  // Quién la creó. Nullable SOLO por las tareas que ya existían: no hay forma de saber quién las
+  // creó, y rellenarlas con el dueño sería inventar el dato. De acá en adelante siempre viene.
+  createdById String?
+  // Quién la cerró y cuándo. Se llena al pasar a DONE y se LIMPIA al reabrirla: una tarea en "Por
+  // hacer" que siga diciendo "completada por Ana" es peor que no decir nada.
+  completedById String?
+  completedAt   DateTime?
   // Cuánto va hecho, de 0 a 100. El rango se valida en el schema compartido, no solo acá: la base
   // acepta cualquier entero y un -20 o un 500 romperían la barra de progreso en silencio.
   progress    Int          @default(0)
@@ -258,6 +275,7 @@ model Task {
 
   @@index([tenantId])
   @@index([tenantId, ownerId, status])
+  @@index([tenantId, completedById])
 }
 
 model AssignmentHistory {

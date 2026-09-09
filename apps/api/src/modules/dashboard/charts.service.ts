@@ -32,7 +32,11 @@ export const ChartsService = {
     const since = rangeStart(months);
     const isAdmin = actor.role === 'ADMIN';
 
-    const [stageRows, dealsInRange, leadRows, users] = await Promise.all([
+    // Las tareas se scopean por ownerId, no por assignedUserId: son otro eje. Un VENDEDOR ve solo
+    // las suyas, así que sus números de tareas son los propios y no los del equipo.
+    const taskOwner = isAdmin ? {} : { ownerId: actor.userId };
+
+    const [stageRows, dealsInRange, leadRows, users, priorityRows, completedRows, createdRows] = await Promise.all([
       prisma.deal.groupBy({
         by: ['stage', 'currency'],
         where: { tenantId, ...owner },
@@ -53,6 +57,21 @@ export const ChartsService = {
       isAdmin
         ? prisma.user.findMany({ where: { tenantId }, select: { id: true, firstName: true, lastName: true } })
         : Promise.resolve([]),
+      prisma.task.groupBy({
+        by: ['priority', 'status'],
+        where: { tenantId, ...taskOwner },
+        _count: { _all: true },
+      }),
+      prisma.task.groupBy({
+        by: ['completedById'],
+        where: { tenantId, ...taskOwner, completedById: { not: null }, completedAt: { gte: since } },
+        _count: { _all: true },
+      }),
+      prisma.task.groupBy({
+        by: ['createdById'],
+        where: { tenantId, ...taskOwner, createdById: { not: null }, createdAt: { gte: since } },
+        _count: { _all: true },
+      }),
     ]);
 
     // ── pipeline por etapa ──────────────────────────────────────────────────────
@@ -113,6 +132,35 @@ export const ChartsService = {
       })
       .sort((a, b) => Number(b.wonAmountPEN) - Number(a.wonAmountPEN));
 
-    return { pipelineByStage, monthly: [...monthly.values()], leadsBySource, bySeller };
+    // ── tareas por prioridad ────────────────────────────────────────────────────
+    // Se listan las cuatro aunque estén en cero: una prioridad ausente del gráfico se lee como que
+    // no existe, cuando en realidad significa que no hay nada ahí.
+    const tasksByPriority = (['URGENT', 'HIGH', 'MEDIUM', 'LOW'] as const).map((priority) => {
+      const rows = priorityRows.filter((row) => row.priority === priority);
+      const total = (status: string) =>
+        rows.filter((row) => (status === 'DONE' ? row.status === 'DONE' : row.status !== 'DONE'))
+          .reduce((sum, row) => sum + row._count._all, 0);
+      return { priority, pending: total('PENDING'), done: total('DONE') };
+    });
+
+    // ── quién cierra y quién carga tareas ───────────────────────────────────────
+    // Para un vendedor `users` viene vacío, así que se arma su propia fila a mano: si no, vería un
+    // gráfico en blanco aunque sus tareas existan.
+    const people = isAdmin
+      ? users.map((user) => ({ id: user.id, name: `${user.firstName} ${user.lastName}` }))
+      : [{ id: actor.userId, name: 'Mis tareas' }];
+    const countFor = (rows: { _count: { _all: number } }[], match: boolean) =>
+      match ? rows.reduce((sum, row) => sum + row._count._all, 0) : 0;
+    const taskPeople = people
+      .map((person) => ({
+        userId: person.id,
+        name: person.name,
+        completed: countFor(completedRows.filter((row) => row.completedById === person.id), true),
+        created: countFor(createdRows.filter((row) => row.createdById === person.id), true),
+      }))
+      .filter((row) => row.completed > 0 || row.created > 0)
+      .sort((a, b) => b.completed - a.completed);
+
+    return { pipelineByStage, monthly: [...monthly.values()], leadsBySource, bySeller, tasksByPriority, taskPeople };
   },
 };

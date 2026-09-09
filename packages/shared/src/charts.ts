@@ -35,6 +35,19 @@ export interface SourceSliceDTO {
   count: number;
 }
 
+export interface TaskPrioritySliceDTO {
+  priority: string;
+  pending: number;
+  done: number;
+}
+
+export interface TaskCompleterRowDTO {
+  userId: string;
+  name: string;
+  completed: number;
+  created: number;
+}
+
 export interface DashboardChartsDTO {
   pipelineByStage: StageSliceDTO[];
   monthly: MonthPointDTO[];
@@ -42,4 +55,8 @@ export interface DashboardChartsDTO {
   // Solo para ADMIN. Un vendedor no puede ver la cartera de sus colegas, así que la lista le llega
   // vacía en vez de con los números del equipo.
   bySeller: SellerRowDTO[];
+  tasksByPriority: TaskPrioritySliceDTO[];
+  // Quién cierra y quién carga tareas. Para un VENDEDOR llega solo con su propia fila: el
+  // rendimiento del resto del equipo es información de jefe.
+  taskPeople: TaskCompleterRowDTO[];
 }

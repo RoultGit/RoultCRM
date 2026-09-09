@@ -17,7 +17,11 @@ export function toDTO(task: Task): TaskDTO {
     dueDate: task.dueDate.toISOString(),
     dueTime: task.dueTime,
     status: task.status,
+    priority: task.priority,
     progress: task.progress,
+    createdById: task.createdById,
+    completedById: task.completedById,
+    completedAt: task.completedAt?.toISOString() ?? null,
     createdAt: task.createdAt.toISOString(),
     updatedAt: task.updatedAt.toISOString(),
   };
@@ -43,7 +47,11 @@ export const TasksService = {
     // una contradicción que el que la mira tiene que resolver de memoria.
     await TasksRepository.updateByIdAndTenant(id, actor.tenantId, {
       status,
-      ...(status === 'DONE' ? { progress: 100 } : {}),
+      ...(status === 'DONE'
+        ? { progress: 100, completedById: actor.userId, completedAt: new Date() }
+        : // Reabrir limpia el cierre. Si no, una tarea en "Por hacer" seguiría diciendo
+          // "completada por Ana el 3 de marzo", que es peor que no decir nada.
+          { completedById: null, completedAt: null }),
     });
     const updated = await TasksRepository.findByIdAndTenant(id, actor.tenantId);
     return toDTO(updated!);
@@ -66,7 +74,12 @@ export const TasksService = {
       dueDate: new Date(input.dueDate),
       dueTime: input.dueTime,
       status: input.status,
+      priority: input.priority,
       progress: input.progress,
+      // Quién la creó es el actor, NUNCA algo que mande el cliente: si viniera del body, cualquiera
+      // podría atribuirle a otro una tarea que él cargó.
+      createdById: actor.userId,
+      ...(input.status === 'DONE' ? { completedById: actor.userId, completedAt: new Date() } : {}),
     });
     return toDTO(task);
   },
@@ -82,8 +95,15 @@ export const TasksService = {
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.dueDate !== undefined ? { dueDate: new Date(input.dueDate) } : {}),
       ...(input.dueTime !== undefined ? { dueTime: input.dueTime ?? null } : {}),
-      ...(input.status !== undefined ? { status: input.status } : {}),
+      // Cerrar por el formulario de edición registra el cierre igual que arrastrando al tablero:
+      // el dato no puede depender de por dónde entró el cambio.
+      ...(input.status !== undefined
+        ? input.status === 'DONE'
+          ? { status: input.status, completedById: actor.userId, completedAt: new Date() }
+          : { status: input.status, completedById: null, completedAt: null }
+        : {}),
       ...(input.progress !== undefined ? { progress: input.progress } : {}),
+      ...(input.priority !== undefined ? { priority: input.priority } : {}),
     });
     const updated = await TasksRepository.findByIdAndTenant(id, actor.tenantId);
     return toDTO(updated!);

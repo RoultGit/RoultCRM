@@ -10,6 +10,8 @@ import {
   SourceList,
   Sparkline,
   StageBars,
+  TaskPeopleList,
+  TaskPriorityChart,
   WonAmountArea,
 } from '../components/charts/DashboardCharts.js';
 
@@ -134,6 +136,15 @@ export function DashboardPage() {
         {/* La comparativa entre vendedores es información de jefe: al vendedor le llega vacía del
             backend, así que ni siquiera se dibuja la card. */}
         {isAdmin && <SellerList data={charts?.bySeller ?? []} />}
+      </div>
+
+      {/* Las tareas viven en su propia sección: responden "cómo viene el trabajo del equipo", que es
+          otra pregunta que "cómo viene la venta". Mezclarlas con el pipeline obliga a saltar de un
+          tema al otro leyendo la misma fila. */}
+      <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Tareas</h2>
+      <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <TaskPriorityChart data={charts?.tasksByPriority ?? []} className="lg:col-span-2" />
+        <TaskPeopleList data={charts?.taskPeople ?? []} />
       </div>
 
       {/* Cuatro totales que NO se suman entre sí: PEN con USD sería inventar un tipo de cambio, y

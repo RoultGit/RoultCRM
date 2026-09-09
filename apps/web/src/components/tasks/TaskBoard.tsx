@@ -14,12 +14,20 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { Clock, Pencil } from 'lucide-react';
-import { updateTaskSchema, type TaskDTO, type UserDTO } from '@roult/shared';
+import { updateTaskSchema, PRIORITY_OPTIONS, type TaskDTO, type UserDTO } from '@roult/shared';
 import { Badge } from '../ui/badge.js';
 import { EditDialog } from '../EditDialog.js';
 import { useSetTaskStatus, useUpdateTask } from '../../hooks/useTasks.js';
 import { formatDate } from '../../lib/date.js';
-import { OwnerAvatar, ProgressBar, STATUS_META, TASK_STATUS, isTaskOverdue } from './shared.js';
+import {
+  OwnerAvatar,
+  PRIORITY_STYLE,
+  PriorityChip,
+  ProgressBar,
+  STATUS_META,
+  TASK_STATUS,
+  isTaskOverdue,
+} from './shared.js';
 
 // Igual que en el pipeline de deals: manda el cursor, y solo si quedó fuera de toda columna se cae
 // a la más cercana. Con la detección por rectángulo, el cuerpo de la card pisa la columna de al
@@ -28,6 +36,32 @@ const collisionDetection: CollisionDetection = (args) => {
   const underPointer = pointerWithin(args);
   return underPointer.length > 0 ? underPointer : closestCorners(args);
 };
+
+// Quién la creó y quién la cerró. Nombres, no ids: un uuid en la tarjeta no le dice nada a nadie.
+function Authorship({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
+  const nameOf = (id: string | null) => {
+    if (!id) return null;
+    const user = users?.find((u) => u.id === id);
+    return user ? `${user.firstName} ${user.lastName}` : null;
+  };
+  const creator = nameOf(task.createdById);
+  const closer = nameOf(task.completedById);
+  // Las tareas anteriores a que se registrara la autoría no tienen creador, y no hay de dónde
+  // sacarlo: en vez de mostrar un hueco, no se muestra la línea.
+  if (!creator && !closer) return null;
+  return (
+    <p className="mt-1.5 text-[11px] leading-relaxed text-gray-400">
+      {creator && <>Creada por {creator}</>}
+      {creator && closer && ' · '}
+      {closer && (
+        <>
+          completada por {closer}
+          {task.completedAt && ` el ${formatDate(task.completedAt)}`}
+        </>
+      )}
+    </p>
+  );
+}
 
 function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id });
@@ -45,7 +79,12 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
       className={`relative rounded-lg border bg-white p-3 ${
         isDragging
           ? 'border-dashed border-gray-300 opacity-40'
-          : 'animate-card-in border-gray-200 shadow-sm'
+          : // Una tarea cerrada vuelve al borde neutro: el color marca lo que reclama atención, y lo
+            // que ya se hizo dejó de reclamarla. Si no, el tablero termina con la columna "Hecha"
+            // llena de rojo y el rojo pierde su significado.
+            `animate-card-in shadow-sm ${
+              task.status === 'DONE' ? 'border-gray-200' : PRIORITY_STYLE[task.priority].card
+            }`
       }`}
     >
       <div {...listeners} {...attributes} className="cursor-grab">
@@ -66,6 +105,7 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
           <ProgressBar value={task.progress} className="mt-2 pl-6" />
         )}
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-dashed border-gray-100 pt-2">
+          <PriorityChip priority={task.priority} />
           <Badge tone={overdue ? 'danger' : 'neutral'}>{formatDate(task.dueDate)}</Badge>
           {task.dueTime && (
             <span className="flex items-center gap-1 text-xs text-gray-500">
@@ -77,6 +117,9 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
             <OwnerAvatar ownerId={task.ownerId} users={users} />
           </span>
         </div>
+        {/* La autoría va en gris chico y en su propia línea: es contexto para cuando hace falta,
+            no algo que tenga que competir con el título de la tarea. */}
+        <Authorship task={task} users={users} />
       </div>
       {/* Fuera de los listeners de arrastre: un click acá abriría un drag en vez del diálogo.
           El ícono va posicionado sobre la esquina en vez de ocupar su propia fila: con un botón
@@ -98,6 +141,7 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
           isError={update.isError}
           values={{
             title: task.title,
+            priority: task.priority,
             description: task.description ?? '',
             dueDate: task.dueDate.slice(0, 10),
             dueTime: task.dueTime ?? '',
@@ -105,6 +149,7 @@ function TaskCard({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
           }}
           fields={[
             { key: 'title', label: 'Título' },
+            { key: 'priority', label: 'Prioridad', options: PRIORITY_OPTIONS },
             { key: 'dueDate', label: 'Fecha límite', type: 'date' },
             { key: 'dueTime', label: 'Hora (opcional)', type: 'time' },
             { key: 'progress', label: 'Avance (%)', type: 'number' },

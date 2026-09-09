@@ -8,6 +8,22 @@ export const relatedTypeSchema = z.enum(['LEAD', 'COMPANY', 'DEAL']);
 // igual que lo que ni se tocó.
 export const taskStatusSchema = z.enum(['TODO', 'DOING', 'DONE']);
 
+export const taskPrioritySchema = z.enum(['URGENT', 'HIGH', 'MEDIUM', 'LOW']);
+export type TaskPriority = z.infer<typeof taskPrioritySchema>;
+
+export const PRIORITY_LABEL: Record<TaskPriority, string> = {
+  URGENT: 'Urgente',
+  HIGH: 'Alta',
+  MEDIUM: 'Media',
+  LOW: 'Baja',
+};
+
+// De lo más urgente a lo menos, igual que el enum en la base.
+export const PRIORITY_OPTIONS = (Object.keys(PRIORITY_LABEL) as TaskPriority[]).map((value) => ({
+  value,
+  label: PRIORITY_LABEL[value],
+}));
+
 // "HH:mm" en 24h. Vacío es una tarea de todo el día, que en el calendario va a la fila de arriba en
 // vez de a una hora concreta.
 export const timeSchema = z
@@ -32,12 +48,14 @@ export const createTaskSchema = z.object({
   dueTime: optionalText(timeSchema),
   status: taskStatusSchema.optional(),
   progress: progressSchema.optional(),
+  priority: taskPrioritySchema.optional(),
 });
 
 export const updateTaskSchema = createTaskSchema.partial();
 
 export const taskFiltersSchema = z.object({
   status: optionalText(taskStatusSchema),
+  priority: optionalText(taskPrioritySchema),
   ownerId: optionalText(z.string()),
 });
 
@@ -51,7 +69,13 @@ export interface TaskDTO {
   dueDate: string;
   dueTime: string | null;
   status: 'TODO' | 'DOING' | 'DONE';
+  priority: TaskPriority;
   progress: number;
+  // null en las tareas anteriores a que se registrara la autoría: no se sabe quién las creó.
+  createdById: string | null;
+  // Se llenan al cerrar la tarea y se limpian al reabrirla.
+  completedById: string | null;
+  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

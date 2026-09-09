@@ -15,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { DashboardChartsDTO, DashboardDTO } from '@roult/shared';
+import { PRIORITY_LABEL, type DashboardChartsDTO, type DashboardDTO, type TaskPriority } from '@roult/shared';
 import { ChartCard, ChartEmpty, ChartTooltip } from './ChartCard.js';
 import { chart, axisProps, gridProps, ANIMATION_MS, monthLabel } from './theme.js';
 import { formatMoney } from '../../lib/money.js';
@@ -389,5 +389,114 @@ export function Sparkline({ values, tone = 'ink' }: { values: number[]; tone?: '
         </BarChart>
       </ResponsiveContainer>
     </div>
+  );
+}
+
+// ── 7. Tareas por prioridad ───────────────────────────────────────────────────
+// Barras apiladas: lo pendiente y lo hecho de cada prioridad, uno encima del otro. Apiladas y no
+// agrupadas porque la pregunta real es "cuánto hay de esto y cuánto falta", no comparar dos series.
+const PRIORITY_FILL: Record<string, string> = {
+  URGENT: '#FB7185',
+  HIGH: '#FBBF24',
+  MEDIUM: '#7DD3FC',
+  LOW: '#D1D5DB',
+};
+
+export function TaskPriorityChart({
+  data,
+  className,
+}: {
+  data: DashboardChartsDTO['tasksByPriority'];
+  className?: string;
+}) {
+  const rows = data.map((row) => ({
+    ...row,
+    label: PRIORITY_LABEL[row.priority as TaskPriority] ?? row.priority,
+  }));
+  const empty = rows.every((row) => row.pending === 0 && row.done === 0);
+  return (
+    <ChartCard
+      title="Tareas por prioridad"
+      hint="Cuánto falta en cada nivel"
+      height={260}
+      className={className}
+      // La leyenda decía "Pendientes" con un cuadrito negro, pero las barras pendientes van en el
+      // color de SU prioridad, no en negro: el gráfico se contradecía a sí mismo. Se explica en
+      // texto en vez de fingir un color que ninguna barra tiene.
+      action={
+        <span className="text-xs text-gray-500">
+          Pendientes en su color · <span className="text-gray-400">hechas en gris</span>
+        </span>
+      }
+    >
+      {empty ? (
+        <ChartEmpty>Todavía no hay tareas cargadas.</ChartEmpty>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rows} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="label" {...axisProps} />
+            <YAxis allowDecimals={false} {...axisProps} />
+            <Tooltip
+              cursor={{ fill: chart.grid }}
+              content={({ active, payload, label }) => (
+                <ChartTooltip
+                  active={active}
+                  label={String(label)}
+                  rows={(payload ?? []).map((p) => ({
+                    name: String(p.name),
+                    value: Number(p.value),
+                    color: p.color,
+                  }))}
+                />
+              )}
+            />
+            {/* Lo pendiente lleva el color de su prioridad; lo hecho va en gris. Lo terminado ya no
+                necesita gritar, y así el gráfico se lee como "cuánto rojo queda". */}
+            <Bar dataKey="pending" name="Pendientes" stackId="t" maxBarSize={44} animationDuration={ANIMATION_MS}>
+              {rows.map((row) => (
+                <Cell key={row.priority} fill={PRIORITY_FILL[row.priority] ?? chart.ink} />
+              ))}
+            </Bar>
+            <Bar
+              dataKey="done"
+              name="Hechas"
+              stackId="t"
+              fill={chart.muted}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={44}
+              animationDuration={ANIMATION_MS}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </ChartCard>
+  );
+}
+
+// ── 8. Quién cierra tareas ────────────────────────────────────────────────────
+export function TaskPeopleList({
+  data,
+  className,
+}: {
+  data: DashboardChartsDTO['taskPeople'];
+  className?: string;
+}) {
+  return (
+    <ChartCard title="Tareas por persona" hint="Cerradas en el período" height={260} className={className}>
+      {data.length === 0 ? (
+        <ChartEmpty>Nadie cerró tareas en este período.</ChartEmpty>
+      ) : (
+        <ProportionList
+          rows={data.slice(0, 6).map((row) => ({
+            label: row.name,
+            value: row.completed,
+            // Cerradas y creadas juntas: quien cierra mucho y crea poco está ejecutando lo que otros
+            // planifican, y al revés. Un solo número escondería esa diferencia.
+            caption: `${row.completed} cerradas · ${row.created} creadas`,
+          }))}
+        />
+      )}
+    </ChartCard>
   );
 }

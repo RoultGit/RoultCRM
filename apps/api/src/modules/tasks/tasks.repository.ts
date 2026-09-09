@@ -9,7 +9,9 @@ export const TasksRepository = {
   findManyByTenant(tenantId: string, owner: { ownerId?: string } = {}) {
     return prisma.task.findMany({
       where: { tenantId, ...owner },
-      orderBy: [{ status: 'asc' }, { dueDate: 'asc' }, { dueTime: 'asc' }],
+      // Prioridad antes que fecha: lo urgente sube aunque venza más tarde, que es la razón de
+      // tener prioridades.
+      orderBy: [{ status: 'asc' }, { priority: 'asc' }, { dueDate: 'asc' }, { dueTime: 'asc' }],
     });
   },
 

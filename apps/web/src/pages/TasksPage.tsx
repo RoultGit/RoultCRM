@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Columns3, GanttChartSquare } from 'lucide-react';
+import { PRIORITY_OPTIONS, type TaskPriority } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
 import { useTasks } from '../hooks/useTasks.js';
 import { useUsers } from '../hooks/useUsers.js';
@@ -16,9 +17,12 @@ export function TasksPage() {
   // La vista vive en el componente y no en la URL a propósito: es una preferencia de cómo mirar lo
   // mismo, no un lugar distinto al que se llegue con un link.
   const [view, setView] = useState<(typeof VIEWS)[number]['key']>('board');
+  // El filtro se aplica en el cliente y no en el servidor: la lista de tareas de una persona es
+  // chica, ya está toda en memoria, y así el tablero responde sin ir y volver a la red.
+  const [priority, setPriority] = useState<TaskPriority | ''>('');
   const { data: tasks, isLoading } = useTasks();
   const { data: users } = useUsers();
-  const all = tasks ?? [];
+  const all = (tasks ?? []).filter((task) => !priority || task.priority === priority);
 
   return (
     <div>
@@ -45,6 +49,19 @@ export function TasksPage() {
               );
             })}
           </div>
+          <select
+            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as TaskPriority | '')}
+            aria-label="Filtrar por prioridad"
+          >
+            <option value="">Prioridad: todas</option>
+            {PRIORITY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
           <CreateTaskDialog />
         </div>
       </div>
@@ -53,7 +70,9 @@ export function TasksPage() {
         <Card className="p-6 text-sm text-gray-500">Cargando…</Card>
       ) : all.length === 0 ? (
         <Card className="p-10 text-center text-sm text-gray-500">
-          No tenés tareas todavía. Creá la primera con “Agregar tarea”.
+          {priority
+            ? 'No hay tareas con esa prioridad.'
+            : 'No tenés tareas todavía. Creá la primera con “Agregar tarea”.'}
         </Card>
       ) : view === 'board' ? (
         <TaskBoard tasks={all} users={users} />
