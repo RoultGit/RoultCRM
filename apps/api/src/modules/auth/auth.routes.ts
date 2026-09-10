@@ -4,7 +4,7 @@ import { AuthService } from './auth.service.js';
 import { ValidationError } from '../../lib/errors.js';
 import { UsersService } from '../users/users.service.js';
 import { requireAuth } from '../../middleware/auth.js';
-import { changePasswordSchema } from '@roult/shared';
+import { changePasswordSchema, forgotPasswordSchema, resetWithTokenSchema } from '@roult/shared';
 import { rateLimit } from '../../middleware/rateLimit.js';
 
 const loginSchema = z.object({
@@ -98,6 +98,49 @@ authRouter.patch('/password', requireAuth, passwordLimiter, async (req, res, nex
     res.cookie(REFRESH_COOKIE, tokens.refreshToken, REFRESH_COOKIE_OPTS);
     passwordLimiter.reset(req);
     res.json({ accessToken: tokens.accessToken });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Límite por IP, no por correo: sin esto cualquiera puede disparar cientos de correos a una casilla
+// ajena usando este endpoint como cañón de spam. Y como la respuesta es siempre la misma, tampoco
+// sirve para averiguar qué correos existen.
+const forgotLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Demasiados pedidos. Probá de nuevo en unos minutos.',
+});
+
+authRouter.post('/forgot-password', forgotLimiter, async (req, res, next) => {
+  try {
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError(parsed.error.message);
+    await AuthService.forgotPassword(parsed.data.email);
+    // SIEMPRE 200 con el mismo mensaje, exista o no la cuenta. Una respuesta distinta convertiría
+    // este endpoint en una forma de averiguar quién usa el sistema.
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Limitador PROPIO, separado del de pedir el link. Con uno solo compartido, quien pedía cinco
+// links se quedaba sin poder usar ninguno: pedir y usar son acciones distintas, y castigar la
+// segunda por la primera deja a la persona encerrada afuera. Este es más permisivo porque acá el
+// token ya es la credencial y adivinarlo es imposible por fuerza bruta.
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: 'Demasiados intentos. Probá de nuevo en unos minutos.',
+});
+
+authRouter.post('/reset-password', resetLimiter, async (req, res, next) => {
+  try {
+    const parsed = resetWithTokenSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError(parsed.error.message);
+    await AuthService.resetPasswordWithToken(parsed.data.token, parsed.data.newPassword);
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }

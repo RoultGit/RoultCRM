@@ -36,6 +36,16 @@ export const changePasswordSchema = z
     path: ['newPassword'],
   });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Ingresa un correo válido'),
+});
+
+export const resetWithTokenSchema = z
+  .object({
+    token: z.string().min(1),
+    newPassword: z.string().min(12, 'La contraseña debe tener al menos 12 caracteres'),
+  });
+
 export interface ResetPasswordDTO {
   userId: string;
   email: string;

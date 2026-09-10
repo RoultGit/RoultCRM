@@ -56,6 +56,7 @@ model User {
   updatedAt      DateTime   @updatedAt
 
   refreshTokens RefreshToken[]
+  passwordResets PasswordResetToken[]
 
   @@index([tenantId])
 }
@@ -73,6 +74,24 @@ model RefreshToken {
 
   @@index([userId])
   @@index([tenantId])
+}
+
+// Token de "olvidé mi contraseña". Se guarda HASHEADO, igual que el refresh token: si alguien lee
+// la base, no puede usar los tokens vivos para tomar cuentas ajenas. Lo que viaja por correo es el
+// valor en claro, que no existe en ningún lado más.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tenantId  String
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  // Un solo uso. Sin esto, el link que quedó en la bandeja de entrada sirve para siempre, y el
+  // correo es justamente lo que se compromete cuando alguien pierde el control de su cuenta.
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model AuditLog {

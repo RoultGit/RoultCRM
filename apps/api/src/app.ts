@@ -20,6 +20,13 @@ import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
   const app = express();
+
+  // Detrás del proxy de Vercel, req.ip es la IP del PROXY y no la del visitante. Sin esto, los
+  // limitadores de intentos meten a todo el mundo en el mismo contador: cinco intentos fallidos de
+  // cualquiera dejarían afuera a todos los demás. Con 1 se confía en un solo salto, que es
+  // exactamente la topología de Vercel; confiar en más permitiría falsificar la cabecera.
+  app.set('trust proxy', 1);
+
   // El frontend y la API comparten dominio en Vercel, así que lo normal es que el Origin del
   // request sea el propio host: eso se permite siempre y ninguna URL de preview necesita lista
   // blanca. WEB_ORIGIN queda para orígenes extra (un dominio propio, o el Vite local).

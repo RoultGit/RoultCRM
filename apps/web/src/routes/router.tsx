@@ -1,6 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell.js';
 import { LoginPage } from '../pages/LoginPage.js';
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage.js';
+import { ResetPasswordPage } from '../pages/ResetPasswordPage.js';
 import { TeamPage } from '../pages/TeamPage.js';
 import { CompaniesPage } from '../pages/CompaniesPage.js';
 import { ContactsPage } from '../pages/ContactsPage.js';
@@ -16,7 +18,10 @@ import { AdminOnly } from '../components/AdminOnly.js';
 import { NotFoundPage } from '../pages/NotFoundPage.js';
 
 export const router = createBrowserRouter([
+  // Públicas: quien olvidó su contraseña no tiene sesión, así que no pueden colgar de AppShell.
   { path: '/login', element: <LoginPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     path: '/',
     element: <AppShell />,

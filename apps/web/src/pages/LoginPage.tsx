@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,6 +44,12 @@ export function LoginPage() {
           <Button type="submit" className="w-full" disabled={login.isPending}>
             {login.isPending ? 'Ingresando…' : 'Ingresar'}
           </Button>
+          <Link
+            to="/forgot-password"
+            className="block text-center text-sm text-gray-500 hover:text-gray-900"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
         </form>
       </Card>
     </div>
