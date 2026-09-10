@@ -16,12 +16,17 @@ export async function seed(env: SeedEnv): Promise<{ tenantId: string; userId: st
   return prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_lock(${SEED_LOCK_KEY})`;
     try {
-      const existing = await tx.user.findUnique({ where: { email: env.adminEmail } });
-      if (existing) {
-        return { tenantId: existing.tenantId, userId: existing.id };
+      // Primero la empresa y después el usuario DENTRO de ella: desde que el correo es único por
+      // empresa y no en el mundo, buscarlo suelto podía encontrar al admin de otra empresa y hacer
+      // que el seed creyera que ya había corrido acá.
+      const existingTenant = await tx.tenant.findFirst({ where: { name: env.tenantName } });
+      if (existingTenant) {
+        const existing = await tx.user.findFirst({
+          where: { tenantId: existingTenant.id, email: env.adminEmail },
+        });
+        if (existing) return { tenantId: existing.tenantId, userId: existing.id };
       }
 
-      const existingTenant = await tx.tenant.findFirst({ where: { name: env.tenantName } });
       const tenant = existingTenant ?? (await tx.tenant.create({ data: { name: env.tenantName } }));
 
       const user = await tx.user.create({

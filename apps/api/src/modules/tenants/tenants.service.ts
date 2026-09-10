@@ -35,17 +35,9 @@ export const TenantsService = {
   async create(actor: Actor, input: z.infer<typeof createTenantSchema>): Promise<CreatedTenantDTO> {
     if (!actor.isPlatformOwner) throw new ForbiddenError('Solo el dueño de la plataforma puede crear entidades');
 
-    // El correo es único a nivel global, no por empresa: si ya existe, el insert fallaría con un
-    // error de base. Chequearlo antes permite decir cuál es el problema en vez de un 500.
-    const taken = await prisma.user.findUnique({ where: { email: input.adminEmail } });
-    if (taken) {
-      // AppError y no DuplicateError: el segundo manda un mensaje genérico pensado para el choque
-      // de empresas parecidas, y acá lo único útil es decir CUÁL correo está tomado.
-      throw new AppError(
-        `El correo ${input.adminEmail} ya está en uso en otra entidad. Cada correo pertenece a una sola empresa.`,
-        409
-      );
-    }
+    // Ya no hace falta chequear si el correo existe en otra empresa: desde que es único POR
+    // EMPRESA, la misma persona puede ser admin de varias. La entidad nace vacía, así que dentro de
+    // ella el correo está libre por definición.
 
     const temporaryPassword = generatePassword();
     const passwordHash = await hashPassword(temporaryPassword);

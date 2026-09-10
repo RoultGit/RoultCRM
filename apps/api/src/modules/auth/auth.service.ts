@@ -32,6 +32,17 @@ interface TokenPair {
   refreshToken: string;
 }
 
+// Cuando el mismo correo y la misma contraseña sirven en dos empresas, no hay forma de adivinar a
+// cuál quiere entrar: se le pregunta.
+export interface TenantChoice {
+  needsTenantChoice: true;
+  tenants: { id: string; name: string }[];
+}
+
+export function isTenantChoice(result: TokenPair | TenantChoice): result is TenantChoice {
+  return 'needsTenantChoice' in result;
+}
+
 async function issueTokens(user: {
   id: string;
   tenantId: string;
@@ -50,11 +61,48 @@ async function issueTokens(user: {
 }
 
 export const AuthService = {
-  async login(email: string, password: string): Promise<TokenPair> {
-    const user = await AuthRepository.findUserByEmail(email);
-    const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
-    if (!user || user.status !== 'ACTIVE' || !valid) throw new UnauthorizedError('Invalid credentials');
-    return issueTokens(user);
+  /**
+   * Ingreso.
+   *
+   * El correo ya no es único en el mundo, así que puede corresponder a varias personas en empresas
+   * distintas. Quién es cuál lo decide la CONTRASEÑA: se prueba contra cada candidata y se sigue con
+   * las que dan bien.
+   *
+   *  - ninguna  → credenciales inválidas
+   *  - una      → entra directo, sin preguntar nada
+   *  - varias   → la misma persona usa el mismo correo Y la misma contraseña en dos empresas, así
+   *               que hay que preguntarle a cuál quiere entrar. Recién ahí se revelan los nombres,
+   *               y solo después de haber validado la contraseña: antes sería contarle a cualquiera
+   *               en qué empresas está registrado un correo.
+   */
+  async login(email: string, password: string, tenantId?: string): Promise<TokenPair | TenantChoice> {
+    const candidates = await AuthRepository.findUsersByEmail(email);
+    const active = candidates.filter((user) => user.status === 'ACTIVE');
+
+    if (active.length === 0) {
+      // Se hace igual una ronda de bcrypt contra un hash falso: sin esto, un correo inexistente
+      // responde más rápido que una contraseña equivocada y se puede averiguar quién está registrado.
+      await verifyPassword(password, DUMMY_PASSWORD_HASH);
+      throw new UnauthorizedError('Invalid credentials');
+    }
+
+    const matches: typeof active = [];
+    for (const user of active) {
+      if (await verifyPassword(password, user.passwordHash)) matches.push(user);
+    }
+    if (matches.length === 0) throw new UnauthorizedError('Invalid credentials');
+
+    if (tenantId) {
+      const chosen = matches.find((user) => user.tenantId === tenantId);
+      if (!chosen) throw new UnauthorizedError('Invalid credentials');
+      return issueTokens(chosen);
+    }
+
+    if (matches.length === 1) return issueTokens(matches[0]);
+    return {
+      needsTenantChoice: true,
+      tenants: matches.map((user) => ({ id: user.tenantId, name: user.tenant.name })),
+    };
   },
 
   async refresh(refreshToken: string): Promise<TokenPair> {
@@ -101,22 +149,25 @@ export const AuthService = {
    * lista de quién usa el sistema — que en un CRM es la lista de clientes de la empresa.
    */
   async forgotPassword(email: string): Promise<void> {
-    const user = await AuthRepository.findUserByEmailForReset(email);
-    if (!user || user.status !== 'ACTIVE') return;
+    // Un correo puede tener cuenta en varias empresas y desde afuera no hay forma de saber cuál
+    // olvidó: se manda un link por cada una, cada uno atado a su propia cuenta.
+    const users = await AuthRepository.findUsersByEmailForReset(email);
 
-    // Los pedidos anteriores mueren: si no, cada uno deja otro link vivo en la bandeja de entrada.
-    await AuthRepository.invalidatePasswordResets(user.id);
+    for (const user of users) {
+      // Los pedidos anteriores mueren: si no, cada uno deja otro link vivo en la bandeja de entrada.
+      await AuthRepository.invalidatePasswordResets(user.id);
 
-    const token = randomBytes(48).toString('hex');
-    await AuthRepository.createPasswordReset(
-      user.tenantId,
-      user.id,
-      hashResetToken(token),
-      new Date(Date.now() + RESET_TOKEN_TTL_MS)
-    );
+      const token = randomBytes(48).toString('hex');
+      await AuthRepository.createPasswordReset(
+        user.tenantId,
+        user.id,
+        hashResetToken(token),
+        new Date(Date.now() + RESET_TOKEN_TTL_MS)
+      );
 
-    const link = `${webOrigin()}/reset-password?token=${token}`;
-    await sendEmail({ to: user.email, ...passwordResetEmail(user.firstName, link) });
+      const link = `${webOrigin()}/reset-password?token=${token}`;
+      await sendEmail({ to: user.email, ...passwordResetEmail(user.firstName, link) });
+    }
   },
 
   /**

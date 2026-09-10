@@ -8,14 +8,24 @@ interface LoginInput {
   password: string;
 }
 
-export function useLogin() {
+// El servidor puede contestar dos cosas: los tokens, o —cuando el mismo correo y contraseña sirven
+// en más de una empresa— la lista para elegir a cuál entrar.
+export type LoginResult =
+  | { accessToken: string; needsTenantChoice?: undefined }
+  | { needsTenantChoice: true; tenants: { id: string; name: string }[] };
+
+export function useLogin(onNeedsTenant?: (tenants: { id: string; name: string }[]) => void) {
   const navigate = useNavigate();
   return useMutation({
-    mutationFn: async (input: LoginInput) => {
-      const res = await apiClient.post<{ accessToken: string }>('/auth/login', input);
+    mutationFn: async (input: LoginInput & { tenantId?: string }) => {
+      const res = await apiClient.post<LoginResult>('/auth/login', input);
       return res.data;
     },
     onSuccess: (data) => {
+      if (data.needsTenantChoice) {
+        onNeedsTenant?.(data.tenants);
+        return;
+      }
       setAccessToken(data.accessToken);
       navigate('/');
     },

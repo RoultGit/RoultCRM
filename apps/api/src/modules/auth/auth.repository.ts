@@ -1,8 +1,14 @@
 import { prisma } from '../../lib/prisma.js';
 
 export const AuthRepository = {
-  findUserByEmail(email: string) {
-    return prisma.user.findUnique({ where: { email } });
+  // findMany y no findUnique: el correo ya no es único en el mundo, así que un mismo correo puede
+  // corresponder a varias personas en empresas distintas. Quién es cuál lo decide la contraseña.
+  findUsersByEmail(email: string) {
+    return prisma.user.findMany({
+      where: { email },
+      include: { tenant: { select: { id: true, name: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
   },
 
   storeRefreshToken(tenantId: string, userId: string, tokenHash: string, expiresAt: Date) {
@@ -59,8 +65,10 @@ export const AuthRepository = {
     });
   },
 
-  findUserByEmailForReset(email: string) {
-    return prisma.user.findUnique({ where: { email } });
+  // Todas las cuentas con ese correo: si la persona está en dos empresas, tiene que poder recuperar
+  // cualquiera de las dos, y desde afuera no hay forma de saber cuál olvidó.
+  findUsersByEmailForReset(email: string) {
+    return prisma.user.findMany({ where: { email, status: 'ACTIVE' } });
   },
 
   revokeAllForUser(userId: string) {

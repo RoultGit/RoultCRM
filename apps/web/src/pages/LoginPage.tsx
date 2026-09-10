@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Building2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,12 +16,45 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
-  const login = useLogin();
+  const { register, handleSubmit, getValues, formState: { errors } } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
+  // Solo aparece cuando el mismo correo y contraseña sirven en más de una empresa. Es raro, pero
+  // pasa: el dueño con dos negocios, o el contador que atiende a varios clientes.
+  const [tenants, setTenants] = useState<{ id: string; name: string }[] | null>(null);
+  const login = useLogin(setTenants);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface">
       <Card className="w-full max-w-sm p-8">
+        {tenants ? (
+          <>
+            <h1 className="mb-1 text-xl font-semibold">¿A cuál entrás?</h1>
+            <p className="mb-5 text-sm text-gray-500">
+              Tu correo tiene cuenta en más de una empresa. Cada una tiene sus propios datos.
+            </p>
+            <div className="space-y-2">
+              {tenants.map((tenant) => (
+                <button
+                  key={tenant.id}
+                  type="button"
+                  disabled={login.isPending}
+                  onClick={() => login.mutate({ ...getValues(), tenantId: tenant.id })}
+                  className="flex w-full items-center gap-3 rounded-lg border border-gray-200 px-3 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <Building2 className="h-4 w-4 shrink-0 text-gray-400" />
+                  {tenant.name}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setTenants(null)}
+              className="mt-4 w-full text-center text-sm text-gray-500 hover:text-gray-900"
+            >
+              Volver
+            </button>
+          </>
+        ) : (
+        <>
         <h1 className="mb-6 text-xl font-semibold">Ingresar a RoultCRM</h1>
         <form className="space-y-4" onSubmit={handleSubmit((data) => login.mutate(data))}>
           <div>
@@ -51,6 +86,8 @@ export function LoginPage() {
             ¿Olvidaste tu contraseña?
           </Link>
         </form>
+        </>
+        )}
       </Card>
     </div>
   );

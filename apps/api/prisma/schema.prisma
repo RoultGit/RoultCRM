@@ -34,7 +34,7 @@ model User {
   id             String     @id @default(uuid())
   tenantId       String
   tenant         Tenant     @relation(fields: [tenantId], references: [id])
-  email          String     @unique
+  email          String
   passwordHash   String
   firstName      String
   lastName       String
@@ -59,7 +59,13 @@ model User {
   refreshTokens RefreshToken[]
   passwordResets PasswordResetToken[]
 
+  // Único POR EMPRESA, no en el mundo. Con el índice global, una persona pertenecía a una sola
+  // empresa: un contador que atiende a dos clientes no podía usar su correo en las dos, y el dueño
+  // que tiene dos negocios necesitaba dos casillas. Es la restricción que impide crecer.
+  @@unique([tenantId, email])
   @@index([tenantId])
+  // El login busca por correo sin saber todavía de qué empresa es, así que necesita su propio índice.
+  @@index([email])
 }
 
 model RefreshToken {

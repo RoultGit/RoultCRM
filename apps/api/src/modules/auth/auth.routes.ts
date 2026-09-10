@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { AuthService } from './auth.service.js';
+import { AuthService, isTenantChoice } from './auth.service.js';
 import { ValidationError } from '../../lib/errors.js';
 import { UsersService } from '../users/users.service.js';
 import { requireAuth } from '../../middleware/auth.js';
@@ -10,6 +10,9 @@ import { rateLimit } from '../../middleware/rateLimit.js';
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  // Solo hace falta cuando el mismo correo y contraseña sirven en más de una empresa: el primer
+  // intento viene sin esto y el servidor contesta con la lista para elegir.
+  tenantId: z.string().optional(),
 });
 
 const REFRESH_COOKIE = 'refreshToken';
@@ -34,10 +37,20 @@ authRouter.post('/login', loginLimiter, async (req, res, next) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError('Invalid email or password format');
-    const { accessToken, refreshToken } = await AuthService.login(parsed.data.email, parsed.data.password);
+    const result = await AuthService.login(parsed.data.email, parsed.data.password, parsed.data.tenantId);
+    // La contraseña ya se validó, así que el intento no cuenta como fallido aunque todavía falte
+    // elegir la empresa.
     loginLimiter.reset(req);
-    res.cookie(REFRESH_COOKIE, refreshToken, REFRESH_COOKIE_OPTS);
-    res.json({ accessToken });
+
+    // 200 y no un error: elegir empresa es un paso del ingreso, no una falla. El frontend muestra
+    // la lista y vuelve a llamar con el tenantId elegido.
+    if (isTenantChoice(result)) {
+      res.json(result);
+      return;
+    }
+
+    res.cookie(REFRESH_COOKIE, result.refreshToken, REFRESH_COOKIE_OPTS);
+    res.json({ accessToken: result.accessToken });
   } catch (err) {
     next(err);
   }

@@ -46,6 +46,7 @@ describe('/tenants routes', () => {
   });
 
   it('does not let a tenant ADMIN create or list entities', async () => {
+    const antes = await prisma.tenant.count({ where: { name: { startsWith: 'Cliente ' } } });
     // Esta es LA regla del endpoint. El admin de una empresa cliente no puede dar de alta otras
     // empresas ni siquiera enterarse de que existen: sería ver la cartera de clientes del negocio.
     expect((await request(app).get('/tenants').set('Authorization', `Bearer ${adminToken}`)).status).toBe(403);
@@ -54,7 +55,9 @@ describe('/tenants routes', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send(newTenant());
     expect(res.status).toBe(403);
-    expect(await prisma.tenant.count({ where: { name: { startsWith: 'Cliente ' } } })).toBe(0);
+    // Se compara contra lo que había ANTES, no contra cero: otras pruebas del mismo archivo crean
+    // entidades con el mismo prefijo y el conteo absoluto las arrastraba.
+    expect(await prisma.tenant.count({ where: { name: { startsWith: 'Cliente ' } } })).toBe(antes);
   });
 
   it('does not let a VENDEDOR near it either', async () => {
@@ -72,7 +75,7 @@ describe('/tenants routes', () => {
     expect(res.body.adminEmail).toBe(payload.adminEmail);
     expect(res.body.temporaryPassword).toHaveLength(16);
 
-    const user = await prisma.user.findUnique({ where: { email: payload.adminEmail } });
+    const user = await prisma.user.findFirst({ where: { email: payload.adminEmail } });
     expect(user?.role).toBe('ADMIN');
     expect(user?.tenantId).toBe(res.body.tenant.id);
     // La contraseña devuelta tiene que servir de verdad para entrar; si no, la entidad nace muerta.
@@ -85,22 +88,29 @@ describe('/tenants routes', () => {
   it('never makes the new admin a platform owner', async () => {
     const res = await request(app).post('/tenants').set('Authorization', `Bearer ${ownerToken}`).send(newTenant());
     created.push(res.body.tenant.id);
-    const user = await prisma.user.findUnique({ where: { email: res.body.adminEmail } });
+    const user = await prisma.user.findFirst({ where: { email: res.body.adminEmail } });
     // Si el admin recién creado naciera como dueño de plataforma, el primer cliente podría crear
     // entidades y listar las de todos los demás: escalada de privilegios en el alta misma.
     expect(user?.isPlatformOwner).toBe(false);
   });
 
-  it('refuses an email that already belongs to another entity', async () => {
+  it('now accepts an email that already exists in another entity', async () => {
     const first = await request(app).post('/tenants').set('Authorization', `Bearer ${ownerToken}`).send(newTenant());
     created.push(first.body.tenant.id);
 
-    const clash = await request(app)
+    // Esto ANTES respondía 409. Cambió a propósito: desde que el correo es único por empresa, la
+    // misma persona puede ser admin de dos empresas cliente — un contador que atiende a varias, o
+    // el dueño con dos negocios. Era la restricción que impedía crecer.
+    const second = await request(app)
       .post('/tenants')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send(newTenant({ adminEmail: first.body.adminEmail }));
-    expect(clash.status).toBe(409);
-    expect(clash.body.error).toContain('ya está en uso');
+    expect(second.status).toBe(201);
+    created.push(second.body.tenant.id);
+
+    expect(await prisma.user.count({ where: { email: first.body.adminEmail } })).toBe(2);
+    // Y cada cuenta tiene SU propia contraseña: no se comparte nada entre las dos empresas.
+    expect(second.body.temporaryPassword).not.toBe(first.body.temporaryPassword);
   });
 
   it('does not leave a half-created entity when the admin cannot be created', async () => {
