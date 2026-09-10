@@ -9,6 +9,7 @@ import { useDeals } from '../hooks/useDeals.js';
 import { useUsers } from '../hooks/useUsers.js';
 import { ActivityTimeline } from '../components/activities/ActivityTimeline.js';
 import { ContactActions } from '../components/ContactActions.js';
+import { CustomFieldsPanel } from '../components/customFields/CustomFieldsPanel.js';
 import { formatAmount } from '../lib/money.js';
 import { formatDate } from '../lib/date.js';
 
@@ -106,6 +107,10 @@ export function CompanyDetailPage() {
               </p>
             )}
           </Card>
+
+          {/* Los campos que esta empresa se definió para sí misma. El panel no se dibuja si no hay
+              ninguno, así que la ficha queda igual para quien no los usa. */}
+          <CustomFieldsPanel entity="COMPANY" recordId={id} card />
 
           <Card className="p-5">
             <ActivityTimeline relatedType="COMPANY" relatedId={id} />

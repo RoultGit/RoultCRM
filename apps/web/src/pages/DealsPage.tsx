@@ -125,6 +125,7 @@ function DealCard({
       <div className="mt-2 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
         <EditDialog
           title="Editar deal"
+          custom={{ entity: 'DEAL', recordId: deal.id }}
           schema={updateDealSchema}
           isPending={update.isPending}
           isError={update.isError}

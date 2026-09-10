@@ -117,6 +117,7 @@ export function LeadsPage() {
           <div className="flex items-center gap-2">
             <EditDialog
               title="Editar lead"
+              custom={{ entity: 'LEAD', recordId: lead.id }}
               schema={updateLeadSchema}
               isPending={updateLead.isPending}
               isError={updateLead.isError}

@@ -13,6 +13,7 @@ import { TasksPage } from '../pages/TasksPage.js';
 import { CalendarPage } from '../pages/CalendarPage.js';
 import { TenantsPage } from '../pages/TenantsPage.js';
 import { IntegrationsPage } from '../pages/IntegrationsPage.js';
+import { CustomFieldsPage } from '../pages/CustomFieldsPage.js';
 import { AuditPage } from '../pages/AuditPage.js';
 import { DashboardPage } from '../pages/DashboardPage.js';
 import { ImportPage } from '../pages/ImportPage.js';
@@ -44,6 +45,14 @@ export const router = createBrowserRouter([
         element: (
           <AdminOnly>
             <IntegrationsPage />
+          </AdminOnly>
+        ),
+      },
+      {
+        path: 'custom-fields',
+        element: (
+          <AdminOnly>
+            <CustomFieldsPage />
           </AdminOnly>
         ),
       },

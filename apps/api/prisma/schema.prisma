@@ -28,6 +28,7 @@ model Tenant {
 
   users User[]
   apiKeys ApiKey[]
+  customFields CustomField[]
 }
 
 model User {
@@ -117,6 +118,60 @@ model ApiKey {
   createdAt  DateTime  @default(now())
 
   @@index([tenantId])
+}
+
+// Qué campo extra definió cada empresa. Una inmobiliaria necesita "metros cuadrados", una clínica
+// "número de historia clínica": no hay forma de anticiparlos, y agregarlos como columnas obligaría a
+// migrar la base por cada cliente nuevo.
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+  CHECKBOX
+}
+
+model CustomField {
+  id          String          @id @default(uuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  // A qué ficha se le agrega: empresa, contacto, lead o venta.
+  entity      RelatedType
+  label       String
+  type        CustomFieldType
+  // Opciones del desplegable. Vacío para los demás tipos.
+  options     String[]        @default([])
+  required    Boolean         @default(false)
+  // Para ordenarlos en el formulario sin depender de cuándo se crearon.
+  position    Int             @default(0)
+  archivedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  values CustomFieldValue[]
+
+  @@index([tenantId, entity, archivedAt])
+}
+
+// El valor guardado, siempre como texto.
+//
+// Un solo campo `value` en vez de una columna por tipo: el tipo lo valida el schema al escribir, y
+// tener valueText/valueNumber/valueDate obligaría a saber cuál mirar en cada lectura. Lo que se
+// gana en pureza se paga en cada consulta.
+model CustomFieldValue {
+  id       String      @id @default(uuid())
+  tenantId String
+  fieldId  String
+  field    CustomField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  // Polimórfico, igual que Activity: el mismo campo puede colgar de cualquier ficha.
+  entity   RelatedType
+  recordId String
+  value    String
+
+  // Un valor por campo y por ficha: sin esto, guardar dos veces dejaría dos filas y la lectura
+  // tendría que elegir una al azar.
+  @@unique([fieldId, recordId])
+  @@index([tenantId, entity, recordId])
 }
 
 model AuditLog {

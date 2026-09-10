@@ -62,6 +62,7 @@ export function CompaniesPage() {
         <div className="flex items-center gap-2">
         <EditDialog
           title="Editar empresa"
+          custom={{ entity: 'COMPANY', recordId: row.original.id }}
           schema={updateCompanySchema}
           isPending={updateCompany.isPending}
           isError={updateCompany.isError}

@@ -24,6 +24,7 @@ export function ContactsPage() {
       cell: ({ row }) => (
         <EditDialog
           title="Editar contacto"
+          custom={{ entity: 'CONTACT', recordId: row.original.id }}
           schema={updateContactSchema}
           isPending={updateContact.isPending}
           isError={updateContact.isError}

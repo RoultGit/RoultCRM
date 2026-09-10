@@ -3,8 +3,10 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useForm, type DefaultValues, type FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { ZodTypeAny } from 'zod';
+import type { CustomFieldDTO } from '@roult/shared';
 import { Button } from './ui/button.js';
 import { useUsers } from '../hooks/useUsers.js';
+import { CustomFieldInputs, useCustomFieldsDraft } from './customFields/CustomFieldsPanel.js';
 
 export interface EditField {
   key: string;
@@ -30,6 +32,7 @@ export function EditDialog<T extends FieldValues>({
   isError,
   onSubmit,
   trigger,
+  custom,
 }: {
   title: string;
   fields: EditField[];
@@ -42,9 +45,13 @@ export function EditDialog<T extends FieldValues>({
   /** Botón que abre el diálogo. Por defecto un "Editar" de contorno; en las cards del tablero se
    *  reemplaza por un ícono, porque diez botones iguales apilados tapan el contenido. */
   trigger?: ReactNode;
+  /** Los campos propios de este registro, si la empresa definió alguno para esta ficha. */
+  custom?: { entity: CustomFieldDTO['entity']; recordId: string };
 }) {
   const [open, setOpen] = useState(false);
   const { data: users } = useUsers();
+  // Solo pide los valores con el diálogo abierto: montado va uno por fila de la tabla.
+  const extra = useCustomFieldsDraft(custom?.entity, open ? (custom?.recordId ?? null) : null);
   const {
     register,
     handleSubmit,
@@ -71,7 +78,15 @@ export function EditDialog<T extends FieldValues>({
         <Dialog.Overlay className="fixed inset-0 bg-black/30" />
         <Dialog.Content className="focus:outline-none fixed left-1/2 top-1/2 max-h-[85vh] w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white p-6 shadow-lg">
           <Dialog.Title className="mb-4 text-lg font-semibold">{title}</Dialog.Title>
-          <form className="space-y-3" onSubmit={handleSubmit((data) => onSubmit(data, () => setOpen(false)))}>
+          <form
+            className="space-y-3"
+            // Los campos propios viven en otra tabla, así que son otra petición; se guardan con el
+            // mismo botón para que nadie complete un campo, apriete Guardar y lo pierda.
+            onSubmit={handleSubmit(async (data) => {
+              await extra.save();
+              onSubmit(data, () => setOpen(false));
+            })}
+          >
             {fields.map((field) => {
               const options =
                 field.options === 'vendedores'
@@ -103,6 +118,12 @@ export function EditDialog<T extends FieldValues>({
                 </label>
               );
             })}
+            {extra.fields.length > 0 && (
+              <div className="space-y-3 border-t border-gray-100 pt-3">
+                <CustomFieldInputs fields={extra.fields} draft={extra.draft} onChange={extra.set} />
+              </div>
+            )}
+            {extra.isError && <p className="text-xs text-red-600">No se pudieron guardar los datos propios.</p>}
             {Object.values(errors).map((err, i) => (
               <p key={i} className="text-xs text-red-600">
                 {(err as { message?: string })?.message}
