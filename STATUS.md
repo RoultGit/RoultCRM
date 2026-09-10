@@ -59,10 +59,43 @@ Un solo proyecto de Vercel sirve el frontend y la API: el SPA en la raíz y Expr
 - **Import/export solo CSV**, no Excel.
 - **No se importan Deals ni Vendedores**: un deal necesita resolver su empresa por nombre y un vendedor necesita credenciales.
 
+## Después de los 4 planes (sesiones 4 y 5)
+
+El producto pasó de "MVP interno de ROUlt" a "SaaS que se le vende a otras empresas". Lo agregado,
+en orden: rendimiento del arrastre en el pipeline; borrado de deals y de empresas; gráficos del
+dashboard (Recharts); módulo de calendario propio (día y mes, sin librería); tareas como tablero +
+línea de tiempo, con prioridad, autoría, asignación y bitácora de avance; responsive en las 10
+rutas; cobro mensual/suscripción; líneas AUTOMATIZACION y SERVICIO; nombre del representante;
+renombre a RoultCRM; alta de entidades cliente con `isPlatformOwner`; gestión de contraseñas
+completa (cambio, forzado, olvido, reseteo); historial de interacciones (`Activity`); ficha 360 del
+cliente; click-to-WhatsApp; API pública de captación de leads (`/intake`).
+
+Y lo último, las 5 cosas que faltaban para venderlo:
+
+1. **Un correo puede estar en varias empresas.** El índice único de `User.email` pasó a ser
+   `[tenantId, email]`. El login busca por correo sin saber la empresa, y si el mismo correo con la
+   misma contraseña existe en dos, devuelve la lista para elegir.
+2. **Campos propios** (`CustomField` / `CustomFieldValue`): el admin los define por tipo de ficha en
+   `/custom-fields`, y aparecen en la ficha de la empresa y en los diálogos de edición de lead,
+   venta, contacto y empresa. El valor se guarda como texto y el tipo se valida al guardar.
+3. **Recordatorios diarios**: cron de Vercel a las 13:00 UTC (8am Lima) → un correo por persona con
+   sus tareas y próximos pasos vencidos o de hoy. `User.lastDigestAt` evita el duplicado.
+4. **WhatsApp Business** (`WhatsAppAccount`): cada empresa cliente conecta SU número desde
+   Conexiones. Token cifrado con AES-256-GCM (`lib/secretBox.ts`, `ENCRYPTION_KEY`). El webhook
+   verifica la firma HMAC de Meta y falla cerrado. Lo entrante cae en la ficha del contacto o lead
+   por los últimos 9 dígitos del número, y si no matchea con nadie, crea un lead.
+5. **Correo de salida**: el código está (`lib/mailer.ts`, Resend por `fetch`), falta la cuenta.
+
+**Verde:** 319 tests de API + 24 de web. Simulación de empresa cliente (`empresa.mjs`, 15 etapas) y
+recorrido de pantallas (`navegador.mjs`) sin fallas.
+
+**Lo que falta configurar afuera está en `docs/PUESTA-EN-MARCHA.md`**: `ENCRYPTION_KEY` y
+`CRON_SECRET` (valores ya generados ahí), la cuenta de Resend y la de Meta.
+
 ## Qué falta para terminar el goal
 
-1. Testing end-to-end final del MVP F1 completo (los 4 planes juntos).
-2. Ajustes de diseño que el usuario quiere revisar.
+1. Cargar las variables de entorno de `docs/PUESTA-EN-MARCHA.md` en Vercel.
+2. Crear las cuentas de Resend y de Meta.
 
 ## Cómo retomar
 
