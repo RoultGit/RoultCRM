@@ -105,3 +105,69 @@ function escapeHtml(value: string): string {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string
   );
 }
+
+/**
+ * El resumen del día: lo que se vence hoy y lo que ya se venció.
+ *
+ * Sin fecha propia por ítem no se distingue "es para hoy" de "se venció hace una semana", que es
+ * justo lo que hace que uno abra el correo o lo archive.
+ */
+export function dailyDigestEmail(
+  name: string,
+  items: { title: string; subtitle?: string; dueDate: Date; kind: 'TASK' | 'NEXT_STEP'; link: string }[],
+  now = new Date()
+): Omit<Email, 'to'> {
+  const hoy = now.toISOString().slice(0, 10);
+  const dia = (d: Date) => d.toISOString().slice(0, 10);
+  const cuando = (d: Date) => {
+    const f = dia(d);
+    if (f === hoy) return 'hoy';
+    if (f < hoy) return `vencido — ${f.split('-').reverse().join('/')}`;
+    return f.split('-').reverse().join('/');
+  };
+  const vencidos = items.filter((i) => dia(i.dueDate) < hoy).length;
+
+  const resumen =
+    vencidos > 0
+      ? `${items.length} pendiente${items.length === 1 ? '' : 's'}, ${vencidos} vencido${vencidos === 1 ? '' : 's'}`
+      : `${items.length} pendiente${items.length === 1 ? '' : 's'} para hoy`;
+
+  const text = [
+    `Hola ${name},`,
+    '',
+    `${resumen}:`,
+    '',
+    ...items.map(
+      (i) =>
+        `- [${i.kind === 'TASK' ? 'Tarea' : 'Próximo paso'}] ${i.title}` +
+        `${i.subtitle ? ` (${i.subtitle})` : ''} — ${cuando(i.dueDate)}`
+    ),
+    '',
+    webOrigin(),
+  ].join('\n');
+
+  const filas = items
+    .map(
+      (i) => `<tr>
+    <td style="padding:10px 0;border-bottom:1px solid #F3F4F6">
+      <a href="${i.link}" style="color:#111827;text-decoration:none;font-weight:500">${escapeHtml(i.title)}</a>
+      <div style="font-size:13px;color:#6B7280;margin-top:2px">
+        ${i.kind === 'TASK' ? 'Tarea' : 'Próximo paso'}${i.subtitle ? ` · ${escapeHtml(i.subtitle)}` : ''}
+      </div>
+    </td>
+    <td style="padding:10px 0;border-bottom:1px solid #F3F4F6;text-align:right;font-size:13px;white-space:nowrap;color:${
+      dia(i.dueDate) < hoy ? '#B91C1C' : '#6B7280'
+    }">${cuando(i.dueDate)}</td>
+  </tr>`
+    )
+    .join('\n');
+
+  const html = `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827">
+  <p style="font-size:18px;font-weight:600;margin:0 0 16px">RoultCRM</p>
+  <p style="margin:0 0 4px">Hola ${escapeHtml(name)},</p>
+  <p style="margin:0 0 20px;color:#6B7280">${resumen}.</p>
+  <table style="width:100%;border-collapse:collapse">${filas}</table>
+</div>`;
+
+  return { subject: `RoultCRM · ${resumen}`, html, text };
+}

@@ -52,6 +52,9 @@ model User {
   // WhatsApp o correo nace marcada: quien entra la cambia antes de poder usar la app. Sin esto, la
   // contraseña que el vendedor le pasó al cliente queda viva para siempre en un chat.
   mustChangePassword Boolean @default(false)
+  // Cuándo se le mandó el último resumen diario. Es la guarda contra mandar dos veces el mismo
+  // correo si el cron corre dos veces en el día.
+  lastDigestAt   DateTime?
   commissionPct  Decimal    @default(20) @db.Decimal(5, 2)
   hireDate       DateTime   @default(now())
   createdAt      DateTime   @default(now())

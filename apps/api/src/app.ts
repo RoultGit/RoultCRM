@@ -19,6 +19,7 @@ import { tenantsRouter } from './modules/tenants/tenants.routes.js';
 import { activitiesRouter } from './modules/activities/activities.routes.js';
 import { intakeRouter } from './modules/intake/intake.routes.js';
 import { customFieldsRouter } from './modules/customFields/customFields.routes.js';
+import { remindersRouter } from './modules/reminders/reminders.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -100,6 +101,7 @@ export function createApp(): Express {
   app.use('/activities', activitiesRouter);
   app.use('/intake', intakeRouter);
   app.use('/custom-fields', customFieldsRouter);
+  app.use('/cron', remindersRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     // body-parser tira este error fuera de la jerarquía de AppError, así que sin este caso caía en

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Copy, Trash2 } from 'lucide-react';
+import { Bell, Check, Copy, Trash2 } from 'lucide-react';
 import { Card } from '../components/ui/card.js';
 import { Button } from '../components/ui/button.js';
 import { apiClient } from '../lib/api.js';
@@ -58,8 +58,8 @@ export function IntegrationsPage() {
     <div>
       <h1 className="text-xl font-semibold">Conexiones</h1>
       <p className="mb-4 mt-1 text-sm text-gray-500">
-        Para que el formulario de tu sitio, un chatbot o cualquier otro sistema cargue leads acá
-        automáticamente.
+        Lo que el CRM hace solo: recibir leads de tu sitio o de un chatbot, y avisarle a cada uno
+        lo que se le vence.
       </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -130,6 +130,9 @@ export function IntegrationsPage() {
           </Card>
         </div>
 
+        <div className="space-y-4">
+        <RecordatoriosCard />
+
         <Card className="p-5">
           <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">Cuidado con la clave</h2>
           <p className="mb-3 text-sm text-gray-600">
@@ -146,6 +149,7 @@ export function IntegrationsPage() {
             pongan la nueva.
           </p>
         </Card>
+        </div>
       </div>
 
       {/* La clave se ve UNA vez. No se guarda en claro en ningún lado. */}
@@ -182,5 +186,76 @@ export function IntegrationsPage() {
         </Dialog.Portal>
       </Dialog.Root>
     </div>
+  );
+}
+
+interface DigestPreview {
+  mailConfigured: boolean;
+  lastDigestAt: string | null;
+  items: { kind: 'TASK' | 'NEXT_STEP'; title: string; subtitle: string | null; dueDate: string }[];
+}
+
+/**
+ * El estado de los recordatorios diarios.
+ *
+ * Muestra lo que ESTE usuario recibiría hoy en vez de un botón de "probar": un botón que le manda
+ * correo a todo el equipo para ver si anda es un botón que nadie aprieta dos veces.
+ */
+function RecordatoriosCard() {
+  const { data } = useQuery({
+    queryKey: ['reminders', 'mine'],
+    queryFn: async () => (await apiClient.get<DigestPreview>('/cron/mine')).data,
+  });
+
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  return (
+    <Card className="p-5">
+      <h2 className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+        <Bell className="h-3.5 w-3.5" /> Recordatorios diarios
+      </h2>
+      <p className="mb-3 text-sm text-gray-600">
+        Todas las mañanas sale un correo por persona con sus tareas y próximos pasos que vencen ese
+        día o que ya se vencieron. Uno solo con todo junto, no uno por pendiente.
+      </p>
+
+      {data && !data.mailConfigured && (
+        <p className="mb-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+          Falta configurar el correo de salida (RESEND_API_KEY y MAIL_FROM). Hasta que esté, los
+          recordatorios se calculan pero no se envían.
+        </p>
+      )}
+
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Lo tuyo de hoy</p>
+      {!data ? (
+        <p className="text-sm text-gray-400">Cargando…</p>
+      ) : data.items.length === 0 ? (
+        <p className="text-sm text-gray-500">Nada pendiente para hoy. No recibirías correo.</p>
+      ) : (
+        <ul className="space-y-2">
+          {data.items.slice(0, 6).map((item, i) => (
+            <li key={i} className="flex items-start justify-between gap-3 text-sm">
+              <span className="min-w-0">
+                <span className="block truncate text-gray-900">{item.title}</span>
+                <span className="text-xs text-gray-500">
+                  {item.kind === 'TASK' ? 'Tarea' : 'Próximo paso'}
+                  {item.subtitle ? ` · ${item.subtitle}` : ''}
+                </span>
+              </span>
+              <span
+                className={`whitespace-nowrap text-xs ${
+                  item.dueDate.slice(0, 10) < hoy ? 'text-red-600' : 'text-gray-500'
+                }`}
+              >
+                {item.dueDate.slice(0, 10) < hoy ? 'vencido' : 'hoy'}
+              </span>
+            </li>
+          ))}
+          {data.items.length > 6 && (
+            <li className="text-xs text-gray-500">y {data.items.length - 6} más</li>
+          )}
+        </ul>
+      )}
+    </Card>
   );
 }
