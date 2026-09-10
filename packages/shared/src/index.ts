@@ -12,3 +12,4 @@ export * from './import.js';
 export * from './calendar.js';
 export * from './charts.js';
 export * from './tenants.js';
+export * from './activities.js';

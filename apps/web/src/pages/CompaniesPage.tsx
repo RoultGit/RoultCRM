@@ -1,5 +1,6 @@
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
 import { Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { LINE_OPTIONS, LINE_LABEL } from '@roult/shared';
 import type { CompanyDTO } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
@@ -27,7 +28,16 @@ export function CompaniesPage() {
   const [companyToDelete, setCompanyToDelete] = useState<CompanyDTO | null>(null);
 
   const columns = [
-    columnHelper.accessor('name', { header: 'Empresa' }),
+    columnHelper.accessor('name', {
+      header: 'Empresa',
+      // El nombre es el acceso a la ficha: es donde la gente hace clic esperando "ver más", y
+      // evita agregar otra columna de acciones.
+      cell: ({ row }) => (
+        <Link to={`/companies/${row.original.id}`} className="font-medium text-gray-900 hover:underline">
+          {row.original.name}
+        </Link>
+      ),
+    }),
     columnHelper.accessor('representativeName', {
       header: 'Representante',
       cell: (info) => info.getValue() ?? '—',

@@ -27,6 +27,7 @@ model Tenant {
   createdAt DateTime @default(now())
 
   users User[]
+  apiKeys ApiKey[]
 }
 
 model User {
@@ -92,6 +93,24 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// Clave para que un sistema de afuera —el formulario de la web, un chatbot, Zapier— cargue leads
+// sin una sesión de usuario. Se guarda HASHEADA: si alguien lee la base, no puede usarla.
+model ApiKey {
+  id         String    @id @default(uuid())
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  name       String
+  keyHash    String    @unique
+  // Últimos 4 caracteres, para poder reconocerla en la lista sin guardarla entera.
+  lastFour   String
+  createdById String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([tenantId])
 }
 
 model AuditLog {
@@ -224,6 +243,39 @@ enum RelatedType {
   LEAD
   COMPANY
   DEAL
+  CONTACT
+}
+
+// Qué pasó con un cliente: la llamada, la reunión, el mensaje. Es el corazón de un CRM — sin esto,
+// el sistema sabe QUIÉN es el cliente pero no QUÉ pasó con él, y cada vendedor guarda esa historia
+// en su cabeza o en su WhatsApp. Cuando se va, la empresa la pierde.
+enum ActivityType {
+  NOTE
+  CALL
+  MEETING
+  WHATSAPP
+  EMAIL
+  VISIT
+}
+
+model Activity {
+  id          String       @id @default(uuid())
+  tenantId    String
+  // Sin @relation, igual que AuditLog: es historia y no puede desaparecer ni bloquear el borrado
+  // si la persona deja la empresa. El nombre se resuelve en la aplicación.
+  authorId    String
+  // Polimórfico a propósito: una interacción es la misma cosa sea contra un lead, un cliente, un
+  // contacto o una venta. Cuatro tablas casi idénticas serían cuatro lugares donde arreglar lo mismo.
+  relatedType RelatedType
+  relatedId   String
+  type        ActivityType
+  body        String
+  // Cuándo pasó, que NO es cuándo se cargó: una llamada del viernes se anota el lunes, y ordenar
+  // por fecha de carga contaría la historia en el orden equivocado.
+  occurredAt  DateTime
+  createdAt   DateTime     @default(now())
+
+  @@index([tenantId, relatedType, relatedId, occurredAt])
 }
 
 model Deal {

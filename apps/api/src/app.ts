@@ -16,6 +16,8 @@ import { importRouter } from './modules/import/import.routes.js';
 import { dashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { calendarRouter } from './modules/calendar/calendar.routes.js';
 import { tenantsRouter } from './modules/tenants/tenants.routes.js';
+import { activitiesRouter } from './modules/activities/activities.routes.js';
+import { intakeRouter } from './modules/intake/intake.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -48,6 +50,14 @@ export function createApp(): Express {
           return false;
         }
       })();
+
+      // La puerta de entrada de leads se llama desde el sitio del cliente, que por definición está
+      // en otro dominio: sin esto, el formulario que este endpoint viene a habilitar queda bloqueado
+      // por el navegador. Se abre a cualquier origen pero SIN credentials, así que no viaja ninguna
+      // cookie de sesión: la única llave es la clave de API que va en la cabecera.
+      if (req.path === '/intake/leads') {
+        return callback(null, { origin: true, credentials: false });
+      }
 
       callback(null, { origin: sameOrigin || extraOrigins.includes(origin), credentials: true });
     })
@@ -86,6 +96,8 @@ export function createApp(): Express {
   app.use('/dashboard', dashboardRouter);
   app.use('/calendar', calendarRouter);
   app.use('/tenants', tenantsRouter);
+  app.use('/activities', activitiesRouter);
+  app.use('/intake', intakeRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     // body-parser tira este error fuera de la jerarquía de AppError, así que sin este caso caía en

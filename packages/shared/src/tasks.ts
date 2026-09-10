@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { optionalText } from './common.js';
 
-export const relatedTypeSchema = z.enum(['LEAD', 'COMPANY', 'DEAL']);
+export const relatedTypeSchema = z.enum(['LEAD', 'COMPANY', 'DEAL', 'CONTACT']);
 
 // Tres estados en vez de un booleano: son las columnas del tablero. "En curso" es lo que faltaba —
 // con un checkbox no había forma de decir "esto lo estoy haciendo", y todo lo empezado se veía
@@ -80,7 +80,7 @@ export interface TaskDTO {
   title: string;
   description: string | null;
   ownerId: string;
-  relatedType: 'LEAD' | 'COMPANY' | 'DEAL' | null;
+  relatedType: 'LEAD' | 'COMPANY' | 'DEAL' | 'CONTACT' | null;
   relatedId: string | null;
   dueDate: string;
   dueTime: string | null;

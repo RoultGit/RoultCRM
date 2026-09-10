@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Building2, CalendarClock, CalendarDays, Contact, Handshake, History, Landmark, LayoutDashboard, ListChecks, LogOut, Menu, Upload, Users } from 'lucide-react';
+import { Building2, CalendarClock, CalendarDays, Contact, Handshake, History, Landmark, LayoutDashboard, ListChecks, LogOut, Menu, Plug, Upload, Users } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
 import { useSession, useLogout } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
@@ -23,6 +23,7 @@ const NAV_ITEMS = [
 // Estas rutas responden 403 a un VENDEDOR, así que mostrarle el link sería ofrecerle una puerta
 // cerrada.
 const ADMIN_ONLY_NAV = [
+  { to: '/integrations', label: 'Conexiones', icon: Plug },
   { to: '/import', label: 'Importar', icon: Upload },
   { to: '/audit', label: 'Auditoría', icon: History },
 ];
