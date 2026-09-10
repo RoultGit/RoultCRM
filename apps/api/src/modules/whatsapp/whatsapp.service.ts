@@ -63,7 +63,7 @@ export const WhatsAppService = {
 
   async connect(
     actor: Actor,
-    input: { phoneNumberId: string; accessToken: string; appSecret?: string; displayPhone?: string }
+    input: { phoneNumberId: string; accessToken: string; appSecret: string; displayPhone?: string }
   ): Promise<WhatsAppStatus> {
     if (actor.role !== 'ADMIN') throw new ForbiddenError('Solo un administrador puede conectar WhatsApp');
     if (!hasEncryptionKey()) {
@@ -75,7 +75,7 @@ export const WhatsAppService = {
       phoneNumberId: input.phoneNumberId.trim(),
       displayPhone: input.displayPhone?.trim() || null,
       accessToken: seal(input.accessToken.trim()),
-      appSecret: input.appSecret?.trim() ? seal(input.appSecret.trim()) : null,
+      appSecret: seal(input.appSecret.trim()),
       verifyToken: randomBytes(16).toString('hex'),
       lastError: null,
       lastErrorAt: null,
@@ -209,13 +209,12 @@ export async function handleWebhook(
         continue;
       }
 
-      if (account.appSecret) {
-        // Sin firma verificada, cualquiera que sepa la URL puede inventar conversaciones dentro
-        // del CRM de un cliente.
-        if (!signatureMatches(rawBody, signatureHeader, unseal(account.appSecret))) {
-          result.ignored += 1;
-          continue;
-        }
+      // Falla cerrado: una cuenta sin app secret guardado no puede verificar nada, así que no se
+      // procesa. Aceptarla "porque no hay con qué verificar" sería dejar la puerta abierta justo en
+      // el caso en que no hay cerradura.
+      if (!account.appSecret || !signatureMatches(rawBody, signatureHeader, unseal(account.appSecret))) {
+        result.ignored += 1;
+        continue;
       }
 
       for (const message of value.messages) {

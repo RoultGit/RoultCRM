@@ -11,7 +11,9 @@ export const whatsappRouter: Router = Router();
 const connectSchema = z.object({
   phoneNumberId: z.string().min(5, 'Copiá el "Phone number ID" de Meta'),
   accessToken: z.string().min(20, 'El token de acceso es más largo que eso'),
-  appSecret: z.string().optional(),
+  // Obligatorio, no opcional: es lo único con lo que se verifica que un webhook vino de Meta.
+  // Sin él, cualquiera que sepa el phone number id inventa conversaciones dentro del CRM.
+  appSecret: z.string().min(8, 'Falta el app secret de Meta (Settings → Basic)'),
   displayPhone: z.string().optional(),
 });
 

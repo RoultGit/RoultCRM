@@ -70,7 +70,9 @@ cada empresa cliente conecta su propio número.
 4. Generar un **token permanente**: Business Settings → Users → System Users → crear uno,
    asignarle la app, Generate Token con los permisos `whatsapp_business_messaging` y
    `whatsapp_business_management`. El token de prueba de 24h no sirve para producción.
-5. Copiar el **App Secret** de Settings → Basic.
+5. Copiar el **App Secret** de Settings → Basic. **Es obligatorio**: es lo único con lo que el
+   CRM comprueba que un mensaje entrante vino de Meta y no de cualquiera que sepa la dirección
+   del webhook.
 6. En el CRM: **Conexiones → WhatsApp Business**, pegar Phone number ID, número visible,
    token y app secret, y darle Conectar.
 7. La tarjeta muestra entonces la **URL del webhook** y un **token de verificación**.

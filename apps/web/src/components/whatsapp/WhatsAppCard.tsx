@@ -94,7 +94,7 @@ export function WhatsAppCard() {
             <input className={input} placeholder="Phone number ID" value={form.phoneNumberId} onChange={set('phoneNumberId')} />
             <input className={input} placeholder="Número visible. Ej. +51 987 654 321" value={form.displayPhone} onChange={set('displayPhone')} />
             <input className={input} type="password" placeholder="Token de acceso permanente" value={form.accessToken} onChange={set('accessToken')} autoComplete="off" />
-            <input className={input} type="password" placeholder="App secret (para verificar lo que entra)" value={form.appSecret} onChange={set('appSecret')} autoComplete="off" />
+            <input className={input} type="password" placeholder="App secret (Settings → Basic en Meta)" value={form.appSecret} onChange={set('appSecret')} autoComplete="off" />
             {connect.isError && (
               <p className="text-xs text-red-600">
                 {(connect.error as { response?: { data?: { error?: string } } })?.response?.data?.error ??
@@ -103,12 +103,12 @@ export function WhatsAppCard() {
             )}
             <Button
               className="w-full"
-              disabled={!form.phoneNumberId.trim() || !form.accessToken.trim() || connect.isPending}
+              disabled={!form.phoneNumberId.trim() || !form.accessToken.trim() || !form.appSecret.trim() || connect.isPending}
               onClick={() =>
                 connect.mutate({
                   phoneNumberId: form.phoneNumberId.trim(),
                   accessToken: form.accessToken.trim(),
-                  appSecret: form.appSecret.trim() || undefined,
+                  appSecret: form.appSecret.trim(),
                   displayPhone: form.displayPhone.trim() || undefined,
                 })
               }
@@ -116,8 +116,9 @@ export function WhatsAppCard() {
               {connect.isPending ? 'Conectando…' : 'Conectar'}
             </Button>
             <p className="text-xs text-gray-500">
-              Después de conectar aparecen acá la URL del webhook y el token de verificación para
-              pegar en Meta. Sin ese paso podés escribir, pero no te llegan las respuestas.
+              El app secret es obligatorio: es lo único con lo que se comprueba que un mensaje
+              entrante vino de Meta y no de cualquiera que sepa la dirección. Después de conectar
+              aparecen acá la URL del webhook y el token de verificación para pegar en Meta.
             </p>
           </div>
         </>

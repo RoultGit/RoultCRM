@@ -88,7 +88,7 @@ describe('/whatsapp', () => {
       const res = await request(app)
         .post('/whatsapp/connect')
         .set('Authorization', `Bearer ${sellerToken}`)
-        .send({ phoneNumberId: PHONE_ID, accessToken: 'EAAG'.padEnd(40, 'x') });
+        .send({ phoneNumberId: PHONE_ID, accessToken: 'EAAG'.padEnd(40, 'x'), appSecret: APP_SECRET });
       expect(res.status).toBe(403);
     });
 
@@ -107,6 +107,16 @@ describe('/whatsapp', () => {
       const segundo = (await conectar()).body.verifyToken;
       // Cambiarlo rompería el webhook ya dado de alta en Meta y nadie relaciona una cosa con la otra.
       expect(segundo).toBe(primero);
+    });
+
+    it('sin el app secret no se conecta', async () => {
+      // Es lo único con lo que se comprueba que un webhook vino de Meta: sin él, cualquiera que
+      // sepa el phone number id inventa conversaciones dentro del CRM del cliente.
+      const res = await request(app)
+        .post('/whatsapp/connect')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ phoneNumberId: PHONE_ID, accessToken: 'EAAG'.padEnd(40, 'x') });
+      expect(res.status).toBe(400);
     });
 
     it('sin ENCRYPTION_KEY se niega a guardar credenciales', async () => {
@@ -129,7 +139,7 @@ describe('/whatsapp', () => {
         .send({ relatedType: 'CONTACT', relatedId: contactId, to: '987654321', body: 'Hola Rosa' });
 
       expect(res.status).toBe(200);
-      const enviado = JSON.parse(fetchMock.mock.calls[0][1].body);
+      const enviado = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, { body: string }])[1].body);
       // Meta pide el número sin espacios y con país: un "987 654 321" no llega y la API no avisa.
       expect(enviado.to).toBe('51987654321');
       const historia = await prisma.activity.findMany({ where: { tenantId, relatedId: contactId } });
@@ -233,6 +243,16 @@ describe('/whatsapp', () => {
       // Sin verificar, cualquiera que sepa la URL inventa conversaciones dentro del CRM de un cliente.
       await entrar(body, 'sha256=' + 'a'.repeat(64));
       await entrar(body);
+      expect(await prisma.activity.count({ where: { tenantId } })).toBe(0);
+    });
+
+    it('una cuenta sin app secret guardado no procesa nada', async () => {
+      await conectar();
+      await prisma.whatsAppAccount.update({ where: { tenantId }, data: { appSecret: null } });
+      const body = mensaje('51987654321', 'Sin con qué verificar');
+      await entrar(body, firmar(body));
+      // Falla cerrado: aceptarla "porque no hay con qué verificar" sería dejar la puerta abierta
+      // justo en el caso en que no hay cerradura.
       expect(await prisma.activity.count({ where: { tenantId } })).toBe(0);
     });
 
