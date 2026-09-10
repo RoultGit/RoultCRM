@@ -77,6 +77,9 @@ describe('/tenants routes', () => {
     expect(user?.tenantId).toBe(res.body.tenant.id);
     // La contraseña devuelta tiene que servir de verdad para entrar; si no, la entidad nace muerta.
     expect(await verifyPassword(res.body.temporaryPassword, user!.passwordHash)).toBe(true);
+    // Y tiene que ser provisoria: viaja por WhatsApp o correo hasta el cliente, así que no puede
+    // quedar viva para siempre.
+    expect(user!.mustChangePassword).toBe(true);
   });
 
   it('never makes the new admin a platform owner', async () => {

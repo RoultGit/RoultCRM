@@ -62,6 +62,10 @@ export const TenantsService = {
           lastName: input.adminLastName,
           role: 'ADMIN',
           isPlatformOwner: false,
+          // La provisoria que se le pasa al cliente por WhatsApp o correo no puede quedar viva:
+          // al entrar tiene que elegir la suya. Faltaba acá aunque ya estaba en el reseteo del
+          // admin, que es exactamente el mismo riesgo.
+          mustChangePassword: true,
         },
       });
       return { tenant, user };

@@ -30,7 +30,9 @@ export function TasksPage() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Tareas</h1>
-        <div className="flex items-center gap-3">
+        {/* flex-wrap: sin esto la fila no envuelve y, al sumarse el filtro de prioridad, empujaba
+            el botón fuera de la pantalla en un teléfono — toda la página se movía de costado. */}
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex rounded-lg border border-gray-200 bg-white p-0.5">
             {VIEWS.map((option) => {
               const Icon = option.icon;
