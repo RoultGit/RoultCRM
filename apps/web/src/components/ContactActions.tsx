@@ -1,5 +1,8 @@
 import { Mail, MessageCircle, Phone } from 'lucide-react';
+import type { CustomFieldDTO } from '@roult/shared';
 import { whatsappUrl, telUrl, mailtoUrl } from '../lib/contact.js';
+import { useWhatsAppStatus } from '../hooks/useWhatsApp.js';
+import { SendWhatsAppDialog } from './whatsapp/SendWhatsAppDialog.js';
 
 /**
  * Los datos de contacto, accionables.
@@ -14,6 +17,7 @@ export function ContactActions({
   email,
   greeting,
   className,
+  related,
 }: {
   phone?: string | null;
   whatsapp?: string | null;
@@ -21,7 +25,10 @@ export function ContactActions({
   /** Mensaje con el que abre el chat, para no arrancar de cero cada vez. */
   greeting?: string;
   className?: string;
+  /** Con la ficha a la que pertenece, el mensaje se manda desde el CRM y queda en su historial. */
+  related?: { relatedType: CustomFieldDTO['entity']; relatedId: string };
 }) {
+  const { data: whatsappStatus } = useWhatsAppStatus();
   const items = [
     whatsapp && {
       key: 'wa',
@@ -53,9 +60,29 @@ export function ContactActions({
     return <p className={`text-sm text-gray-400 ${className ?? ''}`}>Sin datos de contacto cargados.</p>;
   }
 
+  const estilo = (tone: string) =>
+    `flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium transition-colors ${tone}`;
+
   return (
     <div className={`flex flex-wrap gap-2 ${className ?? ''}`}>
-      {items.map((item) => (
+      {items.map((item) =>
+        // Con la cuenta conectada el mensaje sale por el CRM y queda anotado; sin ella, wa.me abre
+        // el chat en el teléfono, que es mejor que nada pero no deja rastro.
+        item.key === 'wa' && related && whatsappStatus?.connected && whatsapp ? (
+          <SendWhatsAppDialog
+            key={item.key}
+            to={whatsapp}
+            relatedType={related.relatedType}
+            relatedId={related.relatedId}
+            greeting={greeting}
+            trigger={
+              <button type="button" title="Escribir por WhatsApp" className={estilo(item.tone)}>
+                <item.icon className="h-3.5 w-3.5" />
+                {item.label}
+              </button>
+            }
+          />
+        ) : (
         <a
           key={item.key}
           href={item.href}
@@ -64,12 +91,13 @@ export function ContactActions({
           target="_blank"
           rel="noopener noreferrer"
           title={item.title}
-          className={`flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium transition-colors ${item.tone}`}
+          className={estilo(item.tone)}
         >
           <item.icon className="h-3.5 w-3.5" />
           {item.label}
         </a>
-      ))}
+        )
+      )}
     </div>
   );
 }

@@ -40,7 +40,11 @@ function when(iso: string): string {
   return new Date(iso).toLocaleDateString('es-PE');
 }
 
+// Los mensajes que llegan por WhatsApp no los escribió nadie del equipo: los escribió el cliente.
+export const WHATSAPP_AUTHOR = 'whatsapp:inbound';
+
 function authorName(id: string, users?: UserDTO[]): string {
+  if (id === WHATSAPP_AUTHOR) return 'El cliente';
   const user = users?.find((u) => u.id === id);
   return user ? `${user.firstName} ${user.lastName}` : 'Alguien';
 }

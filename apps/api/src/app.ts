@@ -20,6 +20,7 @@ import { activitiesRouter } from './modules/activities/activities.routes.js';
 import { intakeRouter } from './modules/intake/intake.routes.js';
 import { customFieldsRouter } from './modules/customFields/customFields.routes.js';
 import { remindersRouter } from './modules/reminders/reminders.routes.js';
+import { whatsappRouter } from './modules/whatsapp/whatsapp.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -78,7 +79,19 @@ export function createApp(): Express {
 
   // El default de express.json son 100KB, pero el tope declarado de importación es de 1000 filas y
   // un archivo de contactos de ese tamaño pesa ~320KB.
-  app.use(express.json({ limit: '5mb' }));
+  app.use(
+    express.json({
+      limit: '5mb',
+      // El webhook de WhatsApp viene firmado sobre el cuerpo EXACTO: al reserializarlo con
+      // JSON.stringify cambia un espacio y la firma deja de coincidir. Se guarda crudo solo para
+      // esa ruta; en el resto sería quedarse con una copia de cada request sin motivo.
+      verify: (req, _res, buf) => {
+        if (req.url?.startsWith('/whatsapp/webhook')) {
+          (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
+        }
+      },
+    })
+  );
   app.use(cookieParser());
 
   app.get('/health', (_req, res) => {
@@ -102,6 +115,7 @@ export function createApp(): Express {
   app.use('/intake', intakeRouter);
   app.use('/custom-fields', customFieldsRouter);
   app.use('/cron', remindersRouter);
+  app.use('/whatsapp', whatsappRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     // body-parser tira este error fuera de la jerarquía de AppError, así que sin este caso caía en

@@ -3,6 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, Copy, Trash2 } from 'lucide-react';
 import { Card } from '../components/ui/card.js';
+import { WhatsAppCard } from '../components/whatsapp/WhatsAppCard.js';
 import { Button } from '../components/ui/button.js';
 import { apiClient } from '../lib/api.js';
 import { formatDate } from '../lib/date.js';
@@ -128,10 +129,6 @@ export function IntegrationsPage() {
               (WEB, SOFTWARE, AUTOMATIZACION o SERVICIO). El resto es opcional.
             </p>
           </Card>
-        </div>
-
-        <div className="space-y-4">
-        <RecordatoriosCard />
 
         <Card className="p-5">
           <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">Cuidado con la clave</h2>
@@ -149,6 +146,12 @@ export function IntegrationsPage() {
             pongan la nueva.
           </p>
         </Card>
+        </div>
+
+        <div className="space-y-4">
+        <WhatsAppCard />
+
+        <RecordatoriosCard />
         </div>
       </div>
 

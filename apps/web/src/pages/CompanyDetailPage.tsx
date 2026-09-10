@@ -93,6 +93,7 @@ export function CompanyDetailPage() {
               whatsapp={company.whatsapp}
               email={company.email}
               greeting={saludo}
+              related={{ relatedType: 'COMPANY', relatedId: id }}
               className="mb-4"
             />
             <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-4 sm:grid-cols-4">
@@ -160,6 +161,7 @@ export function CompanyDetailPage() {
                       whatsapp={contact.whatsapp}
                       email={contact.email}
                       greeting={`Hola ${contact.name}, te escribo de ROUlt.`}
+                      related={{ relatedType: 'CONTACT', relatedId: contact.id }}
                       className="mt-2"
                     />
                   </li>

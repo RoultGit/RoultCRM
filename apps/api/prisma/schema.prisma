@@ -29,6 +29,7 @@ model Tenant {
   users User[]
   apiKeys ApiKey[]
   customFields CustomField[]
+  whatsappAccount WhatsAppAccount?
 }
 
 model User {
@@ -449,4 +450,28 @@ model AssignmentHistory {
   changedAt      DateTime    @default(now())
 
   @@index([tenantId, entityType, entityId])
+}
+
+// La cuenta de WhatsApp Business de una empresa cliente.
+//
+// Va en la base y no en variables de entorno porque cada empresa que usa el CRM tiene su propio
+// número: con env vars solo podría conectarse una, que es lo contrario de vender el producto.
+model WhatsAppAccount {
+  id            String   @id @default(uuid())
+  tenantId      String   @unique
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  // El id del número en Meta. Es la llave con la que el webhook sabe de qué empresa es el mensaje.
+  phoneNumberId String   @unique
+  displayPhone  String?
+  // Cifrado con AES-256-GCM. Un token de Meta manda mensajes en nombre del cliente: en claro, quien
+  // lea la base habla por él.
+  accessToken   String
+  // Igual de sensible: con el secreto de la app se pueden falsificar los webhooks entrantes.
+  appSecret     String?
+  // El que Meta repite al dar de alta el webhook. No es secreto para nosotros, sí tiene que coincidir.
+  verifyToken   String
+  lastErrorAt   DateTime?
+  lastError     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
