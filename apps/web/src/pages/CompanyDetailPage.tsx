@@ -8,6 +8,10 @@ import { useContacts } from '../hooks/useContacts.js';
 import { useDeals } from '../hooks/useDeals.js';
 import { useUsers } from '../hooks/useUsers.js';
 import { ActivityTimeline } from '../components/activities/ActivityTimeline.js';
+import { useQuotes } from '../hooks/useQuotes.js';
+import { useInstallments } from '../hooks/useInstallments.js';
+import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@roult/shared';
+import { formatMoney } from '../lib/money.js';
 import { ContactActions } from '../components/ContactActions.js';
 import { CustomFieldsPanel } from '../components/customFields/CustomFieldsPanel.js';
 import { formatAmount } from '../lib/money.js';
@@ -113,6 +117,9 @@ export function CompanyDetailPage() {
               ninguno, así que la ficha queda igual para quien no los usa. */}
           <CustomFieldsPanel entity="COMPANY" recordId={id} card />
 
+          <Cotizaciones companyId={id} />
+          <EstadoDeCuenta companyId={id} />
+
           <Card className="p-5">
             <ActivityTimeline relatedType="COMPANY" relatedId={id} />
           </Card>
@@ -200,5 +207,97 @@ export function CompanyDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+const TONO_COTIZACION: Record<QuoteStatus, 'neutral' | 'info' | 'success' | 'danger' | 'warning'> = {
+  DRAFT: 'neutral',
+  SENT: 'info',
+  ACCEPTED: 'success',
+  REJECTED: 'danger',
+  EXPIRED: 'warning',
+};
+
+/** Lo que se le cotizó, en la misma pantalla que todo lo demás del cliente. */
+function Cotizaciones({ companyId }: { companyId: string }) {
+  const { data: quotes } = useQuotes({ companyId });
+  if (!quotes || quotes.length === 0) return null;
+
+  return (
+    <Card className="p-5">
+      <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">
+        Cotizaciones ({quotes.length})
+      </h2>
+      <ul className="divide-y divide-gray-100">
+        {quotes.map((quote) => (
+          <li key={quote.id} className="flex flex-wrap items-center gap-3 py-2.5">
+            <span className="w-8 shrink-0 text-sm tabular-nums text-gray-400">#{quote.number}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm text-gray-900">{quote.title}</p>
+              {/* Que el cliente la haya abierto es lo que un PDF adjunto nunca va a poder decir. */}
+              {quote.viewedAt && <p className="text-xs text-gray-500">la abrió</p>}
+            </div>
+            <span className="shrink-0 text-sm tabular-nums text-gray-900">
+              {formatMoney(String(quote.total), quote.currency)}
+            </span>
+            <Badge tone={TONO_COTIZACION[quote.status]}>{QUOTE_STATUS_LABEL[quote.status]}</Badge>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+/**
+ * Qué debe este cliente.
+ *
+ * Va en su ficha y no solo en la pantalla de Cobranza: antes de llamarlo hay que saber si te debe
+ * plata, y tener que abrir otra pantalla para enterarse es la forma de no enterarse nunca.
+ */
+function EstadoDeCuenta({ companyId }: { companyId: string }) {
+  const { data: cuotas } = useInstallments({ companyId });
+  if (!cuotas || cuotas.length === 0) return null;
+
+  const pendientes = cuotas.filter((c) => !c.paidAt);
+  const porMoneda = pendientes.reduce<Record<string, number>>((acc, c) => {
+    acc[c.currency] = Math.round(((acc[c.currency] ?? 0) + c.amount) * 100) / 100;
+    return acc;
+  }, {});
+
+  return (
+    <Card className="p-5">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-xs font-medium uppercase tracking-wide text-gray-500">Estado de cuenta</h2>
+        <p className="text-sm font-semibold tabular-nums text-gray-900">
+          {Object.keys(porMoneda).length === 0
+            ? 'Al día'
+            : Object.entries(porMoneda)
+                .map(([moneda, monto]) => formatMoney(String(monto), moneda as 'PEN' | 'USD'))
+                .join(' · ')}
+        </p>
+      </div>
+      <ul className="divide-y divide-gray-100">
+        {cuotas.map((cuota) => (
+          <li key={cuota.id} className="flex flex-wrap items-center gap-3 py-2.5">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm text-gray-900">{cuota.concept}</p>
+              <p className="text-xs text-gray-500">
+                {cuota.dealTitle} · vence {formatDate(cuota.dueDate)}
+              </p>
+            </div>
+            <span className="shrink-0 text-sm tabular-nums text-gray-900">
+              {formatMoney(String(cuota.amount), cuota.currency)}
+            </span>
+            {cuota.paidAt ? (
+              <Badge tone="success">Cobrada</Badge>
+            ) : cuota.overdue ? (
+              <Badge tone="danger">Vencida</Badge>
+            ) : (
+              <Badge tone="neutral">Pendiente</Badge>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }

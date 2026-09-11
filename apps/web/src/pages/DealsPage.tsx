@@ -15,7 +15,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { updateDealSchema, LINE_OPTIONS, BILLING_OPTIONS, type DealDTO, type UserDTO } from '@roult/shared';
-import { Trash2, MessageSquare, Coins } from 'lucide-react';
+import { Trash2, MessageSquare, Coins, FileText } from 'lucide-react';
 import { Card } from '../components/ui/card.js';
 import { Button } from '../components/ui/button.js';
 import { Badge } from '../components/ui/badge.js';
@@ -31,6 +31,7 @@ import { LostReasonDialog } from '../components/deals/LostReasonDialog.js';
 import { DealActivityDialog } from '../components/deals/DealActivityDialog.js';
 import { DeleteDealDialog } from '../components/deals/DeleteDealDialog.js';
 import { PlanDialog } from '../components/installments/PlanDialog.js';
+import { QuoteDialog } from '../components/quotes/QuoteDialog.js';
 
 // El orden del pipeline es el del spec de negocio, sección 22. PERDIDO va al final y fuera de la
 // secuencia: es una salida, no un paso.
@@ -170,6 +171,23 @@ function DealCard({
         >
           <MessageSquare className="h-4 w-4" />
         </Button>
+        {/* Cotizarle desde la venta, con el cliente ya puesto: llegar acá desde Cotizaciones
+            obligaba a elegir de nuevo al cliente que ya estás mirando. */}
+        <QuoteDialog
+          companyId={deal.companyId}
+          dealId={deal.id}
+          trigger={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-2 text-gray-400 hover:bg-gray-100 hover:text-gray-900"
+              aria-label={`Cotizar ${deal.title}`}
+              title="Cotizarle a este cliente"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+          }
+        />
         {/* La cobranza de esta venta: lo que se cobró y lo que falta. */}
         <Button
           variant="ghost"

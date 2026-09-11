@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card } from '../components/ui/card.js';
 import { useDashboard, useDashboardCharts } from '../hooks/useDashboard.js';
+import { useReceivableTotals } from '../hooks/useInstallments.js';
 import { useSession } from '../hooks/useAuth.js';
 import { formatMoney } from '../lib/money.js';
 import {
@@ -52,15 +53,17 @@ function MoneyTile({
   amount,
   currency,
   suffix,
+  tone,
 }: {
   label: string;
   amount: string;
   currency: 'PEN' | 'USD';
   suffix?: string;
+  tone?: string;
 }) {
   return (
     <Card className="p-4">
-      <p className="text-xl font-semibold text-gray-900">
+      <p className={`text-xl font-semibold ${tone ?? 'text-gray-900'}`}>
         {formatMoney(amount, currency)}
         {suffix && <span className="text-sm font-normal text-gray-500">{suffix}</span>}
       </p>
@@ -161,12 +164,53 @@ export function DashboardPage() {
       <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
         Suscripciones · lo que entra cada mes
       </h2>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <MoneyTile label="Activo PEN / mes" amount={data.wonMonthly.PEN} currency="PEN" suffix="/mes" />
         <MoneyTile label="Activo USD / mes" amount={data.wonMonthly.USD} currency="USD" suffix="/mes" />
         <MoneyTile label="En juego PEN / mes" amount={data.activeMonthly.PEN} currency="PEN" suffix="/mes" />
         <MoneyTile label="En juego USD / mes" amount={data.activeMonthly.USD} currency="USD" suffix="/mes" />
       </div>
+
+      <Cobranza />
     </div>
+  );
+}
+
+/**
+ * Lo que falta cobrar, en la pantalla que se abre a la mañana.
+ *
+ * No va filtrado por período como el resto del tablero: lo que te deben te lo deben hoy, sin
+ * importar de qué mes sea la venta que lo originó.
+ */
+function Cobranza() {
+  const { data: totales } = useReceivableTotals();
+  const monedas = [...new Set([...Object.keys(totales?.pending ?? {}), ...Object.keys(totales?.overdue ?? {})])];
+  if (monedas.length === 0) return null;
+
+  return (
+    <>
+      <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">Cobranza</h2>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {monedas.map((moneda) => (
+          <MoneyTile
+            key={`pendiente-${moneda}`}
+            label={`Por cobrar ${moneda}`}
+            amount={String(totales?.pending[moneda] ?? 0)}
+            currency={moneda as 'PEN' | 'USD'}
+          />
+        ))}
+        {monedas
+          .filter((moneda) => (totales?.overdue[moneda] ?? 0) > 0)
+          .map((moneda) => (
+            <MoneyTile
+              key={`vencido-${moneda}`}
+              label={`Vencido ${moneda}`}
+              amount={String(totales?.overdue[moneda] ?? 0)}
+              currency={moneda as 'PEN' | 'USD'}
+              tone="text-red-600"
+            />
+          ))}
+      </div>
+    </>
   );
 }

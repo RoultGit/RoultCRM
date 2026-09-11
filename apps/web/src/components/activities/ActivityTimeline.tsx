@@ -46,7 +46,10 @@ export const EMAIL_AUTHOR = 'email:inbound';
 export const QUOTE_AUTHOR = 'quote:public';
 
 function authorName(id: string, users?: UserDTO[]): string {
-  if (id === WHATSAPP_AUTHOR) return 'El cliente';
+  // Lo que entra por WhatsApp, por correo o desde la cotización lo escribió el cliente, no alguien
+  // del equipo. Decir "Alguien" haría parecer que lo cargó una persona que nadie identifica.
+  if (id === WHATSAPP_AUTHOR || id === EMAIL_AUTHOR) return 'El cliente';
+  if (id === QUOTE_AUTHOR) return 'El cliente, desde la cotización';
   const user = users?.find((u) => u.id === id);
   return user ? `${user.firstName} ${user.lastName}` : 'Alguien';
 }
