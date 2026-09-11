@@ -275,6 +275,18 @@ const historiaDespues = (await call('GET', `/activities?relatedType=COMPANY&rela
 ok(historiaDespues.length === historiaCliente.length,
    'un correo al buzón de la vecina no cae en la ficha de la otra empresa');
 
+titulo('15. Se da de baja y se limpia');
+ok((await call('DELETE', `/tenants/${vecina.data.tenant.id}`, {
+  token: plataforma, body: { confirmName: `Vecina ${sello}` },
+})).status === 204, 'la vecina se borra con su nombre exacto');
+ok((await call('DELETE', `/tenants/${alta.data.tenant.id}`, {
+  token: plataforma, body: { confirmName: 'nombre equivocado' },
+})).status === 400, 'con el nombre mal, no se borra');
+ok((await call('DELETE', `/tenants/${alta.data.tenant.id}`, {
+  token: plataforma, body: { confirmName: `Ferretería Sur ${sello}` },
+})).status === 204, 'y la ferretería también, con todo lo suyo');
+// Así la simulación no deja entidades de prueba acumuladas corrida tras corrida.
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

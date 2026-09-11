@@ -1,8 +1,9 @@
 import type { RequestHandler } from "express";
 
-// ponytail: contador en memoria, no Redis. Alcanza para un solo proceso, que es como se va a
-// desplegar esto; el día que haya más de una instancia detrás de un balanceador, cada una contará
-// por su lado y hay que mover esto a un almacén compartido.
+// ponytail: contador en memoria, no Redis. Alcanza para frenar un bucle o un raspado desde una
+// misma conexión, que es el caso real; en serverless cada instancia cuenta por su lado, así que el
+// tope efectivo es más alto que el declarado. Para un límite exacto y compartido entre instancias
+// hay que mover esto a un almacén externo (Redis, o la propia base).
 interface Attempt {
   count: number;
   resetAt: number;

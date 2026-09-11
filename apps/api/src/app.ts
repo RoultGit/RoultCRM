@@ -27,7 +27,10 @@ import { installmentsRouter } from './modules/installments/installments.routes.j
 import { emailRouter } from './modules/email/email.routes.js';
 import { attachmentsRouter } from './modules/attachments/attachments.routes.js';
 import { pipelineRouter } from './modules/pipeline/pipeline.routes.js';
+import { healthRouter } from './modules/health/health.routes.js';
 import { AppError } from './lib/errors.js';
+import { rateLimit } from './middleware/rateLimit.js';
+import { recordError } from './lib/errorLog.js';
 
 export function createApp(): Express {
   const app = express();
@@ -104,6 +107,22 @@ export function createApp(): Express {
     res.json({ status: 'ok' });
   });
 
+  // Techo general de toda la API, para lo que no tiene un límite propio.
+  //
+  // Es un freno contra un bucle en el código de un cliente o un raspado, no una cuota por persona:
+  // por eso va por IP y bien alto. Una oficina entera comparte una sola IP, así que un tope
+  // apretado dejaría afuera a veinte personas trabajando normal.
+  //
+  // Las operaciones sensibles —ingresar, restablecer contraseña, mandar WhatsApp, subir archivos,
+  // la cotización pública— tienen cada una el suyo, mucho más chico.
+  app.use(
+    rateLimit({
+      windowMs: 60_000,
+      max: 1000,
+      message: 'Demasiadas peticiones seguidas. Esperá un minuto.',
+    })
+  );
+
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);
   app.use('/companies', companiesRouter);
@@ -128,8 +147,9 @@ export function createApp(): Express {
   app.use('/email', emailRouter);
   app.use('/attachments', attachmentsRouter);
   app.use('/pipeline', pipelineRouter);
+  app.use('/system', healthRouter);
 
-  const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     // body-parser tira este error fuera de la jerarquía de AppError, así que sin este caso caía en
     // el 500 genérico y el usuario no tenía forma de saber que el problema era el tamaño.
     if (err instanceof Error && 'type' in err && err.type === 'entity.too.large') {
@@ -152,6 +172,9 @@ export function createApp(): Express {
       return;
     }
     console.error(err);
+    // Se registra antes de contestar y sin esperarlo: enterarse de un error no puede hacer más
+    // lenta la respuesta que ya salió mal.
+    void recordError(req, 500, err);
     res.status(500).json({ error: 'Internal server error' });
   };
   app.use(errorHandler);

@@ -27,3 +27,22 @@ tenantsRouter.post('/', async (req, res, next) => {
     next(err);
   }
 });
+
+tenantsRouter.patch<{ id: string }>('/:id/suspend', async (req, res, next) => {
+  try {
+    const suspended = req.body?.suspended !== false;
+    res.json(await TenantsService.suspend(req.user!, req.params.id, suspended));
+  } catch (err) {
+    next(err);
+  }
+});
+
+tenantsRouter.delete<{ id: string }>('/:id', async (req, res, next) => {
+  try {
+    const confirmName = typeof req.body?.confirmName === 'string' ? req.body.confirmName : '';
+    await TenantsService.remove(req.user!, req.params.id, confirmName);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});

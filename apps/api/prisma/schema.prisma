@@ -669,3 +669,23 @@ model PipelineStage {
   @@unique([tenantId, stage])
   @@index([tenantId])
 }
+
+// Un error del servidor, guardado para poder enterarse sin que llame un cliente.
+//
+// Va a la base y no a un servicio externo porque un servicio externo es otra cuenta, otra factura y
+// otra clave. Esto no reemplaza a un APM de verdad —no tiene alertas ni trazas— pero convierte
+// "me enteré cuando me llamaron" en "lo vi el mismo día".
+model ErrorLog {
+  id        String   @id @default(uuid())
+  // Nullables: un error puede pasar antes de saber quién es o de qué empresa.
+  tenantId  String?
+  userId    String?
+  method    String
+  path      String
+  status    Int
+  message   String
+  stack     String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

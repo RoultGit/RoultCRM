@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Building2, CalendarClock, CalendarDays, Contact, Handshake, Coins, FileText, GitBranch, History, Landmark, ListPlus, Zap, LayoutDashboard, ListChecks, LogOut, Menu, Plug, Upload, Users } from 'lucide-react';
+import { Building2, CalendarClock, CalendarDays, Contact, Handshake, Activity, Coins, FileText, GitBranch, History, Landmark, ListPlus, Zap, LayoutDashboard, ListChecks, LogOut, Menu, Plug, Upload, Users } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
 import { useSession, useLogout } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
@@ -38,7 +38,10 @@ const ADMIN_ONLY_NAV = [
 
 // Administrar empresas cliente es del dueño de la plataforma, no del admin de cada empresa: al
 // admin de un cliente, mostrarle este link sería contarle que hay otros clientes.
-const OWNER_ONLY_NAV = [{ to: '/tenants', label: 'Entidades', icon: Landmark }];
+const OWNER_ONLY_NAV = [
+  { to: '/tenants', label: 'Entidades', icon: Landmark },
+  { to: '/system', label: 'Estado', icon: Activity },
+];
 
 // El menú lateral se usa en dos lugares: fijo a la izquierda en pantallas grandes y dentro del
 // cajón deslizante en el teléfono. Una sola definición para que no se desincronicen.

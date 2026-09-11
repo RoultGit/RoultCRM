@@ -1,23 +1,55 @@
 import type { CreatedTenantDTO, TenantDTO, createTenantSchema } from '@roult/shared';
 import type { z } from 'zod';
 import { prisma } from '../../lib/prisma.js';
+import type { Prisma } from '@prisma/client';
 import { generatePassword, hashPassword } from '../../lib/password.js';
 import { AppError, ForbiddenError } from '../../lib/errors.js';
 import type { Actor } from '../../lib/scope.js';
 import { recordAudit } from '../../lib/audit.js';
+
+/** Todo lo que cuelga de una empresa cliente, en el orden en que hay que borrarlo. */
+async function borrarTodoDe(tx: Prisma.TransactionClient, tenantId: string) {
+  await tx.quoteItem.deleteMany({ where: { quote: { tenantId } } });
+  await tx.quote.deleteMany({ where: { tenantId } });
+  await tx.installment.deleteMany({ where: { tenantId } });
+  await tx.attachment.deleteMany({ where: { tenantId } });
+  await tx.taskUpdate.deleteMany({ where: { tenantId } });
+  await tx.task.deleteMany({ where: { tenantId } });
+  await tx.activity.deleteMany({ where: { tenantId } });
+  await tx.customFieldValue.deleteMany({ where: { tenantId } });
+  await tx.customField.deleteMany({ where: { tenantId } });
+  await tx.automationRun.deleteMany({ where: { tenantId } });
+  await tx.automation.deleteMany({ where: { tenantId } });
+  await tx.pipelineStage.deleteMany({ where: { tenantId } });
+  await tx.assignmentHistory.deleteMany({ where: { tenantId } });
+  await tx.deal.deleteMany({ where: { tenantId } });
+  await tx.lead.deleteMany({ where: { tenantId } });
+  await tx.contact.deleteMany({ where: { tenantId } });
+  await tx.company.deleteMany({ where: { tenantId } });
+  await tx.whatsAppAccount.deleteMany({ where: { tenantId } });
+  await tx.apiKey.deleteMany({ where: { tenantId } });
+  await tx.auditLog.deleteMany({ where: { tenantId } });
+  await tx.passwordResetToken.deleteMany({ where: { user: { tenantId } } });
+  await tx.refreshToken.deleteMany({ where: { tenantId } });
+  await tx.user.deleteMany({ where: { tenantId } });
+  await tx.tenant.delete({ where: { id: tenantId } });
+}
 
 export const TenantsService = {
   async list(actor: Actor): Promise<TenantDTO[]> {
     if (!actor.isPlatformOwner) throw new ForbiddenError('Solo el dueño de la plataforma puede ver las entidades');
     const tenants = await prisma.tenant.findMany({
       orderBy: { createdAt: 'asc' },
-      include: { _count: { select: { users: true } } },
+      include: { _count: { select: { users: true } }, users: { select: { status: true } } },
     });
     return tenants.map((tenant) => ({
       id: tenant.id,
       name: tenant.name,
       createdAt: tenant.createdAt.toISOString(),
       userCount: tenant._count.users,
+      // Suspendida es "nadie puede entrar": con al menos uno activo, la empresa sigue operando.
+      suspended: tenant.users.length > 0 && tenant.users.every((u) => u.status === 'INACTIVE'),
+      isOwn: tenant.id === actor.tenantId,
     }));
   },
 
@@ -73,9 +105,71 @@ export const TenantsService = {
     });
 
     return {
-      tenant: { id: tenant.id, name: tenant.name, createdAt: tenant.createdAt.toISOString(), userCount: 1 },
+      tenant: { id: tenant.id, name: tenant.name, createdAt: tenant.createdAt.toISOString(), userCount: 1, suspended: false, isOwn: false },
       adminEmail: user.email,
       temporaryPassword,
     };
+  },
+
+  /**
+   * Suspende una empresa cliente: nadie de ahí puede entrar, pero los datos quedan.
+   *
+   * Es lo que hay que hacer cuando alguien deja de pagar. Borrar de una es irreversible y casi
+   * siempre prematuro: el cliente vuelve, o pide sus datos, o reclama.
+   */
+  async suspend(actor: Actor, tenantId: string, suspended: boolean): Promise<{ users: number }> {
+    if (!actor.isPlatformOwner) throw new ForbiddenError('Solo el dueño de la plataforma');
+    if (tenantId === actor.tenantId) {
+      throw new AppError('No podés suspender tu propia empresa', 400);
+    }
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { id: true, name: true } });
+    if (!tenant) throw new AppError('Esa entidad no existe', 404);
+
+    const { count } = await prisma.user.updateMany({
+      where: { tenantId },
+      data: { status: suspended ? 'INACTIVE' : 'ACTIVE' },
+    });
+    // Y se cortan las sesiones abiertas: sin esto, quien ya estaba adentro sigue trabajando hasta
+    // que se le venza el token.
+    if (suspended) await prisma.refreshToken.deleteMany({ where: { tenantId } });
+
+    await recordAudit(actor, {
+      action: 'STATUS_CHANGE',
+      entityType: 'TENANT',
+      entityId: tenantId,
+      after: { name: tenant.name, suspended, users: count },
+    });
+    return { users: count };
+  },
+
+  /**
+   * Borra una empresa cliente y TODO lo suyo.
+   *
+   * Irreversible. Se pide el nombre exacto como confirmación porque el botón está al lado de los
+   * otros y una entidad borrada por error no se recupera de ningún lado.
+   */
+  async remove(actor: Actor, tenantId: string, confirmName: string): Promise<void> {
+    if (!actor.isPlatformOwner) throw new ForbiddenError('Solo el dueño de la plataforma');
+    if (tenantId === actor.tenantId) {
+      throw new AppError('No podés borrar tu propia empresa', 400);
+    }
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new AppError('Esa entidad no existe', 404);
+    if (confirmName.trim() !== tenant.name) {
+      throw new AppError('Para borrarla, escribí su nombre exacto', 400);
+    }
+
+    // Todo en una transacción: a mitad de camino quedaría una empresa sin usuarios pero con datos,
+    // o peor, datos huérfanos que ya nadie puede ver ni borrar.
+    await prisma.$transaction((tx) => borrarTodoDe(tx, tenantId));
+
+    // La línea de auditoría va DESPUÉS y con el tenant del dueño, no con el borrado: la del
+    // borrado se fue con todo lo demás.
+    await recordAudit(actor, {
+      action: 'DELETE',
+      entityType: 'TENANT',
+      entityId: tenantId,
+      before: { name: tenant.name },
+    });
   },
 };

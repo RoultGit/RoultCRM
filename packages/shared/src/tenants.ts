@@ -14,6 +14,10 @@ export interface TenantDTO {
   name: string;
   createdAt: string;
   userCount: number;
+  /** Suspendida = ninguno de sus usuarios puede entrar. Los datos siguen ahí. */
+  suspended: boolean;
+  /** La empresa del que está mirando. No se puede suspender ni borrar a sí mismo. */
+  isOwn: boolean;
 }
 
 export interface CreatedTenantDTO {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import { runReminders, buildDigests } from './reminders.service.js';
 import { runScheduled } from '../automations/engine.js';
+import { pruneErrors } from '../../lib/errorLog.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { isMailConfigured } from '../../lib/mailer.js';
 import { prisma } from '../../lib/prisma.js';
@@ -35,6 +36,10 @@ remindersRouter.get('/reminders', async (req, res) => {
   // sale en el correo de esta misma mañana y no en el de mañana.
   const automatizaciones = await runScheduled();
   console.info('[cron] automatizaciones', automatizaciones);
+
+  // Un registro de errores que crece para siempre es una factura. Un mes alcanza para enterarse.
+  const purgados = await pruneErrors(30);
+  if (purgados > 0) console.info('[cron] errores viejos borrados', purgados);
 
   const result = await runReminders();
   console.info('[cron] resumen diario', result);
