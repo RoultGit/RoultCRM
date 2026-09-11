@@ -98,8 +98,8 @@ En Vercel:
 
 | Variable | Valor |
 |---|---|
-| `INBOUND_SECRET` | `Yk3pQm8vLdR2xNfT7wZcB5hJ4sVgA6nE` |
-| `INBOUND_DOMAIN` | `in.roult.pe` |
+| `INBOUND_SECRET` | `HnONUi6i-9D-6WlRwY6lmxYRJfEDLWK3cHRyqPNTeuA` — **ya cargado en Vercel** |
+| `INBOUND_DOMAIN` | `in.roult.pe` — **ya cargado en Vercel** |
 
 Después hace falta que alguien reciba los correos de `*@in.roult.pe` y los reenvíe a
 `https://roult-crm.vercel.app/api/email/inbound` con la cabecera

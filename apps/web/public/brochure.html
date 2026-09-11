@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RoultCRM — Módulos y flujo de trabajo</title>
-<meta name="description" content="Qué módulos tiene RoultCRM y cómo se trabaja con él, paso a paso, desde que entra un interesado hasta que la venta está entregada.">
+<meta name="description" content="Qué módulos tiene RoultCRM y cómo se trabaja con él, paso a paso, desde que entra un interesado hasta que la venta está cobrada.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="RoultCRM">
 <meta property="og:description" content="Qué módulos tiene y cómo se trabaja con él, paso a paso.">
@@ -307,6 +307,30 @@
       </p>
     </div>
 
+
+    <div class="mod">
+      <div class="mod-head"><h3>Cotizaciones</h3></div>
+      <p>
+        Se arma acá adentro y se manda como <strong>link</strong>, no como PDF adjunto. El cliente lo
+        abre desde el teléfono sin cuenta ni contraseña, ve el detalle y aprieta Aceptar o No por
+        ahora.
+      </p>
+      <p>
+        Queda registrado quién respondió, cuándo, y si llegó a abrirla. Eso con un archivo adjunto es
+        imposible de saber.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Cobranza</h3></div>
+      <p>
+        Qué falta cobrar, de quién y desde cuándo. Desde cada venta se arma el plan de cuotas:
+        adelanto y saldo, cuotas iguales, o mensual para las suscripciones.
+      </p>
+      <p>
+        Los totales van separados por moneda. Los soles y los dólares no se suman nunca.
+      </p>
+    </div>
     <div class="mod">
       <div class="mod-head"><h3>Empresas</h3></div>
       <p>
@@ -351,6 +375,18 @@
       </p>
     </div>
 
+
+    <div class="mod">
+      <div class="mod-head"><h3>Automatizaciones</h3></div>
+      <p>
+        Siete cosas que el CRM hace solo, cada una con su interruptor: repartir los leads que entran,
+        crear la tarea de la cotización cuando una venta pasa a Propuesta, avisar de una venta que
+        lleva días quieta, reclamar una cuota vencida, y algunas más.
+      </p>
+      <p>
+        No hay que armar nada: se prende lo que sirve y se ajustan los números.
+      </p>
+    </div>
     <div class="mod">
       <div class="mod-head"><h3>Campos propios</h3><span class="who">Solo administrador</span></div>
       <p>
@@ -364,8 +400,8 @@
       <div class="mod-head"><h3>Conexiones</h3><span class="who">Solo administrador</span></div>
       <p>
         Donde se conecta el CRM con lo de afuera: la clave para que el formulario de tu página web
-        cargue leads solo, el número de WhatsApp Business de la empresa, y el estado de los
-        recordatorios diarios.
+        cargue leads solo, el número de WhatsApp Business de la empresa, la dirección a la que mandarle copia oculta para que
+        los correos queden en la ficha del cliente, y el estado de los recordatorios diarios.
       </p>
     </div>
 
@@ -467,6 +503,19 @@
       </div>
     </div>
 
+
+    <div class="step">
+      <div class="step-n"></div>
+      <div>
+        <h3>Se le manda la cotización</h3>
+        <p>
+          Se arma con sus líneas, su IGV y sus condiciones, y se envía como link. El cliente lo abre
+          del teléfono y responde ahí mismo. Cuando acepta, queda en su historial con su nombre y la
+          fecha.
+        </p>
+        <p class="where">Dónde: <b>Cotizaciones</b></p>
+      </div>
+    </div>
     <div class="step">
       <div class="step-n"></div>
       <div>
@@ -505,6 +554,18 @@
       </div>
     </div>
 
+
+    <div class="step">
+      <div class="step-n"></div>
+      <div>
+        <h3>Y se cobra</h3>
+        <p>
+          Desde la venta se arma el plan de cuotas y se va marcando lo que entra. Si una cuota se
+          vence, el sistema le crea al vendedor una tarea de cobranza sin que nadie se lo pida.
+        </p>
+        <p class="where">Dónde: <b>Cobranza</b>, y el plan desde <b>Deals</b></p>
+      </div>
+    </div>
     <div class="step">
       <div class="step-n"></div>
       <div>
@@ -521,6 +582,11 @@
   </div>
 
   <div class="note">
+    <p style="margin-bottom:0.75rem">
+      <b>Desde el teléfono.</b> Se instala en la pantalla de inicio y abre como una app. Un botón
+      flotante deja anotar una visita, cargar un lead o registrar un cobro en dos toques, sin abrir
+      la computadora.
+    </p>
     <p>
       <b>Quién ve qué.</b> Hay dos roles. El <b>administrador</b> ve todo lo de su empresa. El
       <b>vendedor</b> ve solamente sus leads, sus clientes, sus contactos, sus ventas y sus tareas.
