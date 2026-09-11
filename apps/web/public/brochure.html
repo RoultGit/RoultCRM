@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RoultCRM — CRM para equipos que venden y entregan</title>
-<meta name="description" content="El CRM para el negocio que no termina cuando se firma: pipeline de ocho etapas hasta mantenimiento, WhatsApp en la ficha del cliente, soles y dólares sin mezclar.">
+<title>RoultCRM — Módulos y flujo de trabajo</title>
+<meta name="description" content="Qué módulos tiene RoultCRM y cómo se trabaja con él, paso a paso, desde que entra un interesado hasta que la venta está entregada.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="RoultCRM">
-<meta property="og:description" content="El CRM para el negocio que no termina cuando se firma. Pipeline hasta mantenimiento, WhatsApp en la ficha del cliente, soles y dólares sin mezclar.">
+<meta property="og:description" content="Qué módulos tiene y cómo se trabaja con él, paso a paso.">
 <meta property="og:url" content="https://roult-crm.vercel.app/brochure.html">
 <meta property="og:locale" content="es_PE">
 <meta name="twitter:card" content="summary">
@@ -16,55 +16,44 @@
 <style>body { margin: 0; } img { max-width: 100%; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap">
 
 <style>
   :root {
-    --paper:      #F2F3F1;
-    --surface:    #FBFBFA;
-    --ink:        #171A18;
-    --body:       #454B47;
-    --muted:      #6E756F;
-    --hairline:   #D4D8D3;
-    --pine:       #0B5D51;
-    --pine-soft:  #E2EDE9;
-    --copper:     #A85C26;
-    --copper-soft:#F6E9DE;
+    --paper:    #FFFFFF;
+    --panel:    #F4F6F8;
+    --ink:      #16191D;
+    --body:     #3F454C;
+    --muted:    #737B83;
+    --line:     #DFE3E7;
+    --accent:   #1B4F8A;
+    --accent-bg:#E8F0F8;
 
-    --display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
-    --text: 'Source Serif 4', Georgia, 'Times New Roman', serif;
-    --data: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-
-    --measure: 64ch;
-    --gap: clamp(2.5rem, 5vw, 4.5rem);
+    --font: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --paper:      #121614;
-      --surface:    #1A1F1C;
-      --ink:        #E9ECE8;
-      --body:       #BCC3BE;
-      --muted:      #8B938D;
-      --hairline:   #2C332E;
-      --pine:       #5FB3A0;
-      --pine-soft:  #16302A;
-      --copper:     #D4915C;
-      --copper-soft:#2E2117;
+      --paper:    #14171A;
+      --panel:    #1C2126;
+      --ink:      #EDF0F2;
+      --body:     #C0C7CE;
+      --muted:    #8A929A;
+      --line:     #2B3238;
+      --accent:   #7FB3E8;
+      --accent-bg:#1B2733;
     }
   }
 
   :root[data-theme="dark"] {
-    --paper:      #121614;
-    --surface:    #1A1F1C;
-    --ink:        #E9ECE8;
-    --body:       #BCC3BE;
-    --muted:      #8B938D;
-    --hairline:   #2C332E;
-    --pine:       #5FB3A0;
-    --pine-soft:  #16302A;
-    --copper:     #D4915C;
-    --copper-soft:#2E2117;
+    --paper:    #14171A;
+    --panel:    #1C2126;
+    --ink:      #EDF0F2;
+    --body:     #C0C7CE;
+    --muted:    #8A929A;
+    --line:     #2B3238;
+    --accent:   #7FB3E8;
+    --accent-bg:#1B2733;
   }
 
   * { box-sizing: border-box; }
@@ -72,817 +61,474 @@
   body {
     background: var(--paper);
     color: var(--body);
-    font-family: var(--text);
+    font-family: var(--font);
     font-size: 17px;
-    line-height: 1.6;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
   }
 
   .page {
-    max-width: 74rem;
+    max-width: 48rem;
     margin: 0 auto;
-    padding: clamp(2rem, 5vw, 4.5rem) clamp(1.25rem, 4vw, 3.5rem) 5rem;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1.25rem, 5vw, 2.5rem) 5rem;
   }
 
-  h1, h2, h3 {
-    font-family: var(--display);
-    color: var(--ink);
-    text-wrap: balance;
-    margin: 0;
+  h1, h2, h3 { color: var(--ink); margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+
+  h1 {
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
     line-height: 1.1;
   }
 
-  p { margin: 0; }
-
-  .eyebrow {
-    font-family: var(--data);
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--pine);
-    margin: 0;
+  .intro {
+    margin-top: 0.9rem;
+    font-size: 1.08rem;
+    max-width: 40rem;
   }
 
-  /* ── Masthead ─────────────────────────────────────────────── */
-
-  .masthead {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    padding-bottom: 2.5rem;
-    border-bottom: 2px solid var(--ink);
-  }
-
-  .wordmark {
-    font-size: clamp(2.6rem, 7vw, 4.4rem);
-    font-weight: 700;
-    letter-spacing: -0.035em;
-  }
-
-  .wordmark .half { color: var(--pine); }
-
-  .standfirst {
-    font-size: clamp(1.1rem, 2vw, 1.3rem);
-    max-width: var(--measure);
-    color: var(--body);
-  }
-
-  .masthead-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.75rem;
-    font-family: var(--data);
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-
-  .masthead-meta b {
-    color: var(--ink);
-    font-weight: 500;
-  }
-
-  /* ── Secciones ────────────────────────────────────────────── */
-
-  section { margin-top: var(--gap); }
-
-  .section-head {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    margin-bottom: 2rem;
-  }
-
-  .section-head h2 {
-    font-size: clamp(1.5rem, 3vw, 2rem);
+  h2 {
+    font-size: clamp(1.35rem, 3.5vw, 1.7rem);
     font-weight: 600;
     letter-spacing: -0.02em;
+    line-height: 1.2;
   }
 
-  .section-head p {
-    max-width: var(--measure);
+  .part {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--ink);
   }
 
-  /* ── El riel del pipeline ─────────────────────────────────── */
-
-  .rail-scroll {
-    overflow-x: auto;
-    padding-bottom: 0.75rem;
+  .part > p {
+    margin-top: 0.6rem;
+    max-width: 40rem;
   }
 
-  .rail {
-    min-width: 46rem;
-    display: grid;
-    grid-template-columns: repeat(7, 1fr) 0.9fr;
-    gap: 0;
-    border-top: 1px solid var(--hairline);
-    border-bottom: 1px solid var(--hairline);
-  }
+  /* ── Lista de módulos ─────────────────────────────────────── */
 
-  .stage {
-    padding: 1.1rem 0.9rem 1.25rem;
-    border-right: 1px solid var(--hairline);
+  .modules {
+    margin-top: 2rem;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
-    position: relative;
+    gap: 0;
   }
 
-  .stage:last-child { border-right: 0; }
-
-  .stage-n {
-    font-family: var(--data);
-    font-size: 0.7rem;
-    color: var(--muted);
+  .mod {
+    padding: 1.35rem 0;
+    border-bottom: 1px solid var(--line);
   }
 
-  .stage-name {
-    font-family: var(--display);
+  .mod:first-child { border-top: 1px solid var(--line); }
+
+  .mod-head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.4rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
     font-weight: 600;
-    font-size: 0.98rem;
-    color: var(--ink);
     letter-spacing: -0.01em;
   }
 
-  .stage-note {
-    font-size: 0.82rem;
-    line-height: 1.4;
-    color: var(--muted);
-  }
-
-  .stage.cash { background: var(--copper-soft); }
-  .stage.cash .stage-name { color: var(--copper); }
-  .stage.cash .stage-note { color: var(--copper); opacity: 0.85; }
-
-  .stage.lost { background: var(--surface); }
-  .stage.lost .stage-name { color: var(--muted); }
-
-  .rail-legend {
-    min-width: 46rem;
-    display: grid;
-    grid-template-columns: repeat(7, 1fr) 0.9fr;
-    font-family: var(--data);
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--pine);
-  }
-
-  .bracket {
-    padding: 0.55rem 0 0;
-    border-top: 2px solid var(--pine);
-    margin-right: 1px;
-  }
-
-  .bracket.sell { grid-column: 1 / 4; }
-  .bracket.deliver { grid-column: 4 / 8; }
-  .bracket.out {
-    grid-column: 8 / 9;
-    border-top-color: var(--hairline);
-    color: var(--muted);
-  }
-
-  /* ── Módulos ──────────────────────────────────────────────── */
-
-  .modules {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    border-top: 1px solid var(--hairline);
-  }
-
-  .module {
-    display: grid;
-    grid-template-columns: minmax(14rem, 22rem) 1fr;
-    gap: 1.5rem clamp(1.5rem, 4vw, 3.5rem);
-    padding: 1.85rem 0;
-    border-bottom: 1px solid var(--hairline);
-  }
-
-  @media (max-width: 42rem) {
-    .module { grid-template-columns: 1fr; }
-  }
-
-  .module h3 {
-    font-size: 1.18rem;
-    font-weight: 600;
-    letter-spacing: -0.015em;
-    margin-bottom: 0.45rem;
-  }
-
-  .module-intro {
-    font-size: 0.95rem;
-    color: var(--muted);
-  }
-
-  .module ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-  }
-
-  /* La viñeta va absoluta y NO como columna de grilla: con `display:grid` en el <li>, cada <code>
-     y cada <b> de adentro se volvía una celda y el texto se encimaba. */
-  .module li {
-    position: relative;
-    padding-left: 1.4rem;
-    font-size: 0.97rem;
-    line-height: 1.55;
-  }
-
-  .module li::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0.62em;
-    width: 0.4rem;
-    height: 0.4rem;
-    background: var(--pine);
-    border-radius: 50%;
-  }
-
-  /* Las etiquetas de valores respiran cuando van varias seguidas en una misma línea. */
-  .module li code { margin-right: 0.15rem; }
-
-  .module li b {
-    color: var(--ink);
-    font-weight: 600;
-  }
-
-  code, .tag {
-    font-family: var(--data);
-    font-size: 0.86em;
-    color: var(--pine);
-    background: var(--pine-soft);
-    padding: 0.08em 0.38em;
-    border-radius: 2px;
+  .who {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-bg);
+    padding: 0.12rem 0.5rem;
+    border-radius: 3px;
     white-space: nowrap;
   }
 
-  /* ── Nota destacada ───────────────────────────────────────── */
+  .mod p { font-size: 0.98rem; }
 
-  .pull {
-    border-left: 3px solid var(--copper);
-    padding: 0.2rem 0 0.2rem 1.25rem;
+  .mod p + p { margin-top: 0.5rem; }
+
+  /* ── Pasos del flujo ──────────────────────────────────────── */
+
+  .steps {
     margin-top: 2rem;
-    max-width: var(--measure);
-  }
-
-  .pull p {
-    font-size: 1.05rem;
-    color: var(--ink);
-  }
-
-  .pull .attrib {
-    font-family: var(--data);
-    font-size: 0.74rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--copper);
-    margin-top: 0.55rem;
-  }
-
-  /* ── Ficha técnica ────────────────────────────────────────── */
-
-  .spec-wrap { overflow-x: auto; }
-
-  table {
-    width: 100%;
-    min-width: 34rem;
-    border-collapse: collapse;
-    font-size: 0.93rem;
-  }
-
-  caption {
-    text-align: left;
-    font-family: var(--data);
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding-bottom: 0.85rem;
-  }
-
-  th, td {
-    text-align: left;
-    padding: 0.7rem 1rem 0.7rem 0;
-    border-bottom: 1px solid var(--hairline);
-    vertical-align: top;
-  }
-
-  thead th {
-    font-family: var(--data);
-    font-weight: 500;
-    font-size: 0.73rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    border-bottom-color: var(--ink);
-  }
-
-  tbody th {
-    font-family: var(--display);
-    font-weight: 600;
-    color: var(--ink);
-    width: 34%;
-    font-size: 0.95rem;
-  }
-
-  td.count {
-    font-family: var(--data);
-    font-variant-numeric: tabular-nums;
-    color: var(--pine);
-    width: 4rem;
-  }
-
-  /* ── Cierre ───────────────────────────────────────────────── */
-
-  .closing {
-    margin-top: var(--gap);
-    padding-top: 2.25rem;
-    border-top: 2px solid var(--ink);
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-    gap: 2rem clamp(1.5rem, 4vw, 3.5rem);
-  }
-
-  .closing h3 {
-    font-size: 1.02rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-  }
-
-  .closing p { font-size: 0.94rem; }
-
-  .colophon {
-    margin-top: 3rem;
-    font-family: var(--data);
-    font-size: 0.74rem;
-    color: var(--muted);
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 1.5rem;
+    flex-direction: column;
+    gap: 1.75rem;
+    counter-reset: paso;
   }
 
-  a {
-    color: var(--pine);
-    text-underline-offset: 3px;
+  .step {
+    display: grid;
+    grid-template-columns: 2.4rem 1fr;
+    gap: 1rem;
+    align-items: start;
   }
 
-  a:focus-visible, .rail-scroll:focus-visible {
-    outline: 2px solid var(--copper);
-    outline-offset: 3px;
+  @media (max-width: 30rem) {
+    .step { grid-template-columns: 1fr; gap: 0.5rem; }
   }
+
+  .step-n {
+    counter-increment: paso;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-bg);
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+
+  .step-n::before { content: counter(paso); }
+
+  .step h3 { margin-bottom: 0.35rem; }
+
+  .step p + p { margin-top: 0.6rem; }
+
+  .step .where {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-top: 0.6rem;
+  }
+
+  .step .where b { color: var(--ink); font-weight: 600; }
+
+  /* ── Recuadro de etapas ───────────────────────────────────── */
+
+  .stages {
+    margin-top: 0.85rem;
+    background: var(--panel);
+    border-radius: 4px;
+    padding: 1rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .stage-row {
+    display: grid;
+    grid-template-columns: 1.4rem 8.5rem 1fr;
+    gap: 0.75rem;
+    font-size: 0.93rem;
+    align-items: baseline;
+  }
+
+  @media (max-width: 34rem) {
+    .stage-row { grid-template-columns: 1.4rem 1fr; }
+    .stage-row .desc { grid-column: 2; }
+  }
+
+  .stage-row .num { color: var(--muted); font-size: 0.8rem; }
+  .stage-row .name { color: var(--ink); font-weight: 600; }
+  .stage-row .desc { color: var(--body); }
+
+  .stage-row.paid .name { color: var(--accent); }
+
+  /* ── Nota final ───────────────────────────────────────────── */
+
+  .note {
+    margin-top: 2rem;
+    padding: 1.15rem 1.25rem;
+    background: var(--panel);
+    border-radius: 4px;
+    font-size: 0.96rem;
+  }
+
+  .note b { color: var(--ink); font-weight: 600; }
+
+  .foot {
+    margin-top: 3.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  b { color: var(--ink); font-weight: 600; }
 </style>
 </head>
 <body>
 <div class="page">
 
-  <header class="masthead">
-    <p class="eyebrow">CRM · Perú · Equipos de 2 a 30 personas</p>
-    <h1 class="wordmark">Roult<span class="half">CRM</span></h1>
-    <p class="standfirst">
-      El CRM para el negocio que no termina cuando se firma. Acá la venta sigue viva hasta que el
-      trabajo está entregado y el cliente está en mantenimiento, porque así es como se cobra de verdad.
-    </p>
-    <div class="masthead-meta">
-      <span>Soles y dólares · <b>PEN / USD</b></span>
-      <span>Pago único y suscripción</span>
-      <span>Web · Software · Automatizaciones · Servicio</span>
-      <span>Anda en <b>teléfono y computadora</b></span>
-    </div>
-  </header>
+  <h1>RoultCRM</h1>
+  <p class="intro">
+    Qué módulos tiene y cómo se trabaja con él, de principio a fin.
+  </p>
 
-  <section>
-    <div class="section-head">
-      <p class="eyebrow">El recorrido</p>
-      <h2>Ocho etapas, de la primera llamada al mantenimiento</h2>
-      <p>
-        La mayoría de los CRM se despide en "Ganado". El nuestro sigue: la plata entra en el adelanto,
-        el trabajo se hace en producción y el cliente se queda en mantenimiento. Cada venta vive en una
-        sola tarjeta que se arrastra de columna en columna.
-      </p>
-    </div>
+  <!-- ── Parte 1 ─────────────────────────────────────────────── -->
 
-    <div class="rail-scroll" tabindex="0" role="group" aria-label="Las ocho etapas del pipeline">
-      <div class="rail">
-        <div class="stage">
-          <span class="stage-n">01</span>
-          <span class="stage-name">Contacto</span>
-          <span class="stage-note">Hubo conversación</span>
-        </div>
-        <div class="stage">
-          <span class="stage-n">02</span>
-          <span class="stage-name">Propuesta</span>
-          <span class="stage-note">Se pasó precio</span>
-        </div>
-        <div class="stage">
-          <span class="stage-n">03</span>
-          <span class="stage-name">Negociación</span>
-          <span class="stage-note">Se discute alcance</span>
-        </div>
-        <div class="stage cash">
-          <span class="stage-n">04</span>
-          <span class="stage-name">Adelanto</span>
-          <span class="stage-note">Pagó. Acá se gana</span>
-        </div>
-        <div class="stage">
-          <span class="stage-n">05</span>
-          <span class="stage-name">Producción</span>
-          <span class="stage-note">Se está haciendo</span>
-        </div>
-        <div class="stage">
-          <span class="stage-n">06</span>
-          <span class="stage-name">Entregado</span>
-          <span class="stage-note">Está en manos del cliente</span>
-        </div>
-        <div class="stage">
-          <span class="stage-n">07</span>
-          <span class="stage-name">Mantenimiento</span>
-          <span class="stage-note">Sigue facturando</span>
-        </div>
-        <div class="stage lost">
-          <span class="stage-n">—</span>
-          <span class="stage-name">Perdido</span>
-          <span class="stage-note">Con motivo obligatorio</span>
-        </div>
-      </div>
-      <div class="rail-legend">
-        <div class="bracket sell">Vender</div>
-        <div class="bracket deliver">Entregar y retener</div>
-        <div class="bracket out">Se archiva</div>
-      </div>
-    </div>
-
-    <div class="pull">
-      <p>
-        Ninguna venta se puede dar por perdida sin escribir por qué. Al mes siguiente esa lista es
-        lo único que dice si el problema es el precio, el plazo o la competencia.
-      </p>
-      <p class="attrib">Regla del sistema, no sugerencia</p>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <p class="eyebrow">Entra</p>
-      <h2>Que ningún interesado se pierda en un chat</h2>
-    </div>
-
-    <div class="modules">
-      <article class="module">
-        <div>
-          <h3>Leads</h3>
-          <p class="module-intro">Todo el que levantó la mano, en un solo lugar.</p>
-        </div>
-        <ul>
-          <li>Empresa, quién atendió, <b>representante legal</b>, teléfono, WhatsApp, correo, origen y notas.</li>
-          <li>Seis estados: <code>Nuevo</code> <code>Contactado</code> <code>Calificado</code> <code>Convertido</code> <code>No califica</code> <code>Perdido</code>.</li>
-          <li>Avisa si ese lead <b>ya existe</b> antes de que dos vendedores llamen al mismo negocio.</li>
-          <li>Al calificarlo, se convierte en cliente, contacto y venta <b>de una sola vez</b>: nadie vuelve a cargar los mismos datos.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>Formulario de tu web</h3>
-          <p class="module-intro">El sitio carga los leads solo.</p>
-        </div>
-        <ul>
-          <li>Se genera una <b>clave de acceso</b> desde el CRM y se la pasás a quien maneja tu página o tu chatbot.</li>
-          <li>Cada envío entra como lead nuevo, sin asignar, listo para que alguien lo tome.</li>
-          <li>La clave <b>solo sirve para crear leads</b>: no da acceso a tus clientes, tus ventas ni tu equipo.</li>
-          <li>Si se filtra, se revoca y se crea otra en dos clics.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>WhatsApp Business</h3>
-          <p class="module-intro">Conectás tu número y la conversación deja de ser privada del vendedor.</p>
-        </div>
-        <ul>
-          <li>Lo que le escribís al cliente desde su ficha <b>queda en su historial</b>.</li>
-          <li>Lo que él contesta entra solo y se guarda en la ficha que corresponde.</li>
-          <li>Si escribe un número que no tenés cargado, se abre un <b>lead nuevo</b> con origen WhatsApp.</li>
-          <li>Si el vendedor se va, la conversación se queda. Un chat en su teléfono se iba con él.</li>
-        </ul>
-      </article>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <p class="eyebrow">Se trabaja</p>
-      <h2>El cliente, completo, en una pantalla</h2>
-    </div>
-
-    <div class="modules">
-      <article class="module">
-        <div>
-          <h3>Ficha del cliente</h3>
-          <p class="module-intro">Lo que un vendedor abre antes de llamar.</p>
-        </div>
-        <ul>
-          <li>Sus datos, sus contactos, <b>todas sus ventas</b> y todo lo que pasó, en la misma vista.</li>
-          <li>Historial por tipo: <code>Nota</code> <code>Llamada</code> <code>Reunión</code> <code>WhatsApp</code> <code>Correo</code> <code>Visita</code>.</li>
-          <li>Cada interacción guarda <b>cuándo pasó</b>, no cuándo se cargó: una llamada del viernes se anota el lunes y la historia sigue en orden.</li>
-          <li>Botones para escribir por WhatsApp, llamar o mandar correo sin copiar números a mano.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>Ventas</h3>
-          <p class="module-intro">Un cliente puede tener varias, y cada una su propia historia.</p>
-        </div>
-        <ul>
-          <li>Monto en <b>soles o dólares</b>, y <b>pago único o mensual</b>. El sistema nunca los suma entre sí.</li>
-          <li>Cada venta lleva su <b>próximo paso</b>: qué hay que hacer, quién y para cuándo.</li>
-          <li>Línea de negocio: <code>Web</code> <code>Software</code> <code>Automatizaciones</code> <code>Servicio</code>.</li>
-          <li>Se arrastra entre etapas en el tablero, o se cambia desde la lista.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>Campos propios</h3>
-          <p class="module-intro">Lo que tu rubro necesita y ningún CRM trae de fábrica.</p>
-        </div>
-        <ul>
-          <li>El RUC acá, el número de póliza en una aseguradora, los metros cuadrados en una constructora.</li>
-          <li>Cinco tipos: texto, número, fecha, lista de opciones y sí/no.</li>
-          <li>Se definen por separado para empresas, contactos, leads y ventas.</li>
-          <li>Se archivan sin perder lo ya cargado. <b>Dejan de estar en Notas</b>, que es donde no se puede filtrar ni sumar.</li>
-        </ul>
-      </article>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <p class="eyebrow">Se entrega</p>
-      <h2>El trabajo después de la firma</h2>
-    </div>
-
-    <div class="modules">
-      <article class="module">
-        <div>
-          <h3>Tareas</h3>
-          <p class="module-intro">Tablero y línea de tiempo, la misma información de dos formas.</p>
-        </div>
-        <ul>
-          <li>Tres columnas: <code>Por hacer</code> <code>Haciendo</code> <code>Hecho</code>.</li>
-          <li>Prioridad <code>Urgente</code> <code>Alta</code> <code>Media</code> <code>Baja</code>, cada una con su color.</li>
-          <li>Se asignan a alguien, y queda registrado <b>quién la creó y quién la cerró</b>.</li>
-          <li>Bitácora de avance: se comenta lo que se hizo y en qué porcentaje va, y queda el historial.</li>
-          <li>Se cuelgan de un lead, un cliente, un contacto o una venta.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>Calendario</h3>
-          <p class="module-intro">Día, semana y mes.</p>
-        </div>
-        <ul>
-          <li>Junta las <b>tareas del equipo</b> y los <b>próximos pasos</b> de las ventas.</li>
-          <li>Con hora o de todo el día, como cada cosa lo pida.</li>
-          <li>Un vendedor ve su semana; un administrador, la de todos.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>Recordatorios automáticos</h3>
-          <p class="module-intro">El sistema avisa antes de que alguien pregunte.</p>
-        </div>
-        <ul>
-          <li>Todas las mañanas, <b>un correo por persona</b> con lo que se le vence ese día y lo que ya se le venció.</li>
-          <li>Uno solo con todo junto, no uno por pendiente: cinco correos a las 8 de la mañana se archivan sin leer.</li>
-          <li>Si nadie quedó a cargo del próximo paso de una venta, el aviso le llega a quien la lleva.</li>
-        </ul>
-      </article>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <p class="eyebrow">Se mide</p>
-      <h2>Números que aguantan una reunión</h2>
-      <p>
-        El tablero de control no inventa un solo total. Los soles no se suman con los dólares y el pago
-        único no se suma con la suscripción, porque "S/ 84 000" mezclando las cuatro cosas no es un dato,
-        es un error con formato de moneda.
-      </p>
-    </div>
-
-    <div class="modules">
-      <article class="module">
-        <div>
-          <h3>Lo que ya entró y lo que está en juego</h3>
-          <p class="module-intro">Separado por moneda y por tipo de cobro.</p>
-        </div>
-        <ul>
-          <li><b>Ganado</b> y <b>en juego</b>, cada uno en PEN y en USD.</li>
-          <li><b>Activo por mes</b> y <b>en juego por mes</b> para las suscripciones, aparte del pago único.</li>
-          <li>Leads nuevos, ventas creadas, ganadas y perdidas, y tareas vencidas del período.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>Ocho gráficos</h3>
-          <p class="module-intro">Para ver la forma, no solo el total.</p>
-        </div>
-        <ul>
-          <li>Evolución mensual · Resultado · Pipeline por etapa · Ganado por mes.</li>
-          <li><b>Leads por origen</b>: de dónde vienen los que sí compran.</li>
-          <li><b>Por vendedor</b>: cuánto cerró cada uno en el período.</li>
-          <li><b>Tareas por prioridad</b> y <b>por persona</b>: quién está tapado y quién cierra.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>Buscar, exportar, auditar</h3>
-          <p class="module-intro">Para cuando hay que sacar la información del sistema.</p>
-        </div>
-        <ul>
-          <li>Búsqueda global con <code>⌘K</code> sobre empresas, contactos, leads, ventas y personas.</li>
-          <li>Filtros en todas las listas, y el <b>CSV exportado respeta el filtro</b> que tenías puesto.</li>
-          <li>Importación desde CSV con vista previa antes de confirmar.</li>
-          <li>Registro de auditoría: quién hizo qué y cuándo.</li>
-        </ul>
-      </article>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <p class="eyebrow">Quién ve qué</p>
-      <h2>Un vendedor ve lo suyo. Y "lo suyo" significa lo suyo</h2>
-      <p>
-        No es que la pantalla le esconda las cosas: el servidor no se las manda. La misma regla vale en
-        las listas, en la búsqueda, en el calendario, en el CSV que exporta y en los gráficos del tablero.
-      </p>
-    </div>
-
-    <div class="modules">
-      <article class="module">
-        <div>
-          <h3>Dos roles</h3>
-          <p class="module-intro">Sin permisos que haya que configurar de a uno.</p>
-        </div>
-        <ul>
-          <li><b>Administrador</b>: ve todo, da de alta al equipo, define campos, conecta integraciones.</li>
-          <li><b>Vendedor</b>: sus leads, sus clientes, sus contactos, sus ventas y sus tareas.</li>
-          <li>Comisión configurable por vendedor.</li>
-          <li>La reasignación de una cartera <b>queda registrada</b> con fecha.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>Acceso</h3>
-          <p class="module-intro">Sin que nadie quede encerrado ni una contraseña viva para siempre.</p>
-        </div>
-        <ul>
-          <li>El administrador da de alta a alguien y el sistema genera una <b>contraseña provisoria</b>.</li>
-          <li>Esa contraseña <b>obliga a cambiarla</b> al primer ingreso: la que se pasó por WhatsApp no queda viva en un chat.</li>
-          <li>"Olvidé mi contraseña" con link por correo, de un solo uso y con vencimiento.</li>
-          <li>El administrador puede restablecer el acceso de cualquiera de su equipo.</li>
-        </ul>
-      </article>
-
-      <article class="module">
-        <div>
-          <h3>Tu empresa es tuya</h3>
-          <p class="module-intro">Varias empresas usan el mismo sistema sin tocarse.</p>
-        </div>
-        <ul>
-          <li>Cada empresa tiene su propio espacio: <b>nadie de afuera ve un solo dato tuyo</b>.</li>
-          <li>Un mismo correo puede tener cuenta en <b>más de una empresa</b> — el contador que atiende a dos clientes no necesita dos casillas.</li>
-          <li>Las contraseñas se guardan cifradas y sin posibilidad de revertirlas; la sesión se renueva sola y se puede cortar.</li>
-          <li>Las credenciales que conectás (WhatsApp) se guardan <b>cifradas</b>, no en texto plano.</li>
-        </ul>
-      </article>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-head">
-      <p class="eyebrow">Ficha técnica</p>
-      <h2>Todo lo que trae, en números</h2>
-    </div>
-
-    <div class="spec-wrap">
-      <table>
-        <caption>Valores del sistema</caption>
-        <thead>
-          <tr>
-            <th scope="col">Concepto</th>
-            <th scope="col">N.º</th>
-            <th scope="col">Valores</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">Etapas del pipeline</th>
-            <td class="count">8</td>
-            <td>Contacto · Propuesta · Negociación · Adelanto · Producción · Entregado · Mantenimiento · Perdido</td>
-          </tr>
-          <tr>
-            <th scope="row">Estados de lead</th>
-            <td class="count">6</td>
-            <td>Nuevo · Contactado · Calificado · Convertido · No califica · Perdido</td>
-          </tr>
-          <tr>
-            <th scope="row">Líneas de negocio</th>
-            <td class="count">4</td>
-            <td>Web · Software · Automatizaciones · Servicio</td>
-          </tr>
-          <tr>
-            <th scope="row">Tipos de interacción</th>
-            <td class="count">6</td>
-            <td>Nota · Llamada · Reunión · WhatsApp · Correo · Visita</td>
-          </tr>
-          <tr>
-            <th scope="row">Prioridad de tareas</th>
-            <td class="count">4</td>
-            <td>Urgente · Alta · Media · Baja</td>
-          </tr>
-          <tr>
-            <th scope="row">Estados de tarea</th>
-            <td class="count">3</td>
-            <td>Por hacer · Haciendo · Hecho</td>
-          </tr>
-          <tr>
-            <th scope="row">Tipos de campo propio</th>
-            <td class="count">5</td>
-            <td>Texto · Número · Fecha · Lista de opciones · Sí/No</td>
-          </tr>
-          <tr>
-            <th scope="row">Vistas de calendario</th>
-            <td class="count">3</td>
-            <td>Día · Semana · Mes</td>
-          </tr>
-          <tr>
-            <th scope="row">Monedas</th>
-            <td class="count">2</td>
-            <td>Soles (PEN) · Dólares (USD), nunca sumadas entre sí</td>
-          </tr>
-          <tr>
-            <th scope="row">Tipos de cobro</th>
-            <td class="count">2</td>
-            <td>Pago único · Mensual (suscripción)</td>
-          </tr>
-          <tr>
-            <th scope="row">Roles</th>
-            <td class="count">2</td>
-            <td>Administrador · Vendedor</td>
-          </tr>
-          <tr>
-            <th scope="row">Entrada y salida de datos</th>
-            <td class="count">—</td>
-            <td>Importación CSV con vista previa · Exportación CSV con los filtros aplicados · API de captación de leads</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <div class="closing">
-    <div>
-      <h3>No hay nada que instalar</h3>
-      <p>
-        Se entra desde el navegador, en la computadora o en el teléfono. Las diez pantallas están
-        hechas para usarse con el pulgar: un vendedor carga una visita desde la calle.
-      </p>
-    </div>
-    <div>
-      <h3>Arranca con tus datos</h3>
-      <p>
-        Tus clientes y contactos se suben desde una planilla, con vista previa antes de confirmar.
-        No hay que cargar el histórico a mano para empezar a usarlo.
-      </p>
-    </div>
-    <div>
-      <h3>Se conecta a lo que ya usás</h3>
-      <p>
-        El formulario de tu web, tu número de WhatsApp Business y tu correo de salida. Cada empresa
-        conecta lo suyo desde adentro del sistema, sin depender de nadie.
-      </p>
-    </div>
+  <div class="part">
+    <h2>Los módulos</h2>
+    <p>Cada uno es una opción del menú de la izquierda, en este orden.</p>
   </div>
 
-  <p class="colophon">
-    <span>RoultCRM</span>
-    <span>Un producto de ROUlt</span>
-    <span>Lima, Perú</span>
-  </p>
+  <div class="modules">
+
+    <div class="mod">
+      <div class="mod-head"><h3>Dashboard</h3></div>
+      <p>
+        La pantalla de inicio. Muestra cuántos leads entraron, cuántas ventas se crearon, se ganaron
+        y se perdieron, cuánto dinero entró y cuánto está en juego, y ocho gráficos: evolución
+        mensual, pipeline por etapa, leads por origen, ventas por vendedor, tareas por prioridad y
+        por persona.
+      </p>
+      <p>
+        Los soles y los dólares se muestran por separado, y el pago único aparte de la suscripción
+        mensual. El sistema nunca los suma entre sí.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Leads</h3></div>
+      <p>
+        Los interesados que todavía no compraron. Cada lead guarda la empresa, quién atendió, el
+        representante legal, teléfono, WhatsApp, correo, de dónde salió y notas.
+      </p>
+      <p>
+        Tiene seis estados: Nuevo, Contactado, Calificado, Convertido, No califica y Perdido. Acá se
+        le asigna un vendedor y, cuando compra, se lo convierte en cliente.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Deals</h3></div>
+      <p>
+        Las ventas. Es un tablero donde cada venta es una tarjeta que se arrastra de una etapa a la
+        siguiente. Cada una tiene monto, moneda, tipo de cobro, vendedor a cargo y su próximo paso.
+      </p>
+      <p>
+        Un mismo cliente puede tener varias ventas al mismo tiempo, cada una en su propia etapa.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Empresas</h3></div>
+      <p>
+        Los clientes ya convertidos. Al hacer clic en el nombre se abre su ficha: sus datos, sus
+        contactos, todas sus ventas y el historial completo de lo que pasó con él.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Contactos</h3></div>
+      <p>
+        Las personas dentro de cada empresa cliente: nombre, cargo, teléfono, WhatsApp y correo. Una
+        empresa puede tener varios.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Vendedores</h3><span class="who">Solo administrador</span></div>
+      <p>
+        El equipo. Acá se da de alta a alguien, se le asigna su rol, su comisión, se lo desactiva o
+        se le restablece la contraseña.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Tareas</h3></div>
+      <p>
+        Los pendientes del equipo, en dos vistas: un tablero de tres columnas (Por hacer, Haciendo,
+        Hecho) o una línea de tiempo ordenada por fecha.
+      </p>
+      <p>
+        Cada tarea tiene prioridad, responsable, fecha de vencimiento y una bitácora donde se va
+        comentando el avance en porcentaje. Queda registrado quién la creó y quién la cerró.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Calendario</h3></div>
+      <p>
+        Las tareas y los próximos pasos de las ventas, puestos en un calendario de día, semana o mes.
+        Un vendedor ve lo suyo; un administrador ve lo de todos.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Campos propios</h3><span class="who">Solo administrador</span></div>
+      <p>
+        Para agregar datos que el CRM no trae de fábrica y tu negocio sí necesita: el RUC, un número
+        de contrato, los metros cuadrados. Se eligen el nombre y el tipo (texto, número, fecha, lista
+        de opciones o sí/no) y se decide en qué ficha aparece: empresa, contacto, lead o venta.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Conexiones</h3><span class="who">Solo administrador</span></div>
+      <p>
+        Donde se conecta el CRM con lo de afuera: la clave para que el formulario de tu página web
+        cargue leads solo, el número de WhatsApp Business de la empresa, y el estado de los
+        recordatorios diarios.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Importar</h3><span class="who">Solo administrador</span></div>
+      <p>
+        Para subir empresas, contactos o leads desde un archivo CSV (una planilla de Excel guardada
+        en ese formato). Muestra una vista previa de lo que va a entrar antes de confirmar.
+      </p>
+      <p>
+        Para sacar datos no hay un módulo aparte: cada lista tiene su botón "Exportar CSV", y
+        exporta exactamente lo que tengas filtrado en pantalla.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Auditoría</h3><span class="who">Solo administrador</span></div>
+      <p>
+        El registro de quién hizo qué y cuándo: quién borró una empresa, quién reasignó un lead,
+        quién cambió una venta de etapa.
+      </p>
+    </div>
+
+    <div class="mod">
+      <div class="mod-head"><h3>Entidades</h3><span class="who">Solo el dueño del sistema</span></div>
+      <p>
+        La lista de empresas que usan el CRM. Desde acá se da de alta una empresa cliente nueva con
+        su primer administrador. Cada una queda completamente separada de las demás.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ── Parte 2 ─────────────────────────────────────────────── -->
+
+  <div class="part">
+    <h2>El flujo de trabajo</h2>
+    <p>Cómo pasa un interesado de ser un número desconocido a ser un cliente que ya pagó.</p>
+  </div>
+
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-n"></div>
+      <div>
+        <h3>Entra un interesado</h3>
+        <p>
+          Puede entrar de tres formas: alguien lo carga a mano, lo manda el formulario de tu página
+          web, o la persona escribe al WhatsApp de la empresa. En los tres casos aparece como un
+          lead nuevo, sin vendedor asignado.
+        </p>
+        <p class="where">Dónde: <b>Leads</b></p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-n"></div>
+      <div>
+        <h3>Se le asigna un vendedor</h3>
+        <p>
+          El administrador elige quién lo va a trabajar. Desde ese momento ese lead es de esa
+          persona: los demás vendedores no lo ven ni en la lista, ni en la búsqueda, ni en el
+          calendario, ni en lo que exportan.
+        </p>
+        <p class="where">Dónde: <b>Leads</b> → columna Vendedor</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-n"></div>
+      <div>
+        <h3>El vendedor lo trabaja</h3>
+        <p>
+          Llama, escribe por WhatsApp, se reúne. Después de cada contacto anota qué pasó en el
+          historial, eligiendo el tipo: nota, llamada, reunión, WhatsApp, correo o visita. También
+          va cambiando el estado del lead a medida que avanza.
+        </p>
+        <p>
+          Si el WhatsApp de la empresa está conectado, lo que le escribe y lo que el cliente
+          contesta se guarda solo, sin que nadie lo cargue a mano.
+        </p>
+        <p class="where">Dónde: <b>Leads</b> → historial del lead</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-n"></div>
+      <div>
+        <h3>El lead compra y se convierte</h3>
+        <p>
+          Cuando cierra, el vendedor aprieta "Calificar" y carga el monto. En ese momento el sistema
+          crea tres cosas de una sola vez: la <b>empresa</b> cliente, su primer <b>contacto</b> y la
+          <b>venta</b>. Nadie vuelve a escribir los mismos datos.
+        </p>
+        <p>
+          El lead queda marcado como Convertido y deja de aparecer entre los pendientes.
+        </p>
+        <p class="where">Dónde: <b>Leads</b> → botón Calificar</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-n"></div>
+      <div>
+        <h3>La venta avanza por las etapas</h3>
+        <p>
+          La venta aparece como tarjeta en el tablero y se arrastra de columna en columna a medida
+          que progresa:
+        </p>
+        <div class="stages">
+          <div class="stage-row"><span class="num">1</span><span class="name">Contacto</span><span class="desc">Hubo conversación</span></div>
+          <div class="stage-row"><span class="num">2</span><span class="name">Propuesta</span><span class="desc">Se pasó el precio</span></div>
+          <div class="stage-row"><span class="num">3</span><span class="name">Negociación</span><span class="desc">Se está discutiendo el alcance</span></div>
+          <div class="stage-row paid"><span class="num">4</span><span class="name">Adelanto</span><span class="desc">El cliente pagó. Desde acá cuenta como ganada</span></div>
+          <div class="stage-row"><span class="num">5</span><span class="name">Producción</span><span class="desc">Se está haciendo el trabajo</span></div>
+          <div class="stage-row"><span class="num">6</span><span class="name">Entregado</span><span class="desc">Ya está en manos del cliente</span></div>
+          <div class="stage-row"><span class="num">7</span><span class="name">Mantenimiento</span><span class="desc">El cliente sigue pagando por el servicio</span></div>
+          <div class="stage-row"><span class="num">—</span><span class="name">Perdido</span><span class="desc">No se cerró. Hay que escribir el motivo</span></div>
+        </div>
+        <p class="where">Dónde: <b>Deals</b></p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-n"></div>
+      <div>
+        <h3>Mientras tanto, el trabajo se reparte</h3>
+        <p>
+          Cada venta lleva un <b>próximo paso</b>: qué hay que hacer, quién y para cuándo. Y lo que
+          requiere varias manos se carga como <b>tareas</b> asignadas a personas.
+        </p>
+        <p>
+          Todo eso aparece junto en el calendario. Además, cada mañana el sistema le manda a cada
+          uno un correo con lo que se le vence ese día y lo que ya se le venció.
+        </p>
+        <p class="where">Dónde: <b>Deals</b>, <b>Tareas</b> y <b>Calendario</b></p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-n"></div>
+      <div>
+        <h3>El administrador mira los números</h3>
+        <p>
+          Todo lo anterior alimenta el dashboard: cuánto entró, cuánto falta cerrar, qué vendedor
+          está cerrando, de qué origen vienen los leads que sí compran y quién tiene tareas
+          atrasadas.
+        </p>
+        <p class="where">Dónde: <b>Dashboard</b></p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <p>
+      <b>Quién ve qué.</b> Hay dos roles. El <b>administrador</b> ve todo lo de su empresa. El
+      <b>vendedor</b> ve solamente sus leads, sus clientes, sus contactos, sus ventas y sus tareas.
+      Y si hay varias empresas usando el sistema, ninguna ve un solo dato de otra.
+    </p>
+  </div>
+
+  <p class="foot">RoultCRM — un producto de ROUlt</p>
 
 </div>
 </body>
