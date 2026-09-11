@@ -22,9 +22,19 @@ export function TeamPage() {
   const columns = [
     columnHelper.accessor((row) => `${row.firstName} ${row.lastName}`, {
       id: 'name',
-      header: 'Vendedor',
+      header: 'Persona',
     }),
     columnHelper.accessor('email', { header: 'Correo' }),
+    // Sin esta columna no había forma de saber quién es administrador y quién vendedor, y la lista
+    // se leía como si todos fueran vendedores.
+    columnHelper.accessor('role', {
+      header: 'Rol',
+      cell: (info) => (
+        <Badge tone={info.getValue() === 'ADMIN' ? 'info' : 'neutral'}>
+          {info.getValue() === 'ADMIN' ? 'Administrador' : 'Vendedor'}
+        </Badge>
+      ),
+    }),
     columnHelper.accessor('status', {
       header: 'Estado',
       cell: (info) => <Badge tone={info.getValue() === 'ACTIVE' ? 'success' : 'neutral'}>{info.getValue() === 'ACTIVE' ? 'Activo' : 'Inactivo'}</Badge>,
@@ -39,7 +49,7 @@ export function TeamPage() {
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
         <EditDialog
-          title="Editar vendedor"
+          title="Editar persona"
           schema={updateUserSchema}
           isPending={updateUser.isPending}
           isError={updateUser.isError}
@@ -48,12 +58,21 @@ export function TeamPage() {
             lastName: row.original.lastName,
             phone: row.original.phone ?? '',
             commissionPct: row.original.commissionPct,
+            role: row.original.role,
           }}
           fields={[
             { key: 'firstName', label: 'Nombre' },
             { key: 'lastName', label: 'Apellido' },
             { key: 'phone', label: 'Teléfono' },
             { key: 'commissionPct', label: 'Comisión (%)' },
+            {
+              key: 'role',
+              label: 'Qué puede hacer',
+              options: [
+                { value: 'VENDEDOR', label: 'Vendedor — solo lo suyo' },
+                { value: 'ADMIN', label: 'Administrador — todo, y puede dar de alta gente' },
+              ],
+            },
           ]}
           onSubmit={(data, close) =>
             updateUser.mutate(
@@ -95,7 +114,12 @@ export function TeamPage() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Vendedores</h1>
+        <div>
+          <h1 className="text-xl font-semibold">Equipo</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Todas las personas con cuenta en la empresa. El rol es lo que decide qué ve cada una.
+          </p>
+        </div>
         <CreateVendedorDialog />
       </div>
       {setStatus.isError && (

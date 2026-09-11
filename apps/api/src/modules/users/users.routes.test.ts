@@ -129,4 +129,92 @@ describe('/users routes', () => {
     expect(second.status).toBe(409);
     expect(second.body.error).toContain('email');
   });
+
+  describe('cambiar el rol', () => {
+    it('un admin puede convertir a alguien en administrador', async () => {
+      // Antes esto no se podía desde la app: el alta forzaba VENDEDOR y no había forma de tener un
+      // segundo administrador sin tocar la base a mano.
+      const creado = await request(app)
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          email: `rol-${Date.now()}@roult.pe`,
+          password: 'ClaveDePrueba2026',
+          firstName: 'Socio',
+          lastName: 'Nuevo',
+          role: 'VENDEDOR',
+        });
+      expect(creado.status).toBe(201);
+
+      const res = await request(app)
+        .patch(`/users/${creado.body.id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ role: 'ADMIN' });
+      expect(res.status).toBe(200);
+      expect(res.body.role).toBe('ADMIN');
+    });
+
+    it('se puede crear a alguien directamente como administrador', async () => {
+      const res = await request(app)
+        .post('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          email: `admin-${Date.now()}@roult.pe`,
+          password: 'ClaveDePrueba2026',
+          firstName: 'Otra',
+          lastName: 'Dueña',
+          role: 'ADMIN',
+        });
+      expect(res.status).toBe(201);
+      expect(res.body.role).toBe('ADMIN');
+    });
+
+    it('nadie se cambia el rol a sí mismo', async () => {
+      const yo = await prisma.user.create({
+        data: {
+          tenantId,
+          email: `yo-${Date.now()}@roult.pe`,
+          passwordHash: 'x',
+          firstName: 'Yo',
+          lastName: 'Mismo',
+          role: 'ADMIN',
+        },
+      });
+      const miToken = signAccessToken({ userId: yo.id, tenantId, role: 'ADMIN' });
+      const res = await request(app)
+        .patch(`/users/${yo.id}`)
+        .set('Authorization', `Bearer ${miToken}`)
+        .send({ role: 'VENDEDOR' });
+      // Un admin que se baja a vendedor por error pierde el acceso a esta misma pantalla y no tiene
+      // cómo volver.
+      expect(res.status).toBe(400);
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: yo.id } })).role).toBe('ADMIN');
+    });
+
+    it('la empresa no se puede quedar sin ningún administrador', async () => {
+      const solo = await prisma.tenant.create({ data: { name: `Solo un admin ${Date.now()}` } });
+      const unico = await prisma.user.create({
+        data: {
+          tenantId: solo.id,
+          email: `unico-${Date.now()}@roult.pe`,
+          passwordHash: 'x',
+          firstName: 'Único',
+          lastName: 'Admin',
+          role: 'ADMIN',
+        },
+      });
+      const otroAdmin = signAccessToken({ userId: 'otro-admin', tenantId: solo.id, role: 'ADMIN' });
+
+      const res = await request(app)
+        .patch(`/users/${unico.id}`)
+        .set('Authorization', `Bearer ${otroAdmin}`)
+        .send({ role: 'VENDEDOR' });
+      // Sería una empresa donde nadie puede dar de alta gente, ni conectar nada, ni tocar la
+      // configuración. Nunca más.
+      expect(res.status).toBe(400);
+
+      await prisma.user.deleteMany({ where: { tenantId: solo.id } });
+      await prisma.tenant.delete({ where: { id: solo.id } });
+    });
+  });
 });

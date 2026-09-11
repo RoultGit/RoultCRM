@@ -16,7 +16,9 @@ const NAV_ITEMS = [
   { to: '/receivables', label: 'Cobranza', icon: Coins },
   { to: '/companies', label: 'Empresas', icon: Building2 },
   { to: '/contacts', label: 'Contactos', icon: Contact },
-  { to: '/team', label: 'Vendedores', icon: Users },
+  // "Equipo" y no "Vendedores": acá adentro está TODA la gente de la empresa, admins incluidos, y
+  // el nombre viejo hacía pensar que quien aparecía en la lista era vendedor.
+  { to: '/team', label: 'Equipo', icon: Users },
   { to: '/tasks', label: 'Tareas', icon: CalendarClock },
   { to: '/calendar', label: 'Calendario', icon: CalendarDays },
   { to: '/automations', label: 'Automatizaciones', icon: Zap },

@@ -2,7 +2,8 @@ import type { ResetPasswordDTO, UserDTO, createUserSchema, updateUserSchema } fr
 import type { z } from 'zod';
 import { UsersRepository } from './users.repository.js';
 import { hashPassword, generatePassword } from '../../lib/password.js';
-import { NotFoundError } from '../../lib/errors.js';
+import { NotFoundError, ValidationError } from '../../lib/errors.js';
+import { prisma } from '../../lib/prisma.js';
 import type { User } from '@prisma/client';
 import { AuthRepository } from '../auth/auth.repository.js';
 import { recordAudit } from '../../lib/audit.js';
@@ -79,9 +80,33 @@ export const UsersService = {
     return toDTO(user);
   },
 
-  async update(tenantId: string, id: string, input: z.infer<typeof updateUserSchema>): Promise<UserDTO> {
+  async update(
+    tenantId: string,
+    id: string,
+    input: z.infer<typeof updateUserSchema>,
+    actorUserId?: string
+  ): Promise<UserDTO> {
     const existing = await UsersRepository.findByIdAndTenant(id, tenantId);
     if (!existing) throw new NotFoundError('User not found');
+
+    if (input.role && input.role !== existing.role) {
+      // Nadie se cambia el rol a sí mismo. Un admin que se baja a vendedor por error pierde el
+      // acceso a esta misma pantalla y no tiene cómo volver.
+      if (actorUserId && actorUserId === id) {
+        throw new ValidationError('No podés cambiarte el rol a vos mismo. Pedíselo a otro administrador.');
+      }
+      // Y la empresa no puede quedarse sin ningún administrador: sería una empresa donde nadie
+      // puede dar de alta gente, ni conectar nada, ni tocar la configuración. Nunca más.
+      if (existing.role === 'ADMIN') {
+        const otros = await prisma.user.count({
+          where: { tenantId, role: 'ADMIN', status: 'ACTIVE', id: { not: id } },
+        });
+        if (otros === 0) {
+          throw new ValidationError('Tiene que quedar al menos un administrador activo en la empresa.');
+        }
+      }
+    }
+
     await UsersRepository.updateByIdAndTenant(id, tenantId, input);
     const updated = await UsersRepository.findByIdAndTenant(id, tenantId);
     return toDTO(updated!);

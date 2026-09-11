@@ -34,7 +34,7 @@ usersRouter.patch<{ id: string }>('/:id', requireRole('ADMIN'), async (req, res,
   try {
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const user = await UsersService.update(req.user!.tenantId, req.params.id, parsed.data);
+    const user = await UsersService.update(req.user!.tenantId, req.params.id, parsed.data, req.user!.userId);
     res.json(user);
   } catch (err) {
     next(err);

@@ -18,6 +18,7 @@ export const updateUserSchema = z.object({
   lastName: z.string().min(1).optional(),
   phone: z.string().optional(),
   commissionPct: z.number().min(0).max(100).optional(),
+  role: z.enum(['ADMIN', 'VENDEDOR']).optional(),
 });
 
 export const userFiltersSchema = z.object({
