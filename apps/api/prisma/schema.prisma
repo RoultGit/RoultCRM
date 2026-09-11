@@ -241,6 +241,7 @@ model Company {
   deals              Deal[]
 
   @@index([tenantId])
+  quotes   Quote[]
 }
 
 model Contact {
@@ -520,4 +521,67 @@ enum AutomationCode {
   LEAD_AUTO_ASSIGN
   LEAD_UNTOUCHED
   TASK_OVERDUE_ESCALATE
+}
+
+// Una cotización. Para quien vende servicios, ESTE es el momento de la venta: si se arma en Word y
+// se manda por Gmail, el CRM no está en la operación, es un diario escrito después.
+model Quote {
+  id             String      @id @default(uuid())
+  tenantId       String
+  // Correlativo por empresa, no global: el cliente ve "Cotización 14", no un uuid.
+  number         Int
+  companyId      String
+  company        Company     @relation(fields: [companyId], references: [id])
+  dealId         String?
+  title          String
+  status         QuoteStatus @default(DRAFT)
+  currency       Currency
+  // El IGV va POR cotización y no en una configuración global: hay ventas exoneradas y hay ventas
+  // al exterior, y en las dos el 18% fijo daría un total equivocado.
+  taxRate        Decimal     @default(18) @db.Decimal(5, 2)
+  validUntil     DateTime?
+  notes          String?
+  terms          String?
+  // La llave del link público. Es la credencial de lectura, así que tiene que poder buscarse por
+  // ella: se guarda tal cual y la defensa son sus 32 bytes al azar.
+  publicToken    String      @unique
+  createdById    String
+  assignedUserId String?
+  sentAt         DateTime?
+  // Cuándo la abrió el cliente por primera vez. Es lo que un PDF adjunto no puede decir.
+  viewedAt       DateTime?
+  respondedAt    DateTime?
+  // Quién dijo que sí, del lado del cliente.
+  respondedBy    String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  items QuoteItem[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@index([companyId])
+  @@index([dealId])
+}
+
+model QuoteItem {
+  id          String  @id @default(uuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal @db.Decimal(12, 2)
+  // El precio queda CONGELADO en la línea. Si se guardara una referencia a una lista de precios,
+  // una cotización vieja cambiaría de total sola cuando se actualiza la lista.
+  unitPrice   Decimal @db.Decimal(12, 2)
+  position    Int
+
+  @@index([quoteId])
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
 }

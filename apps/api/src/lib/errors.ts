@@ -36,3 +36,11 @@ export class DuplicateError extends AppError {
     super(message, 409, { duplicate });
   }
 }
+
+// 409 para el choque de estado: la operación es válida, pero el registro está en un estado que no
+// la admite. Distinto de DuplicateError, que es un choque de datos y lleva el duplicado adentro.
+export class ConflictError extends AppError {
+  constructor(message: string) {
+    super(message, 409);
+  }
+}

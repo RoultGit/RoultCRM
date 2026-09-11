@@ -15,6 +15,8 @@ import { TenantsPage } from '../pages/TenantsPage.js';
 import { IntegrationsPage } from '../pages/IntegrationsPage.js';
 import { CustomFieldsPage } from '../pages/CustomFieldsPage.js';
 import { AutomationsPage } from '../pages/AutomationsPage.js';
+import { QuotesPage } from '../pages/QuotesPage.js';
+import { PublicQuotePage } from '../pages/PublicQuotePage.js';
 import { AuditPage } from '../pages/AuditPage.js';
 import { DashboardPage } from '../pages/DashboardPage.js';
 import { ImportPage } from '../pages/ImportPage.js';
@@ -26,6 +28,9 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  // La cotización que abre el cliente: sin sesión y fuera del AppShell, porque quien la abre no
+  // tiene cuenta y no tiene por qué ver nada del CRM.
+  { path: '/cotizacion/:token', element: <PublicQuotePage /> },
   {
     path: '/',
     element: <AppShell />,
@@ -38,6 +43,7 @@ export const router = createBrowserRouter([
       { path: 'contacts', element: <ContactsPage /> },
       { path: 'leads', element: <LeadsPage /> },
       { path: 'deals', element: <DealsPage /> },
+      { path: 'quotes', element: <QuotesPage /> },
       { path: 'tasks', element: <TasksPage /> },
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'automations', element: <AutomationsPage /> },

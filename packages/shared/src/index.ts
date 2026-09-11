@@ -15,3 +15,4 @@ export * from './tenants.js';
 export * from './activities.js';
 export * from './customFields.js';
 export * from './automations.js';
+export * from './quotes.js';
