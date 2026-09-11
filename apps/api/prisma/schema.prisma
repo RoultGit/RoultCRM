@@ -25,6 +25,10 @@ model Tenant {
   id        String   @id @default(uuid())
   name      String
   createdAt DateTime @default(now())
+  // La parte local de la dirección a la que se le manda copia oculta: {inboundKey}@in.roult.pe.
+  // Va al azar y no derivada del nombre: si fuera "ferreteria@", cualquiera podría meterle correos
+  // a la ficha de sus clientes con solo adivinar el nombre de la empresa.
+  inboundKey String? @unique
 
   users User[]
   apiKeys ApiKey[]
@@ -339,9 +343,14 @@ model Activity {
   // Cuándo pasó, que NO es cuándo se cargó: una llamada del viernes se anota el lunes, y ordenar
   // por fecha de carga contaría la historia en el orden equivocado.
   occurredAt  DateTime
+  // El id que le puso el sistema de afuera (el Message-ID de un correo). Es lo que evita que el
+  // mismo mensaje quede dos veces cuando llega por copia oculta Y el cliente además responde a
+  // todos. Nulo para lo que se carga a mano.
+  externalId  String?
   createdAt   DateTime     @default(now())
 
   @@index([tenantId, relatedType, relatedId, occurredAt])
+  @@unique([tenantId, externalId])
 }
 
 model Deal {

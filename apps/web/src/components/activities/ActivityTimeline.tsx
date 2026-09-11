@@ -42,6 +42,8 @@ function when(iso: string): string {
 
 // Los mensajes que llegan por WhatsApp no los escribió nadie del equipo: los escribió el cliente.
 export const WHATSAPP_AUTHOR = 'whatsapp:inbound';
+export const EMAIL_AUTHOR = 'email:inbound';
+export const QUOTE_AUTHOR = 'quote:public';
 
 function authorName(id: string, users?: UserDTO[]): string {
   if (id === WHATSAPP_AUTHOR) return 'El cliente';

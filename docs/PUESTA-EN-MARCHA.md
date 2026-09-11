@@ -89,12 +89,40 @@ error de Meta a algo legible, pero la plantilla la tenés que crear vos.
 
 ---
 
+## 3.5 Correo entrante — el buzón de copia oculta
+
+Para que los correos con los clientes queden en su ficha sin que nadie los copie a mano. **No usa
+Gmail ni OAuth**: funciona con cualquier casilla de cualquier proveedor.
+
+En Vercel:
+
+| Variable | Valor |
+|---|---|
+| `INBOUND_SECRET` | `Yk3pQm8vLdR2xNfT7wZcB5hJ4sVgA6nE` |
+| `INBOUND_DOMAIN` | `in.roult.pe` |
+
+Después hace falta que alguien reciba los correos de `*@in.roult.pe` y los reenvíe a
+`https://roult-crm.vercel.app/api/email/inbound` con la cabecera
+`Authorization: Bearer <INBOUND_SECRET>`. La forma más barata es **Cloudflare Email Routing**
+(gratis): se apunta el MX de `in.roult.pe` a Cloudflare y un Email Worker de veinte líneas hace el
+POST con este JSON:
+
+```json
+{ "from": "Rosa <rosa@cliente.pe>", "to": ["abc123@in.roult.pe"],
+  "subject": "...", "text": "...", "messageId": "<id@cliente.pe>" }
+```
+
+Una vez andando, cada empresa activa su buzón desde **Conexiones → Correo en la ficha** y pone esa
+dirección en copia oculta cuando le escribe a un cliente. Si escribe alguien que no está cargado,
+se abre un lead con origen Correo.
+
 ## 4. Qué queda andando solo, una vez cargado todo
 
 - **8:00 de la mañana (hora de Lima):** a cada persona le llega un correo con sus tareas y
   próximos pasos que vencen ese día o que ya se vencieron. Uno solo por persona y por día.
 - **Cada mensaje de WhatsApp** que entre al número conectado queda en la ficha del cliente,
   y si el número no le corresponde a nadie, se crea un lead con origen WhatsApp.
+- **Cada correo** que vaya con el buzón en copia oculta queda en la ficha del cliente.
 - **Cada lead** que mande el formulario de tu sitio (Conexiones → Claves de acceso) entra
   como lead nuevo sin asignar.
 

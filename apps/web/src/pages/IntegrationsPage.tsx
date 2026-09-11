@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, Copy, Trash2 } from 'lucide-react';
 import { Card } from '../components/ui/card.js';
 import { WhatsAppCard } from '../components/whatsapp/WhatsAppCard.js';
+import { InboxCard } from '../components/email/InboxCard.js';
 import { Button } from '../components/ui/button.js';
 import { apiClient } from '../lib/api.js';
 import { formatDate } from '../lib/date.js';
@@ -150,6 +151,8 @@ export function IntegrationsPage() {
 
         <div className="space-y-4">
         <WhatsAppCard />
+
+        <InboxCard />
 
         <RecordatoriosCard />
         </div>
