@@ -84,7 +84,7 @@ describe('automatizaciones', () => {
     it('lista las seis apagadas y con los valores de fábrica', async () => {
       const res = await request(app).get('/automations').set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
-      expect(res.body).toHaveLength(6);
+      expect(res.body).toHaveLength(7);
       expect(res.body.every((a: { enabled: boolean }) => !a.enabled)).toBe(true);
       const quieta = res.body.find((a: { code: string }) => a.code === 'DEAL_STALE');
       expect(quieta.config.dias).toBe(14);
@@ -308,6 +308,57 @@ describe('automatizaciones', () => {
       });
       await runScheduled(HOY);
       await runScheduled(new Date(HOY.getTime() + 24 * 60 * 60 * 1000));
+      expect(await tareas()).toHaveLength(2);
+    });
+  });
+
+  describe('cobrar lo vencido', () => {
+    it('le crea al vendedor una tarea de cobranza por la cuota atrasada', async () => {
+      await prender('INSTALLMENT_OVERDUE', { dias: 3 });
+      const deal = await crearVenta({ title: 'Con deuda' });
+      await prisma.installment.create({
+        data: {
+          tenantId,
+          dealId: deal.id,
+          concept: 'Saldo 50%',
+          amount: 3100,
+          currency: 'PEN',
+          dueDate: diasAtras(10),
+        },
+      });
+      await runScheduled(HOY);
+
+      const creadas = await tareas();
+      expect(creadas).toHaveLength(1);
+      expect(creadas[0].ownerId).toBe(anaId);
+      expect(creadas[0].priority).toBe('URGENT');
+      expect(creadas[0].title).toContain('Cobrar');
+    });
+
+    it('no molesta con lo que ya se cobró ni con lo que todavía no vence', async () => {
+      await prender('INSTALLMENT_OVERDUE', { dias: 3 });
+      const deal = await crearVenta();
+      await prisma.installment.createMany({
+        data: [
+          { tenantId, dealId: deal.id, concept: 'Cobrada', amount: 100, currency: 'PEN', dueDate: diasAtras(30), paidAt: diasAtras(25), paidAmount: 100 },
+          { tenantId, dealId: deal.id, concept: 'Por vencer', amount: 100, currency: 'PEN', dueDate: diasAtras(-30) },
+        ],
+      });
+      await runScheduled(HOY);
+      expect(await tareas()).toHaveLength(0);
+    });
+
+    it('avisa de cada cuota vencida, no solo de la primera de la venta', async () => {
+      await prender('INSTALLMENT_OVERDUE', { dias: 3 });
+      const deal = await crearVenta();
+      await prisma.installment.createMany({
+        data: [
+          { tenantId, dealId: deal.id, concept: 'Cuota 1', amount: 100, currency: 'PEN', dueDate: diasAtras(40) },
+          { tenantId, dealId: deal.id, concept: 'Cuota 2', amount: 100, currency: 'PEN', dueDate: diasAtras(10) },
+        ],
+      });
+      await runScheduled(HOY);
+      // Si el registro apuntara a la venta, la segunda cuota quedaría tapada por la primera.
       expect(await tareas()).toHaveLength(2);
     });
   });

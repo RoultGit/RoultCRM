@@ -16,6 +16,7 @@ import { IntegrationsPage } from '../pages/IntegrationsPage.js';
 import { CustomFieldsPage } from '../pages/CustomFieldsPage.js';
 import { AutomationsPage } from '../pages/AutomationsPage.js';
 import { QuotesPage } from '../pages/QuotesPage.js';
+import { ReceivablesPage } from '../pages/ReceivablesPage.js';
 import { PublicQuotePage } from '../pages/PublicQuotePage.js';
 import { AuditPage } from '../pages/AuditPage.js';
 import { DashboardPage } from '../pages/DashboardPage.js';
@@ -44,6 +45,7 @@ export const router = createBrowserRouter([
       { path: 'leads', element: <LeadsPage /> },
       { path: 'deals', element: <DealsPage /> },
       { path: 'quotes', element: <QuotesPage /> },
+      { path: 'receivables', element: <ReceivablesPage /> },
       { path: 'tasks', element: <TasksPage /> },
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'automations', element: <AutomationsPage /> },

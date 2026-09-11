@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Building2, CalendarClock, CalendarDays, Contact, Handshake, FileText, History, Landmark, ListPlus, Zap, LayoutDashboard, ListChecks, LogOut, Menu, Plug, Upload, Users } from 'lucide-react';
+import { Building2, CalendarClock, CalendarDays, Contact, Handshake, Coins, FileText, History, Landmark, ListPlus, Zap, LayoutDashboard, ListChecks, LogOut, Menu, Plug, Upload, Users } from 'lucide-react';
 import { cn } from '../../lib/cn.js';
 import { useSession, useLogout } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/leads', label: 'Leads', icon: Handshake },
   { to: '/deals', label: 'Deals', icon: ListChecks },
   { to: '/quotes', label: 'Cotizaciones', icon: FileText },
+  { to: '/receivables', label: 'Cobranza', icon: Coins },
   { to: '/companies', label: 'Empresas', icon: Building2 },
   { to: '/contacts', label: 'Contactos', icon: Contact },
   { to: '/team', label: 'Vendedores', icon: Users },

@@ -15,7 +15,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { updateDealSchema, LINE_OPTIONS, BILLING_OPTIONS, type DealDTO, type UserDTO } from '@roult/shared';
-import { Trash2, MessageSquare } from 'lucide-react';
+import { Trash2, MessageSquare, Coins } from 'lucide-react';
 import { Card } from '../components/ui/card.js';
 import { Button } from '../components/ui/button.js';
 import { Badge } from '../components/ui/badge.js';
@@ -30,6 +30,7 @@ import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { LostReasonDialog } from '../components/deals/LostReasonDialog.js';
 import { DealActivityDialog } from '../components/deals/DealActivityDialog.js';
 import { DeleteDealDialog } from '../components/deals/DeleteDealDialog.js';
+import { PlanDialog } from '../components/installments/PlanDialog.js';
 
 // El orden del pipeline es el del spec de negocio, sección 22. PERDIDO va al final y fuera de la
 // secuencia: es una salida, no un paso.
@@ -72,6 +73,7 @@ function DealCard({
   users,
   onStageChange,
   onOpenHistory,
+  onOpenPlan,
   // Sin onDelete no se dibuja el botón. Es lo que deja el borrado fuera de la vista del vendedor:
   // la página solo lo pasa si el usuario es ADMIN, y el backend lo vuelve a exigir igual.
   onDelete,
@@ -82,6 +84,7 @@ function DealCard({
   onStageChange: (deal: DealDTO, stage: DealDTO['stage']) => void;
   onDelete?: (deal: DealDTO) => void;
   onOpenHistory: (deal: DealDTO) => void;
+  onOpenPlan: (deal: DealDTO) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
   const assign = useAssignDeal();
@@ -167,6 +170,17 @@ function DealCard({
         >
           <MessageSquare className="h-4 w-4" />
         </Button>
+        {/* La cobranza de esta venta: lo que se cobró y lo que falta. */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="px-2 text-gray-400 hover:bg-gray-100 hover:text-gray-900"
+          aria-label={`Cobranza de ${deal.title}`}
+          title="Cobranza de esta venta"
+          onClick={() => onOpenPlan(deal)}
+        >
+          <Coins className="h-4 w-4" />
+        </Button>
         {onDelete && (
           <Button
             variant="ghost"
@@ -226,6 +240,7 @@ function StageColumn({
   onStageChange,
   onDelete,
   onOpenHistory,
+  onOpenPlan,
 }: {
   stage: DealDTO['stage'];
   deals: DealDTO[];
@@ -234,6 +249,7 @@ function StageColumn({
   onStageChange: (deal: DealDTO, stage: DealDTO['stage']) => void;
   onDelete?: (deal: DealDTO) => void;
   onOpenHistory: (deal: DealDTO) => void;
+  onOpenPlan: (deal: DealDTO) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   return (
@@ -257,6 +273,7 @@ function StageColumn({
             onStageChange={onStageChange}
             onDelete={onDelete}
             onOpenHistory={onOpenHistory}
+            onOpenPlan={onOpenPlan}
           />
         ))}
       </div>
@@ -274,6 +291,7 @@ export function DealsPage() {
   const [activeDeal, setActiveDeal] = useState<DealDTO | null>(null);
   const [dealToDelete, setDealToDelete] = useState<DealDTO | null>(null);
   const [historyDeal, setHistoryDeal] = useState<DealDTO | null>(null);
+  const [planDeal, setPlanDeal] = useState<DealDTO | null>(null);
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
 
@@ -336,6 +354,7 @@ export function DealsPage() {
                 onStageChange={moveTo}
                 onDelete={canAssign ? setDealToDelete : undefined}
                 onOpenHistory={setHistoryDeal}
+                onOpenPlan={setPlanDeal}
               />
             ))}
           </div>
@@ -360,6 +379,7 @@ export function DealsPage() {
       <LostReasonDialog deal={lostDeal} onClose={() => setLostDeal(null)} />
       <DeleteDealDialog deal={dealToDelete} onClose={() => setDealToDelete(null)} />
       <DealActivityDialog deal={historyDeal} onClose={() => setHistoryDeal(null)} />
+      <PlanDialog deal={planDeal} onClose={() => setPlanDeal(null)} />
     </div>
   );
 }

@@ -7,6 +7,7 @@ export const automationCodeSchema = z.enum([
   'LEAD_AUTO_ASSIGN',
   'LEAD_UNTOUCHED',
   'TASK_OVERDUE_ESCALATE',
+  'INSTALLMENT_OVERDUE',
 ]);
 export type AutomationCode = z.infer<typeof automationCodeSchema>;
 
@@ -85,6 +86,13 @@ export const AUTOMATION_CATALOG: AutomationSpec[] = [
     description: 'Si una tarea lleva {dias} días vencida, crear una tarea para el administrador.',
     kind: 'SCHEDULED',
     params: [{ key: 'dias', label: 'Días de atraso', type: 'number', default: 7, min: 1, max: 365 }],
+  },
+  {
+    code: 'INSTALLMENT_OVERDUE',
+    name: 'Cobrar lo vencido',
+    description: 'Si una cuota lleva {dias} días vencida, crear una tarea de cobranza para el vendedor.',
+    kind: 'SCHEDULED',
+    params: [{ key: 'dias', label: 'Días de atraso', type: 'number', default: 3, min: 0, max: 365 }],
   },
 ];
 

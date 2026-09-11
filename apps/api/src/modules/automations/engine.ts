@@ -31,6 +31,12 @@ interface Contexto {
   now: Date;
 }
 
+/** El monto como lo escribiría una persona. "PEN 4250" en el título de una tarea se lee como un
+ *  código de sistema; "S/ 4,250.00" se lee como plata. */
+function comoPlata(monto: number, moneda: string): string {
+  return new Intl.NumberFormat('es-PE', { style: 'currency', currency: moneda }).format(monto);
+}
+
 /** Medianoche UTC de una fecha, que es como guarda las fechas todo el resto del sistema. */
 function aFechaPelada(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -324,6 +330,55 @@ async function escalarTareaVencida(ctx: Contexto, restante: number): Promise<num
   return hechas;
 }
 
+async function cuotaVencida(ctx: Contexto, restante: number): Promise<number> {
+  const dias = Number(ctx.config.dias ?? 3);
+  const limite = sumarDias(aFechaPelada(ctx.now), -dias);
+
+  const cuotas = await prisma.installment.findMany({
+    where: { tenantId: ctx.tenantId, paidAt: null, dueDate: { lt: limite } },
+    select: {
+      id: true,
+      concept: true,
+      amount: true,
+      currency: true,
+      updatedAt: true,
+      dealId: true,
+      deal: { select: { assignedUserId: true, company: { select: { name: true } } } },
+    },
+    orderBy: { dueDate: 'asc' },
+    take: restante,
+  });
+
+  let hechas = 0;
+  for (const cuota of cuotas) {
+    if (hechas >= restante) break;
+    if (await yaActuoDesde(ctx.tenantId, 'INSTALLMENT_OVERDUE', cuota.id, cuota.updatedAt)) continue;
+    const owner = (await esUsuarioVivo(ctx.tenantId, cuota.deal.assignedUserId))
+      ? cuota.deal.assignedUserId!
+      : await primerAdmin(ctx.tenantId);
+    if (!owner) continue;
+
+    await crearTarea(
+      ctx,
+      'INSTALLMENT_OVERDUE',
+      {
+        title: `Cobrar ${comoPlata(Number(cuota.amount), cuota.currency)} a ${cuota.deal.company.name}`,
+        ownerId: owner,
+        dueDate: aFechaPelada(ctx.now),
+        relatedType: 'DEAL',
+        relatedId: cuota.dealId,
+        priority: 'URGENT',
+      },
+      `"${cuota.concept}" lleva ${dias} días vencida`,
+      // El registro apunta a la CUOTA y no a la venta: una venta puede tener varias vencidas y hay
+      // que poder avisar de cada una sin que la primera tape a las demás.
+      { type: 'DEAL', id: cuota.id }
+    );
+    hechas += 1;
+  }
+  return hechas;
+}
+
 // ── Entradas ─────────────────────────────────────────────────────────────────
 
 async function prendidas(tenantId: string, kind: 'EVENT' | 'SCHEDULED') {
@@ -405,7 +460,9 @@ export async function runScheduled(now = new Date(), tope = TOPE_POR_CORRIDA): P
               ? await leadSinTocar(ctx, restante)
               : activa.code === 'TASK_OVERDUE_ESCALATE'
                 ? await escalarTareaVencida(ctx, restante)
-                : 0;
+                : activa.code === 'INSTALLMENT_OVERDUE'
+                  ? await cuotaVencida(ctx, restante)
+                  : 0;
         restante -= hechas;
         resultado.acciones += hechas;
       } catch (err) {
