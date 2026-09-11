@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import { runReminders, buildDigests } from './reminders.service.js';
+import { runScheduled } from '../automations/engine.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { isMailConfigured } from '../../lib/mailer.js';
 import { prisma } from '../../lib/prisma.js';
@@ -30,9 +31,14 @@ remindersRouter.get('/reminders', async (req, res) => {
     timingSafeEqual(Buffer.from(given), Buffer.from(expected));
   if (!ok) return res.status(401).json({ error: 'Unauthorized' });
 
+  // Primero las automatizaciones y después el resumen: así una tarea que se crea sola esta mañana
+  // sale en el correo de esta misma mañana y no en el de mañana.
+  const automatizaciones = await runScheduled();
+  console.info('[cron] automatizaciones', automatizaciones);
+
   const result = await runReminders();
   console.info('[cron] resumen diario', result);
-  return res.json(result);
+  return res.json({ ...result, automatizaciones });
 });
 
 

@@ -475,3 +475,49 @@ model WhatsAppAccount {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+// Las automatizaciones que la empresa tiene prendidas.
+//
+// El comportamiento vive en el catálogo, en código: acá solo se guarda si está prendida y con qué
+// números. Un esquema genérico de disparadores y condiciones sería una base de datos de reglas que
+// nadie va a escribir a mano, y el catálogo cerrado es justamente lo que se eligió.
+model Automation {
+  id        String         @id @default(uuid())
+  tenantId  String
+  code      AutomationCode
+  enabled   Boolean        @default(false)
+  // Los parámetros que declara el catálogo para ese código: días, título de la tarea.
+  config    Json           @default("{}")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId, enabled])
+}
+
+// Qué hizo cada automatización y sobre qué.
+//
+// No es un adorno: es lo que evita que "venta quieta" cree la misma tarea todas las mañanas. Una
+// automatización de calendario se saltea si ya actuó sobre ese registro DESPUÉS del último
+// movimiento del registro.
+model AutomationRun {
+  id         String         @id @default(uuid())
+  tenantId   String
+  code       AutomationCode
+  targetType RelatedType
+  targetId   String
+  detail     String
+  createdAt  DateTime       @default(now())
+
+  @@index([tenantId, code, targetId])
+  @@index([tenantId, createdAt])
+}
+
+enum AutomationCode {
+  DEAL_STALE
+  DEAL_STAGE_TASK_PROPUESTA
+  DEAL_STAGE_TASK_ENTREGADO
+  LEAD_AUTO_ASSIGN
+  LEAD_UNTOUCHED
+  TASK_OVERDUE_ESCALATE
+}

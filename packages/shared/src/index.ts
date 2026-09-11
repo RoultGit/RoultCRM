@@ -14,3 +14,4 @@ export * from './charts.js';
 export * from './tenants.js';
 export * from './activities.js';
 export * from './customFields.js';
+export * from './automations.js';

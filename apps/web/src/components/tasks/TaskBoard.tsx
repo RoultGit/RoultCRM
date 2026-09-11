@@ -42,6 +42,9 @@ const collisionDetection: CollisionDetection = (args) => {
 function Authorship({ task, users }: { task: TaskDTO; users?: UserDTO[] }) {
   const nameOf = (id: string | null) => {
     if (!id) return null;
+    // Lo que crea el motor de automatizaciones no lo escribió nadie del equipo. Dejarlo en blanco
+    // haría parecer que la tarea apareció de la nada.
+    if (id === 'automation') return 'Automatización';
     const user = users?.find((u) => u.id === id);
     return user ? `${user.firstName} ${user.lastName}` : null;
   };

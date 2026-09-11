@@ -21,6 +21,7 @@ import { intakeRouter } from './modules/intake/intake.routes.js';
 import { customFieldsRouter } from './modules/customFields/customFields.routes.js';
 import { remindersRouter } from './modules/reminders/reminders.routes.js';
 import { whatsappRouter } from './modules/whatsapp/whatsapp.routes.js';
+import { automationsRouter } from './modules/automations/automations.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -116,6 +117,7 @@ export function createApp(): Express {
   app.use('/custom-fields', customFieldsRouter);
   app.use('/cron', remindersRouter);
   app.use('/whatsapp', whatsappRouter);
+  app.use('/automations', automationsRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     // body-parser tira este error fuera de la jerarquía de AppError, así que sin este caso caía en
