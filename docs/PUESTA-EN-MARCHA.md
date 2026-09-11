@@ -131,3 +131,22 @@ se abre un lead con origen Correo.
 En **Conexiones → Recordatorios diarios** ves exactamente lo que te llegaría hoy a vos.
 No manda nada: es una vista previa. Un botón de "probar" que le escribe a todo el equipo
 es un botón que nadie aprieta dos veces.
+
+## 6. Respaldos
+
+Esto no se puede verificar desde el código, hay que mirarlo en el panel de Supabase
+(Project Settings → Database → Backups). Lo que hay que saber:
+
+- **Plan Free:** Supabase **no** garantiza respaldos recuperables. Si la base se
+  pierde, se perdió. Con clientes reales pagando, esto no alcanza.
+- **Plan Pro:** respaldo diario automático, con 7 días de retención, y se puede
+  activar *Point-in-Time Recovery* aparte (volver a cualquier momento, no solo al
+  corte de medianoche).
+
+Mientras tanto, y como respaldo propio que no depende del proveedor, cada
+administrador puede bajar **todos** los datos de su empresa desde *Importar →
+Descargar todos mis datos*. Es el mismo archivo que responde un pedido de acceso
+a la información bajo la Ley 29733.
+
+Lo mínimo antes de cobrarle a alguien: plan Pro y comprobar una vez —una sola—
+que un respaldo restaura. Un respaldo que nunca se probó no es un respaldo.
