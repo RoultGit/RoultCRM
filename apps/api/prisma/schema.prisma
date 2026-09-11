@@ -624,3 +624,28 @@ model Installment {
   @@index([tenantId, paidAt])
   @@index([dealId])
 }
+
+// Un archivo colgado de una ficha: el contrato firmado, la orden de compra, la foto del local.
+//
+// El archivo NO vive acá: acá vive su ficha técnica y la ruta dentro del bucket. Guardar los bytes
+// en Postgres se come el espacio de la base —la base entera pesa lo que pesan tres contratos— y
+// hace que cada backup arrastre todos los adjuntos.
+model Attachment {
+  id           String      @id @default(uuid())
+  tenantId     String
+  relatedType  RelatedType
+  relatedId    String
+  name         String
+  size         Int
+  mimeType     String
+  // Ruta dentro del bucket. Lleva el tenantId adelante para que un archivo nunca pueda quedar
+  // servido desde la carpeta de otra empresa.
+  path         String      @unique
+  uploadedById String
+  // Un archivo existe recién cuando la subida terminó. Sin esto, un corte a mitad de camino deja
+  // una fila apuntando a algo que no está y la ficha muestra un adjunto que no se puede abrir.
+  uploadedAt   DateTime?
+  createdAt    DateTime    @default(now())
+
+  @@index([tenantId, relatedType, relatedId])
+}

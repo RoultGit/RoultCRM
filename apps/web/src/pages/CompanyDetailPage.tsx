@@ -14,6 +14,7 @@ import { useInstallments } from '../hooks/useInstallments.js';
 import { QUOTE_STATUS_LABEL, type QuoteStatus } from '@roult/shared';
 import { formatMoney } from '../lib/money.js';
 import { ContactActions } from '../components/ContactActions.js';
+import { AttachmentsPanel } from '../components/attachments/AttachmentsPanel.js';
 import { CustomFieldsPanel } from '../components/customFields/CustomFieldsPanel.js';
 import { formatAmount } from '../lib/money.js';
 import { formatDate } from '../lib/date.js';
@@ -115,6 +116,7 @@ export function CompanyDetailPage() {
               ninguno, así que la ficha queda igual para quien no los usa. */}
           <CustomFieldsPanel entity="COMPANY" recordId={id} card />
 
+          <AttachmentsPanel relatedType="COMPANY" relatedId={id} card />
           <Cotizaciones companyId={id} />
           <EstadoDeCuenta companyId={id} />
 

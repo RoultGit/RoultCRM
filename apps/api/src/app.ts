@@ -25,6 +25,7 @@ import { automationsRouter } from './modules/automations/automations.routes.js';
 import { quotesRouter } from './modules/quotes/quotes.routes.js';
 import { installmentsRouter } from './modules/installments/installments.routes.js';
 import { emailRouter } from './modules/email/email.routes.js';
+import { attachmentsRouter } from './modules/attachments/attachments.routes.js';
 import { AppError } from './lib/errors.js';
 
 export function createApp(): Express {
@@ -124,6 +125,7 @@ export function createApp(): Express {
   app.use('/quotes', quotesRouter);
   app.use('/installments', installmentsRouter);
   app.use('/email', emailRouter);
+  app.use('/attachments', attachmentsRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     // body-parser tira este error fuera de la jerarquía de AppError, así que sin este caso caía en
