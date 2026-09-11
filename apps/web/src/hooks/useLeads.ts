@@ -83,3 +83,22 @@ export function useConvertLead() {
 export function useLeadsPaged(filters: LeadFilters = {}, page: Page = firstPage) {
   return usePagedQuery<LeadDTO>(LEADS_KEY, '/leads', filters, page);
 }
+
+/** Cambios sobre varios leads a la vez. Reasignar 40 leads no puede ser 40 clics. */
+export function useBulkAssignLeads() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { ids: string[]; assignedUserId: string | null }) =>
+      (await apiClient.post<{ updated: number }>('/leads/bulk/assign', input)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: LEADS_KEY }),
+  });
+}
+
+export function useBulkLeadStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { ids: string[]; status: string }) =>
+      (await apiClient.post<{ updated: number }>('/leads/bulk/status', input)).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: LEADS_KEY }),
+  });
+}

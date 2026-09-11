@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
 import { isAxiosError } from 'axios';
 import { LINE_OPTIONS, BILLING_OPTIONS } from '@roult/shared';
@@ -10,11 +10,13 @@ import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import { CreateLeadDialog } from '../components/leads/CreateLeadDialog.js';
 import { QualifyLeadDialog } from '../components/leads/QualifyLeadDialog.js';
-import { useLeadsPaged, useSetLeadStatus, useConvertLead, useUpdateLead } from '../hooks/useLeads.js';
+import { useLeadsPaged, useSetLeadStatus, useConvertLead, useUpdateLead, useBulkAssignLeads, useBulkLeadStatus } from '../hooks/useLeads.js';
 import { AssigneeCell } from '../components/AssigneeCell.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { EditDialog } from '../components/EditDialog.js';
 import { updateLeadSchema } from '@roult/shared';
+import { useUsers } from '../hooks/useUsers.js';
+import { BulkBar } from '../components/BulkBar.js';
 
 const STATUS_TONE: Record<LeadDTO['status'], 'info' | 'neutral' | 'warning' | 'success' | 'danger'> = {
   NEW: 'info',
@@ -61,6 +63,15 @@ export function LeadsPage() {
   const [duplicate, setDuplicate] = useState<{ lead: LeadDTO; company: CompanyDTO } | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
   const [qualifying, setQualifying] = useState<LeadDTO | null>(null);
+  const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
+  const visibles = leads ?? [];
+  const bulkAssign = useBulkAssignLeads();
+  const bulkStatus = useBulkLeadStatus();
+  const { data: equipo } = useUsers();
+
+  // La selección se limpia al cambiar de página o de filtro: si no, quedan marcados ids que ya no
+  // están en pantalla y la barra dice un número que no se corresponde con nada visible.
+  useEffect(() => setSeleccion(new Set()), [page.offset, JSON.stringify(filters)]);
 
   const runConvert = (lead: LeadDTO, confirmDuplicate = false) =>
     convert.mutate(
@@ -80,7 +91,44 @@ export function LeadsPage() {
       }
     );
 
-  const columns = [
+  const columns = useMemo(() => [
+    columnHelper.display({
+      id: 'seleccion',
+      header: () => (
+        <input
+          type="checkbox"
+          aria-label="Seleccionar todo lo que se ve"
+          // Solo lo de ESTA página: decir "seleccionar todo" y actuar sobre 300 filas que nadie vio
+          // es la forma más rápida de que alguien reasigne media cartera por error.
+          checked={visibles.length > 0 && visibles.every((l) => seleccion.has(l.id))}
+          onChange={(e) =>
+            setSeleccion(e.target.checked ? new Set(visibles.map((l) => l.id)) : new Set())
+          }
+        />
+      ),
+      cell: (info) => (
+        <input
+          type="checkbox"
+          aria-label={`Seleccionar ${info.row.original.businessName}`}
+          checked={seleccion.has(info.row.original.id)}
+          onChange={(e) => {
+            // Dos cosas, y las dos hacen falta con clics rápidos:
+            // 1. El valor se lee ACÁ y no adentro del actualizador. El actualizador corre después,
+            //    y para entonces React ya devolvió el checkbox a su valor controlado.
+            // 2. El actualizador es funcional. Armando el conjunto desde `seleccion`, tres clics en
+            //    el mismo tick leen todos el mismo estado viejo y solo sobrevive el último.
+            const marcado = e.target.checked;
+            const id = info.row.original.id;
+            setSeleccion((prev) => {
+              const copia = new Set(prev);
+              if (marcado) copia.add(id);
+              else copia.delete(id);
+              return copia;
+            });
+          }}
+        />
+      ),
+    }),
     columnHelper.accessor('businessName', { header: 'Empresa / persona' }),
     columnHelper.accessor('contactName', { header: 'Contacto' }),
     columnHelper.accessor('representativeName', {
@@ -185,7 +233,8 @@ export function LeadsPage() {
         );
       },
     }),
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [seleccion, visibles, setStatus, convert, updateLead]);
 
   const table = useReactTable({ data: leads ?? [], columns, getCoreRowModel: getCoreRowModel() });
 
@@ -240,6 +289,51 @@ export function LeadsPage() {
       {setStatus.isError && <p className="mb-4 text-sm text-red-600">No se pudo cambiar el estado del lead.</p>}
       {updateLead.isError && <p className="mb-4 text-sm text-red-600">No se pudo cambiar el vendedor asignado.</p>}
       <QualifyLeadDialog lead={qualifying} onClose={() => setQualifying(null)} />
+      <BulkBar count={seleccion.size} onClear={() => setSeleccion(new Set())}>
+        <select
+          className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1 text-sm text-white"
+          aria-label="Asignar los seleccionados a"
+          value=""
+          disabled={bulkAssign.isPending}
+          onChange={(e) => {
+            const valor = e.target.value;
+            if (!valor) return;
+            bulkAssign.mutate(
+              { ids: [...seleccion], assignedUserId: valor === 'ninguno' ? null : valor },
+              { onSuccess: () => setSeleccion(new Set()) }
+            );
+          }}
+        >
+          <option value="">Asignar a…</option>
+          <option value="ninguno">Sin asignar</option>
+          {(equipo ?? []).map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.firstName} {u.lastName}
+            </option>
+          ))}
+        </select>
+        <select
+          className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1 text-sm text-white"
+          aria-label="Cambiar el estado de los seleccionados"
+          value=""
+          disabled={bulkStatus.isPending}
+          onChange={(e) => {
+            if (!e.target.value) return;
+            bulkStatus.mutate(
+              { ids: [...seleccion], status: e.target.value },
+              { onSuccess: () => setSeleccion(new Set()) }
+            );
+          }}
+        >
+          <option value="">Marcar como…</option>
+          {(['NEW', 'CONTACTED', 'QUALIFIED', 'UNQUALIFIED', 'LOST'] as const).map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABEL[s]}
+            </option>
+          ))}
+        </select>
+      </BulkBar>
+
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>

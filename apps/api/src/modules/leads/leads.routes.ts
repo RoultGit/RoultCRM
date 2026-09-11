@@ -12,6 +12,7 @@ import { paginationSchema } from '@roult/shared';
 import { pageArgs, sendPaged } from '../../lib/pagination.js';
 import { ValidationError } from '../../lib/errors.js';
 import { toCsv, UTF8_BOM } from '../../lib/csv.js';
+import { LeadsBulk, bulkAssignSchema, bulkStatusSchema } from './bulk.js';
 
 export const leadsRouter = Router();
 
@@ -24,6 +25,27 @@ leadsRouter.get('/', async (req, res, next) => {
     const page = paginationSchema.safeParse(req.query);
     if (!page.success) throw new ValidationError('Paginación inválida');
     sendPaged(res, await LeadsService.listPaged(req.user!, parsed.data, pageArgs(page.data)));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Acciones sobre varios a la vez. Van antes de las rutas con :id.
+leadsRouter.post('/bulk/assign', async (req, res, next) => {
+  try {
+    const parsed = bulkAssignSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError('Selección inválida');
+    res.json(await LeadsBulk.assign(req.user!, parsed.data));
+  } catch (err) {
+    next(err);
+  }
+});
+
+leadsRouter.post('/bulk/status', async (req, res, next) => {
+  try {
+    const parsed = bulkStatusSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError('Selección inválida');
+    res.json(await LeadsBulk.setStatus(req.user!, parsed.data));
   } catch (err) {
     next(err);
   }
