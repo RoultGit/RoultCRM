@@ -283,22 +283,28 @@
     gap: 0.65rem;
   }
 
+  /* La viñeta va absoluta y NO como columna de grilla: con `display:grid` en el <li>, cada <code>
+     y cada <b> de adentro se volvía una celda y el texto se encimaba. */
   .module li {
-    display: grid;
-    grid-template-columns: 0.7rem 1fr;
-    gap: 0.7rem;
+    position: relative;
+    padding-left: 1.4rem;
     font-size: 0.97rem;
-    line-height: 1.5;
+    line-height: 1.55;
   }
 
   .module li::before {
     content: "";
+    position: absolute;
+    left: 0;
+    top: 0.62em;
     width: 0.4rem;
     height: 0.4rem;
-    margin-top: 0.55em;
     background: var(--pine);
     border-radius: 50%;
   }
+
+  /* Las etiquetas de valores respiran cuando van varias seguidas en una misma línea. */
+  .module li code { margin-right: 0.15rem; }
 
   .module li b {
     color: var(--ink);
