@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
 import { isAxiosError } from 'axios';
 import { LINE_OPTIONS, BILLING_OPTIONS } from '@roult/shared';
 import type { LeadDTO, CompanyDTO } from '@roult/shared';
+import { firstPage } from '../hooks/usePagedQuery.js';
+import { Pagination } from '../components/ui/pagination.js';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import { CreateLeadDialog } from '../components/leads/CreateLeadDialog.js';
 import { QualifyLeadDialog } from '../components/leads/QualifyLeadDialog.js';
-import { useLeads, useSetLeadStatus, useConvertLead, useUpdateLead } from '../hooks/useLeads.js';
+import { useLeadsPaged, useSetLeadStatus, useConvertLead, useUpdateLead } from '../hooks/useLeads.js';
 import { AssigneeCell } from '../components/AssigneeCell.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { EditDialog } from '../components/EditDialog.js';
@@ -46,7 +48,13 @@ const columnHelper = createColumnHelper<LeadDTO>();
 
 export function LeadsPage() {
   const [filters, setFilters] = useState<FilterValue>({});
-  const { data: leads, isLoading } = useLeads(filters);
+  const [page, setPage] = useState(firstPage);
+  const { data, isLoading } = useLeadsPaged(filters, page);
+  const leads = data?.items;
+
+  // Al cambiar un filtro hay que volver a la primera página: si no, se filtra estando en la página
+  // 3 y la lista aparece vacía aunque haya resultados.
+  useEffect(() => setPage(firstPage), [JSON.stringify(filters)]);
   const setStatus = useSetLeadStatus();
   const convert = useConvertLead();
   const updateLead = useUpdateLead();
@@ -263,6 +271,7 @@ export function LeadsPage() {
           </table>
           </div>
         )}
+        <Pagination page={page} total={data?.total ?? 0} onChange={setPage} etiqueta="leads" />
       </Card>
     </div>
   );

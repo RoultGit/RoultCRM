@@ -3,8 +3,9 @@ import { ArrowLeft } from 'lucide-react';
 import { LINE_LABEL, BILLING_LABEL } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
-import { useCompanies } from '../hooks/useCompanies.js';
-import { useContacts } from '../hooks/useContacts.js';
+import { useCompany } from '../hooks/useCompanies.js';
+import { firstPage } from '../hooks/usePagedQuery.js';
+import { useContactsPaged } from '../hooks/useContacts.js';
 import { useDeals } from '../hooks/useDeals.js';
 import { useUsers } from '../hooks/useUsers.js';
 import { ActivityTimeline } from '../components/activities/ActivityTimeline.js';
@@ -46,14 +47,10 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
  */
 export function CompanyDetailPage() {
   const { id = '' } = useParams();
-  // Se reusa la lista ya cacheada en vez de un endpoint por id: la cartera de una empresa entra
-  // holgada en memoria y así abrir una ficha es instantáneo al volver del listado.
-  const { data: companies, isLoading } = useCompanies();
-  const { data: contacts } = useContacts();
-  const { data: deals } = useDeals();
+  const { data: company, isLoading } = useCompany(id);
+  const { data: contacts } = useContactsPaged(firstPage, id);
+  const { data: deals } = useDeals({ companyId: id });
   const { data: users } = useUsers();
-
-  const company = companies?.find((c) => c.id === id);
   if (isLoading) return <Card className="p-6 text-sm text-gray-500">Cargando…</Card>;
   if (!company) {
     return (
@@ -66,8 +63,9 @@ export function CompanyDetailPage() {
     );
   }
 
-  const misContactos = (contacts ?? []).filter((c) => c.companyId === id);
-  const susDeals = (deals ?? []).filter((d) => d.companyId === id);
+  // Ya vienen filtrados por el servidor; filtrar otra vez acá se quedaría con lo de una página.
+  const misContactos = contacts?.items ?? [];
+  const susDeals = deals ?? [];
   const owner = users?.find((u) => u.id === company.assignedUserId);
   const saludo = `Hola ${company.representativeName ?? company.name}, te escribo de ROUlt.`;
 

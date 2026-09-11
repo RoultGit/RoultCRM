@@ -3,6 +3,8 @@ import { createTaskSchema, updateTaskSchema, taskStatusSchema, createTaskUpdateS
 import { TasksService } from './tasks.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
+import { paginationSchema } from '@roult/shared';
+import { pageArgs, sendPaged } from '../../lib/pagination.js';
 
 export const tasksRouter = Router();
 
@@ -10,7 +12,9 @@ tasksRouter.use(requireAuth);
 
 tasksRouter.get('/', async (req, res, next) => {
   try {
-    res.json(await TasksService.list(req.user!));
+    const page = paginationSchema.safeParse(req.query);
+    if (!page.success) throw new ValidationError('Paginación inválida');
+    sendPaged(res, await TasksService.listPaged(req.user!, pageArgs(page.data)));
   } catch (err) {
     next(err);
   }

@@ -4,7 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { ArrowLeft, Coins, ListChecks, Handshake, Plus, Search, StickyNote } from 'lucide-react';
 import { ACTIVITY_OPTIONS, type ActivityType } from '@roult/shared';
 import { Button } from '../ui/button.js';
-import { useCompanies } from '../../hooks/useCompanies.js';
+import { useCompanyOptions } from '../../hooks/useCompanyOptions.js';
 import { useLogActivity } from '../../hooks/useActivities.js';
 
 /**
@@ -98,7 +98,7 @@ function Opcion({
 }
 
 function Anotar({ onListo, onVolver }: { onListo: () => void; onVolver: () => void }) {
-  const { data: companies } = useCompanies();
+  const { data: companies } = useCompanyOptions();
   const [empresa, setEmpresa] = useState<{ id: string; name: string } | null>(null);
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState<ActivityType>('CALL');

@@ -4,18 +4,22 @@ import { isAxiosError } from 'axios';
 import type { CompanyDTO } from '@roult/shared';
 import { Button } from '../ui/button.js';
 import { useDeleteCompany } from '../../hooks/useCompanies.js';
-import { useContacts } from '../../hooks/useContacts.js';
+import { useContactsPaged } from '../../hooks/useContacts.js';
+import { firstPage } from '../../hooks/usePagedQuery.js';
 
 // Eliminar una empresa arrastra cosas que no están a la vista en la fila de la tabla: sus contactos
 // se van con ella. Se dice ANTES de borrar y con el número exacto, no después.
 export function DeleteCompanyDialog({ company, onClose }: { company: CompanyDTO | null; onClose: () => void }) {
   const remove = useDeleteCompany();
-  const { data: contacts } = useContacts();
+  const { data: contacts } = useContactsPaged(firstPage, company?.id);
   const [blocked, setBlocked] = useState<string | null>(null);
 
   useEffect(() => setBlocked(null), [company?.id]);
 
-  const attached = (contacts ?? []).filter((contact) => contact.companyId === company?.id).length;
+  // El total viene del servidor filtrado por esta empresa. Antes se contaba sobre la lista
+  // completa en memoria; con paginación eso contaría solo los de la primera página y el diálogo
+  // diría que no hay contactos cuando sí los hay.
+  const attached = contacts?.total ?? 0;
 
   const submit = () => {
     if (!company) return;

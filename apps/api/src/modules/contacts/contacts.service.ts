@@ -4,6 +4,7 @@ import type { Contact, Prisma } from '@prisma/client';
 import { ContactsRepository } from './contacts.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
 import { AppError, NotFoundError, DuplicateError } from '../../lib/errors.js';
+import type { Paged } from '../../lib/pagination.js';
 import { ownerFilter, canSee, type Actor } from '../../lib/scope.js';
 import { recordAudit } from '../../lib/audit.js';
 
@@ -29,6 +30,12 @@ export const ContactsService = {
   async list(actor: Actor): Promise<ContactDTO[]> {
     const contacts = await ContactsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor));
     return contacts.map(toDTO);
+  },
+
+  /** La página, con el total de lo que hay detrás del filtro. */
+  async listPaged(actor: Actor, page: { take: number; skip: number }, companyId?: string): Promise<Paged<ContactDTO>> {
+    const { items, total } = await ContactsRepository.findPageByTenant(actor.tenantId, ownerFilter(actor), page, companyId);
+    return { items: items.map(toDTO), total };
   },
 
   async create(actor: Actor, input: z.infer<typeof createContactSchema>): Promise<ContactDTO> {

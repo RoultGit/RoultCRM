@@ -4,8 +4,10 @@ import type { Company, Prisma } from '@prisma/client';
 import { CompaniesRepository, type CompanyFilters } from './companies.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { AppError, NotFoundError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
+import type { Paged } from '../../lib/pagination.js';
 import { ownerFilter, defaultAssignee, canSee, type Actor } from '../../lib/scope.js';
 import { recordAudit } from '../../lib/audit.js';
+import { prisma } from '../../lib/prisma.js';
 
 export function toDTO(company: Company): CompanyDTO {
   return {
@@ -41,9 +43,41 @@ async function assertAssignedUserValid(tenantId: string, assignedUserId?: string
 }
 
 export const CompaniesService = {
+  async get(actor: Actor, id: string): Promise<CompanyDTO> {
+    const company = await CompaniesRepository.findByIdAndTenant(id, actor.tenantId, ownerFilter(actor));
+    // 404 y no 403: decir "existe pero no es tuya" ya revela que ese cliente existe en la empresa.
+    if (!company) throw new NotFoundError('Company not found');
+    return toDTO(company);
+  },
+
+  /**
+   * Solo id y nombre, para los selectores.
+   *
+   * Existe porque un selector no puede depender de que la lista completa quepa en una página: con
+   * paginación, el cliente número 51 desaparecía del desplegable sin que nada avisara.
+   */
+  async options(actor: Actor, q?: string): Promise<{ id: string; name: string }[]> {
+    return prisma.company.findMany({
+      where: {
+        tenantId: actor.tenantId,
+        ...ownerFilter(actor),
+        ...(q ? { name: { contains: q, mode: 'insensitive' as const } } : {}),
+      },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+      take: 50,
+    });
+  },
+
   async list(actor: Actor, filters: CompanyFilters = {}): Promise<CompanyDTO[]> {
     const companies = await CompaniesRepository.findManyByTenant(actor.tenantId, ownerFilter(actor), filters);
     return companies.map(toDTO);
+  },
+
+  /** La página, con el total de lo que hay detrás del filtro. */
+  async listPaged(actor: Actor, filters: CompanyFilters, page: { take: number; skip: number }): Promise<Paged<CompanyDTO>> {
+    const { items, total } = await CompaniesRepository.findPageByTenant(actor.tenantId, ownerFilter(actor), filters, page);
+    return { items: items.map(toDTO), total };
   },
 
   async create(actor: Actor, input: z.infer<typeof createCompanySchema>): Promise<CompanyDTO> {

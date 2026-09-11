@@ -2,13 +2,34 @@ import { prisma } from '../../lib/prisma.js';
 import type { Prisma } from '@prisma/client';
 
 export const TasksRepository = {
+  /** La página y el total, de la misma consulta. */
+  async findPageByTenant(
+    tenantId: string,
+    owner: { ownerId?: string } = {},
+    page: { take: number; skip: number } = { take: 50, skip: 0 }
+  ) {
+    const where = { tenantId, ...owner };
+    const [items, total] = await prisma.$transaction([
+      prisma.task.findMany({
+        where,
+        // Prioridad antes que fecha, igual que el listado completo: lo urgente sube aunque venza
+        // más tarde, que es la razón de tener prioridades.
+        orderBy: [{ status: 'asc' }, { priority: 'asc' }, { dueDate: 'asc' }, { dueTime: 'asc' }],
+        ...page,
+      }),
+      prisma.task.count({ where }),
+    ]);
+    return { items, total };
+  },
+
   // El orden es el que quiere la vista "Mi día": lo pendiente primero, y dentro de eso lo más
   // vencido arriba. El enum TaskStatus está declarado TODO, DOING, DONE justamente para que ese
   // orden alfabético... no sirva: Postgres ordena los enum por su orden de declaración, no
   // alfabético, así que 'asc' da TODO → DOING → DONE, que es el orden de las columnas.
-  findManyByTenant(tenantId: string, owner: { ownerId?: string } = {}) {
+  findManyByTenant(tenantId: string, owner: { ownerId?: string } = {}, page?: { take: number; skip: number }) {
     return prisma.task.findMany({
       where: { tenantId, ...owner },
+      ...(page ?? {}),
       // Prioridad antes que fecha: lo urgente sube aunque venza más tarde, que es la razón de
       // tener prioridades.
       orderBy: [{ status: 'asc' }, { priority: 'asc' }, { dueDate: 'asc' }, { dueTime: 'asc' }],

@@ -1,15 +1,24 @@
+import { useEffect, useState } from 'react';
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
 import type { ContactDTO } from '@roult/shared';
+import { firstPage } from '../hooks/usePagedQuery.js';
+import { Pagination } from '../components/ui/pagination.js';
 import { Card } from '../components/ui/card.js';
 import { CreateContactDialog } from '../components/contacts/CreateContactDialog.js';
-import { useContacts, useUpdateContact } from '../hooks/useContacts.js';
+import { useContactsPaged, useUpdateContact } from '../hooks/useContacts.js';
 import { EditDialog } from '../components/EditDialog.js';
 import { updateContactSchema } from '@roult/shared';
 
 const columnHelper = createColumnHelper<ContactDTO>();
 
 export function ContactsPage() {
-  const { data: contacts, isLoading } = useContacts();
+  const [page, setPage] = useState(firstPage);
+  const { data, isLoading } = useContactsPaged(page);
+  const contacts = data?.items;
+
+  // Al cambiar un filtro hay que volver a la primera página: si no, se filtra estando en la página
+  // 3 y la lista aparece vacía aunque haya resultados.
+  useEffect(() => setPage(firstPage), [JSON.stringify({})]);
   const updateContact = useUpdateContact();
 
   const columns = [
@@ -89,6 +98,7 @@ export function ContactsPage() {
           </table>
           </div>
         )}
+        <Pagination page={page} total={data?.total ?? 0} onChange={setPage} etiqueta="contactos" />
       </Card>
     </div>
   );

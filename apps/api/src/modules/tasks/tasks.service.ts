@@ -5,6 +5,7 @@ import { TasksRepository } from './tasks.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { NotFoundError, ForbiddenError } from '../../lib/errors.js';
 import type { Actor } from '../../lib/scope.js';
+import type { Paged } from '../../lib/pagination.js';
 
 export function toDTO(task: Task): TaskDTO {
   return {
@@ -47,6 +48,12 @@ export const TasksService = {
   async list(actor: Actor): Promise<TaskDTO[]> {
     const tasks = await TasksRepository.findManyByTenant(actor.tenantId, taskOwnerFilter(actor));
     return tasks.map(toDTO);
+  },
+
+  /** La página, con el total de lo que hay detrás del filtro. */
+  async listPaged(actor: Actor, page: { take: number; skip: number }): Promise<Paged<TaskDTO>> {
+    const { items, total } = await TasksRepository.findPageByTenant(actor.tenantId, taskOwnerFilter(actor), page);
+    return { items: items.map(toDTO), total };
   },
 
   async listUpdates(actor: Actor, taskId: string): Promise<TaskUpdateDTO[]> {

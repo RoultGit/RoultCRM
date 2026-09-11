@@ -3,6 +3,8 @@ import { createContactSchema, updateContactSchema } from '@roult/shared';
 import { ContactsService } from './contacts.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
+import { paginationSchema } from '@roult/shared';
+import { pageArgs, sendPaged } from '../../lib/pagination.js';
 
 export const contactsRouter = Router();
 
@@ -10,8 +12,10 @@ contactsRouter.use(requireAuth);
 
 contactsRouter.get('/', async (req, res, next) => {
   try {
-    const contacts = await ContactsService.list(req.user!);
-    res.json(contacts);
+    const page = paginationSchema.safeParse(req.query);
+    if (!page.success) throw new ValidationError('Paginación inválida');
+    const companyId = typeof req.query.companyId === 'string' ? req.query.companyId : undefined;
+    sendPaged(res, await ContactsService.listPaged(req.user!, pageArgs(page.data), companyId));
   } catch (err) {
     next(err);
   }

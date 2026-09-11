@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma.js';
 import type { Prisma, DealStage, Currency, Line, BillingType } from '@prisma/client';
 
 export interface DealFilters {
+  companyId?: string;
   stage?: DealStage;
   assignedUserId?: string;
   currency?: Currency;
@@ -13,16 +14,17 @@ export interface DealFilters {
 
 const withCompany = { include: { company: { select: { name: true } } } } as const;
 
-export const DealsRepository = {
-  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}, filters: DealFilters = {}) {
-    return prisma.deal.findMany({
-      where: {
+/** El `where` se arma una sola vez y lo usan la página y el conteo: escritos por separado, el
+ *  total terminaría contando filas que la página no devuelve. */
+function buildWhere(tenantId: string, owner: { assignedUserId?: string }, filters: DealFilters = {}) {
+  return {
         tenantId,
         // El scoping por dueño y el filtro del query van en AND, NUNCA como dos spreads en el
         // mismo objeto: ahí el último gana, y `?assignedUserId=<otro>` pisaba el scoping y le
         // devolvía a un vendedor la cartera de un colega. Intersecándolos, un vendedor que filtre
         // por otro dueño obtiene cero filas, que es la respuesta correcta.
         AND: [owner, {
+          ...(filters.companyId ? { companyId: filters.companyId } : {}),
           ...(filters.stage ? { stage: filters.stage } : {}),
           ...(filters.assignedUserId ? { assignedUserId: filters.assignedUserId } : {}),
           ...(filters.currency ? { currency: filters.currency } : {}),
@@ -39,10 +41,31 @@ export const DealsRepository = {
               }
             : {}),
         }],
-      },
+      };
+}
+
+export const DealsRepository = {
+  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}, filters: DealFilters = {}, page?: { take: number; skip: number }) {
+    return prisma.deal.findMany({
+      where: buildWhere(tenantId, owner, filters),
       orderBy: { createdAt: 'desc' },
       ...withCompany,
+      ...(page ?? {}),
     });
+  },
+
+  /** La página y el total, de la misma consulta. */
+  async findPageByTenant(
+    tenantId: string,
+    owner: { assignedUserId?: string } = {}, filters: DealFilters = {},
+    page: { take: number; skip: number } = { take: 50, skip: 0 }
+  ) {
+    const where = buildWhere(tenantId, owner, filters);
+    const [items, total] = await prisma.$transaction([
+      prisma.deal.findMany({ where, orderBy: { createdAt: 'desc' }, ...withCompany, ...page }),
+      prisma.deal.count({ where }),
+    ]);
+    return { items, total };
   },
 
   findByIdAndTenant(id: string, tenantId: string, owner: { assignedUserId?: string } = {}) {

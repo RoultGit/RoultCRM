@@ -8,6 +8,8 @@ import {
 } from '@roult/shared';
 import { DealsService } from './deals.service.js';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
+import { paginationSchema } from '@roult/shared';
+import { pageArgs, sendPaged } from '../../lib/pagination.js';
 import { ValidationError } from '../../lib/errors.js';
 import { toCsv, UTF8_BOM } from '../../lib/csv.js';
 
@@ -21,7 +23,9 @@ dealsRouter.get('/', async (req, res, next) => {
     // Un filtro con un valor inválido tiene que ser un error, no un filtro ignorado: silenciarlo
     // devolvería la lista completa y el usuario creería que ese es el resultado del filtro.
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    res.json(await DealsService.list(req.user!, parsed.data));
+    const page = paginationSchema.safeParse(req.query);
+    if (!page.success) throw new ValidationError('Paginación inválida');
+    sendPaged(res, await DealsService.listPaged(req.user!, parsed.data, pageArgs(page.data)));
   } catch (err) {
     next(err);
   }

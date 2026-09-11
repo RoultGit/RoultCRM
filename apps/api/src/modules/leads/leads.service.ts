@@ -19,6 +19,7 @@ import { DealsRepository } from '../deals/deals.repository.js';
 import { toDTO as dealToDTO } from '../deals/deals.service.js';
 import { toDTO as contactToDTO } from '../contacts/contacts.service.js';
 import { AppError, NotFoundError, ValidationError, DuplicateError, ForbiddenError } from '../../lib/errors.js';
+import type { Paged } from '../../lib/pagination.js';
 import { ownerFilter, defaultAssignee, canSee, type Actor } from '../../lib/scope.js';
 import { recordAudit } from '../../lib/audit.js';
 import { prisma } from '../../lib/prisma.js';
@@ -55,6 +56,16 @@ export const LeadsService = {
   async list(actor: Actor, filters: LeadFilters = {}): Promise<LeadDTO[]> {
     const leads = await LeadsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor), filters);
     return leads.map(toDTO);
+  },
+
+  /** La página, con el total de lo que hay detrás del filtro. */
+  async listPaged(actor: Actor, filters: LeadFilters, page: { take: number; skip: number }): Promise<Paged<LeadDTO>> {
+    const owner = ownerFilter(actor);
+    const [leads, total] = await Promise.all([
+      LeadsRepository.findManyByTenant(actor.tenantId, owner, filters, page),
+      LeadsRepository.countByTenant(actor.tenantId, owner, filters),
+    ]);
+    return { items: leads.map(toDTO), total };
   },
 
   async create(actor: Actor, input: z.infer<typeof createLeadSchema>): Promise<LeadDTO> {

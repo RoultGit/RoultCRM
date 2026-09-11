@@ -9,10 +9,10 @@ export interface LeadFilters {
   source?: string;
 }
 
-export const LeadsRepository = {
-  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}, filters: LeadFilters = {}) {
-    return prisma.lead.findMany({
-      where: {
+/** El `where` se arma una sola vez y lo usan la página y el conteo: si se escribieran por separado
+ *  el total podría contar filas que la página no devuelve. */
+function buildWhere(tenantId: string, owner: { assignedUserId?: string }, filters: LeadFilters) {
+  return {
         tenantId,
         // El scoping por dueño y el filtro del query van en AND, NUNCA como dos spreads en el
         // mismo objeto: ahí el último gana, y `?assignedUserId=<otro>` pisaba el scoping y le
@@ -27,9 +27,25 @@ export const LeadsRepository = {
           // mayúsculas: "Instagram", "instagram" y "IG - Instagram" caen en el mismo filtro.
           ...(filters.source ? { source: { contains: filters.source, mode: 'insensitive' as const } } : {}),
         }],
-      },
+  } satisfies Prisma.LeadWhereInput;
+}
+
+export const LeadsRepository = {
+  findManyByTenant(
+    tenantId: string,
+    owner: { assignedUserId?: string } = {},
+    filters: LeadFilters = {},
+    page?: { take: number; skip: number }
+  ) {
+    return prisma.lead.findMany({
+      where: buildWhere(tenantId, owner, filters),
       orderBy: { createdAt: 'desc' },
+      ...(page ?? {}),
     });
+  },
+
+  countByTenant(tenantId: string, owner: { assignedUserId?: string } = {}, filters: LeadFilters = {}) {
+    return prisma.lead.count({ where: buildWhere(tenantId, owner, filters) });
   },
 
   findByIdAndTenant(id: string, tenantId: string, owner: { assignedUserId?: string } = {}) {

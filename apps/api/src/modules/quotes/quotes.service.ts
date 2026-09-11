@@ -92,8 +92,13 @@ function venceHoyOAntes(validUntil: Date | null, now = new Date()): boolean {
 }
 
 export const QuotesService = {
-  async list(actor: Actor, filters: { companyId?: string; status?: string; dealId?: string } = {}): Promise<QuoteDTO[]> {
+  async list(
+    actor: Actor,
+    filters: { companyId?: string; status?: string; dealId?: string } = {},
+    page?: { take: number; skip: number }
+  ): Promise<QuoteDTO[]> {
     const quotes = await prisma.quote.findMany({
+      ...(page ?? {}),
       where: {
         AND: [
           { tenantId: actor.tenantId, ...ownerFilter(actor) },
@@ -108,6 +113,29 @@ export const QuotesService = {
       orderBy: { number: 'desc' },
     });
     return quotes.map(toDTO);
+  },
+
+  /** La página y el total de lo que hay detrás del filtro, de la misma consulta. */
+  async listPaged(
+    actor: Actor,
+    filters: { companyId?: string; status?: string; dealId?: string },
+    page: { take: number; skip: number }
+  ): Promise<{ items: QuoteDTO[]; total: number }> {
+    const where = {
+      AND: [
+        { tenantId: actor.tenantId, ...ownerFilter(actor) },
+        {
+          ...(filters.companyId ? { companyId: filters.companyId } : {}),
+          ...(filters.dealId ? { dealId: filters.dealId } : {}),
+          ...(filters.status ? { status: filters.status as Quote['status'] } : {}),
+        },
+      ],
+    };
+    const [quotes, total] = await prisma.$transaction([
+      prisma.quote.findMany({ where, include: INCLUDE, orderBy: { number: 'desc' }, ...page }),
+      prisma.quote.count({ where }),
+    ]);
+    return { items: quotes.map(toDTO), total };
   },
 
   async get(actor: Actor, id: string): Promise<QuoteDTO> {

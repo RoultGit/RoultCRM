@@ -5,6 +5,7 @@ import { DealsRepository, type DealFilters } from './deals.repository.js';
 import { CompaniesRepository } from '../companies/companies.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { NotFoundError, ForbiddenError } from '../../lib/errors.js';
+import type { Paged } from '../../lib/pagination.js';
 import { ownerFilter, defaultAssignee, type Actor } from '../../lib/scope.js';
 import { recordAudit } from '../../lib/audit.js';
 
@@ -41,6 +42,12 @@ export const DealsService = {
   async list(actor: Actor, filters: DealFilters = {}): Promise<DealDTO[]> {
     const deals = await DealsRepository.findManyByTenant(actor.tenantId, ownerFilter(actor), filters);
     return deals.map(toDTO);
+  },
+
+  /** La página, con el total de lo que hay detrás del filtro. */
+  async listPaged(actor: Actor, filters: DealFilters, page: { take: number; skip: number }): Promise<Paged<DealDTO>> {
+    const { items, total } = await DealsRepository.findPageByTenant(actor.tenantId, ownerFilter(actor), filters, page);
+    return { items: items.map(toDTO), total };
   },
 
   async create(actor: Actor, input: z.infer<typeof createDealSchema>): Promise<DealDTO> {

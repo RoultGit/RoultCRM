@@ -8,6 +8,8 @@ import {
 } from '@roult/shared';
 import { LeadsService } from './leads.service.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { paginationSchema } from '@roult/shared';
+import { pageArgs, sendPaged } from '../../lib/pagination.js';
 import { ValidationError } from '../../lib/errors.js';
 import { toCsv, UTF8_BOM } from '../../lib/csv.js';
 
@@ -19,8 +21,9 @@ leadsRouter.get('/', async (req, res, next) => {
   try {
     const parsed = leadFiltersSchema.safeParse(req.query);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const leads = await LeadsService.list(req.user!, parsed.data);
-    res.json(leads);
+    const page = paginationSchema.safeParse(req.query);
+    if (!page.success) throw new ValidationError('Paginación inválida');
+    sendPaged(res, await LeadsService.listPaged(req.user!, parsed.data, pageArgs(page.data)));
   } catch (err) {
     next(err);
   }

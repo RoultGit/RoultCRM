@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { Plus, Trash2 } from 'lucide-react';
 import { quoteTotals, type QuoteDTO } from '@roult/shared';
 import { Button } from '../ui/button.js';
-import { useCompanies } from '../../hooks/useCompanies.js';
+import { useCompanyOptions } from '../../hooks/useCompanyOptions.js';
 import { useCreateQuote, useUpdateQuote } from '../../hooks/useQuotes.js';
 import { formatMoney } from '../../lib/money.js';
 
@@ -33,7 +33,7 @@ export function QuoteDialog({
   dealId?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const { data: companies } = useCompanies();
+  const { data: companies } = useCompanyOptions();
   const create = useCreateQuote();
   const update = useUpdateQuote();
   const guardando = create.isPending || update.isPending;

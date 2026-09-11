@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { createCompanySchema, updateCompanySchema, companyFiltersSchema } from '@roult/shared';
 import { CompaniesService } from './companies.service.js';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
+import { paginationSchema } from '@roult/shared';
+import { pageArgs, sendPaged } from '../../lib/pagination.js';
 import { ValidationError } from '../../lib/errors.js';
 import { toCsv, UTF8_BOM } from '../../lib/csv.js';
 
@@ -13,8 +15,9 @@ companiesRouter.get('/', async (req, res, next) => {
   try {
     const parsed = companyFiltersSchema.safeParse(req.query);
     if (!parsed.success) throw new ValidationError(parsed.error.message);
-    const companies = await CompaniesService.list(req.user!, parsed.data);
-    res.json(companies);
+    const page = paginationSchema.safeParse(req.query);
+    if (!page.success) throw new ValidationError('Paginación inválida');
+    sendPaged(res, await CompaniesService.listPaged(req.user!, parsed.data, pageArgs(page.data)));
   } catch (err) {
     next(err);
   }
@@ -39,6 +42,23 @@ companiesRouter.get('/export', async (req, res, next) => {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="empresas.csv"');
     res.send(UTF8_BOM + csv);
+  } catch (err) {
+    next(err);
+  }
+});
+
+companiesRouter.get('/options', async (req, res, next) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q : undefined;
+    res.json(await CompaniesService.options(req.user!, q));
+  } catch (err) {
+    next(err);
+  }
+});
+
+companiesRouter.get<{ id: string }>('/:id', async (req, res, next) => {
+  try {
+    res.json(await CompaniesService.get(req.user!, req.params.id));
   } catch (err) {
     next(err);
   }

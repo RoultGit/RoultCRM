@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { MAX_PAGE_SIZE } from '@roult/shared';
 import type { BillingType, DealDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
 
@@ -12,7 +13,10 @@ export function useDeals(filters: DealFilters = {}) {
   // anterior y la tabla no cambia al filtrar. Las invalidaciones siguen andando porque hacen match
   // por prefijo de la key.
     queryKey: [...DEALS_KEY, filters],
-    queryFn: async () => (await apiClient.get<DealDTO[]>('/deals', { params: filters })).data,
+    // El tablero necesita TODAS las ventas del filtro para poder dibujar cada columna, así que
+    // pide el máximo que el servidor permite. Si hay más, la pantalla lo dice en vez de mentir
+    // mostrando un pipeline incompleto como si fuera el total.
+    queryFn: async () => (await apiClient.get<DealDTO[]>('/deals', { params: { ...filters, limit: MAX_PAGE_SIZE } })).data,
   });
 }
 

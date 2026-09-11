@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CompanyDTO, Line } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
+import { usePagedQuery, firstPage, type Page } from './usePagedQuery.js';
 
 const COMPANIES_KEY = ['companies'];
 
@@ -13,6 +14,22 @@ export function useCompanies(filters: CompanyFilters = {}) {
   // por prefijo de la key.
     queryKey: [...COMPANIES_KEY, filters],
     queryFn: async () => (await apiClient.get<CompanyDTO[]>('/companies', { params: filters })).data,
+  });
+}
+
+/**
+ * Una empresa por su id.
+ *
+ * Antes la ficha buscaba dentro de la lista completa cacheada. Con paginación eso deja de
+ * funcionar: la empresa número 51 no está en la primera página y la ficha decía "no existe o no
+ * es tuya" sobre un cliente que sí existe.
+ */
+export function useCompany(id: string | undefined) {
+  return useQuery({
+    queryKey: [...COMPANIES_KEY, 'byId', id],
+    queryFn: async () => (await apiClient.get<CompanyDTO>(`/companies/${id}`)).data,
+    enabled: !!id,
+    retry: false,
   });
 }
 
@@ -58,4 +75,9 @@ export function useDeleteCompany() {
       }
     },
   });
+}
+
+/** La misma lista, pero de a una página y con el total. */
+export function useCompaniesPaged(filters: CompanyFilters = {}, page: Page = firstPage) {
+  return usePagedQuery<CompanyDTO>(COMPANIES_KEY, '/companies', filters, page);
 }

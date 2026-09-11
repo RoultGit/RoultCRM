@@ -6,10 +6,10 @@ export interface CompanyFilters {
   line?: Line;
 }
 
-export const CompaniesRepository = {
-  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}, filters: CompanyFilters = {}) {
-    return prisma.company.findMany({
-      where: {
+/** El `where` se arma una sola vez y lo usan la página y el conteo: escritos por separado, el
+ *  total terminaría contando filas que la página no devuelve. */
+function buildWhere(tenantId: string, owner: { assignedUserId?: string }, filters: CompanyFilters = {}) {
+  return {
         tenantId,
         // El scoping por dueño y el filtro del query van en AND, NUNCA como dos spreads en el
         // mismo objeto: ahí el último gana, y `?assignedUserId=<otro>` pisaba el scoping y le
@@ -19,9 +19,30 @@ export const CompaniesRepository = {
           ...(filters.assignedUserId ? { assignedUserId: filters.assignedUserId } : {}),
           ...(filters.line ? { line: filters.line } : {}),
         }],
-      },
+      };
+}
+
+export const CompaniesRepository = {
+  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}, filters: CompanyFilters = {}, page?: { take: number; skip: number }) {
+    return prisma.company.findMany({
+      where: buildWhere(tenantId, owner, filters),
       orderBy: { createdAt: 'desc' },
+      ...(page ?? {}),
     });
+  },
+
+  /** La página y el total, de la misma consulta. */
+  async findPageByTenant(
+    tenantId: string,
+    owner: { assignedUserId?: string } = {}, filters: CompanyFilters = {},
+    page: { take: number; skip: number } = { take: 50, skip: 0 }
+  ) {
+    const where = buildWhere(tenantId, owner, filters);
+    const [items, total] = await prisma.$transaction([
+      prisma.company.findMany({ where, orderBy: { createdAt: 'desc' }, ...page }),
+      prisma.company.count({ where }),
+    ]);
+    return { items, total };
   },
 
   findByIdAndTenant(id: string, tenantId: string, owner: { assignedUserId?: string } = {}) {

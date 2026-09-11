@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ContactDTO } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
+import { usePagedQuery, firstPage, type Page } from './usePagedQuery.js';
 
 const CONTACTS_KEY = ['contacts'];
 
@@ -39,4 +40,9 @@ export function useUpdateContact() {
       (await apiClient.patch<ContactDTO>(`/contacts/${id}`, input)).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: CONTACTS_KEY }),
   });
+}
+
+/** La misma lista, pero de a una página y con el total. */
+export function useContactsPaged(page: Page = firstPage, companyId?: string) {
+  return usePagedQuery<ContactDTO>(CONTACTS_KEY, '/contacts', companyId ? { companyId } : {}, page);
 }

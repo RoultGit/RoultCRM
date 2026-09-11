@@ -5,6 +5,8 @@ import { QuotesService, PublicQuotes } from './quotes.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { ValidationError } from '../../lib/errors.js';
 import { rateLimit } from '../../middleware/rateLimit.js';
+import { paginationSchema } from '@roult/shared';
+import { pageArgs, sendPaged } from '../../lib/pagination.js';
 
 export const quotesRouter: Router = Router();
 
@@ -57,7 +59,9 @@ quotesRouter.get('/', requireAuth, async (req, res, next) => {
   try {
     const parsed = filtersSchema.safeParse(req.query);
     if (!parsed.success) throw new ValidationError('Filtros inválidos');
-    res.json(await QuotesService.list(req.user!, parsed.data));
+    const page = paginationSchema.safeParse(req.query);
+    if (!page.success) throw new ValidationError('Paginación inválida');
+    sendPaged(res, await QuotesService.listPaged(req.user!, parsed.data, pageArgs(page.data)));
   } catch (err) {
     next(err);
   }

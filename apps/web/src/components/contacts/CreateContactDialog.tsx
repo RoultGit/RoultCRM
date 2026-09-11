@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { isAxiosError } from 'axios';
 import { Button } from '../ui/button.js';
 import { useCreateContact } from '../../hooks/useContacts.js';
-import { useCompanies } from '../../hooks/useCompanies.js';
+import { useCompanyOptions } from '../../hooks/useCompanyOptions.js';
 
 const formSchema = createContactSchema.omit({ confirmDuplicate: true });
 type FormValues = z.infer<typeof formSchema>;
@@ -17,7 +17,7 @@ export function CreateContactDialog() {
   const [duplicate, setDuplicate] = useState<ContactDTO | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
 
-  const { data: companies } = useCompanies();
+  const { data: companies } = useCompanyOptions();
   const { register, handleSubmit, reset, getValues, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
   });

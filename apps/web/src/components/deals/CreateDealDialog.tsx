@@ -6,7 +6,7 @@ import { BILLING_OPTIONS,createDealSchema } from '@roult/shared';
 import { z } from 'zod';
 import { Button } from '../ui/button.js';
 import { useCreateDeal } from '../../hooks/useDeals.js';
-import { useCompanies } from '../../hooks/useCompanies.js';
+import { useCompanyOptions } from '../../hooks/useCompanyOptions.js';
 import { useUsers } from '../../hooks/useUsers.js';
 
 type FormValues = z.infer<typeof createDealSchema>;
@@ -23,7 +23,7 @@ export function CreateDealDialog() {
     defaultValues: { currency: 'PEN' },
   });
   const createDeal = useCreateDeal();
-  const { data: companies } = useCompanies();
+  const { data: companies } = useCompanyOptions();
   const { data: users } = useUsers();
 
   const submit = (data: FormValues) =>

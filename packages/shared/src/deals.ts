@@ -40,6 +40,7 @@ export const setDealStageSchema = z
   });
 
 export const dealFiltersSchema = z.object({
+  companyId: optionalText(z.string()),
   stage: optionalText(dealStageSchema),
   assignedUserId: optionalText(z.string()),
   currency: optionalText(currencySchema),

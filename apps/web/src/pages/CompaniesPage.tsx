@@ -3,10 +3,12 @@ import { Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LINE_OPTIONS, LINE_LABEL } from '@roult/shared';
 import type { CompanyDTO } from '@roult/shared';
+import { firstPage } from '../hooks/usePagedQuery.js';
+import { Pagination } from '../components/ui/pagination.js';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { CreateCompanyDialog } from '../components/companies/CreateCompanyDialog.js';
-import { useCompanies, useUpdateCompany } from '../hooks/useCompanies.js';
+import { useCompaniesPaged, useUpdateCompany } from '../hooks/useCompanies.js';
 import { useSession } from '../hooks/useAuth.js';
 import { Button } from '../components/ui/button.js';
 import { DeleteCompanyDialog } from '../components/companies/DeleteCompanyDialog.js';
@@ -14,13 +16,19 @@ import { AssigneeCell } from '../components/AssigneeCell.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { EditDialog } from '../components/EditDialog.js';
 import { updateCompanySchema } from '@roult/shared';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const columnHelper = createColumnHelper<CompanyDTO>();
 
 export function CompaniesPage() {
   const [filters, setFilters] = useState<FilterValue>({});
-  const { data: companies, isLoading } = useCompanies(filters);
+  const [page, setPage] = useState(firstPage);
+  const { data, isLoading } = useCompaniesPaged(filters, page);
+  const companies = data?.items;
+
+  // Al cambiar un filtro hay que volver a la primera página: si no, se filtra estando en la página
+  // 3 y la lista aparece vacía aunque haya resultados.
+  useEffect(() => setPage(firstPage), [JSON.stringify(filters)]);
   const updateCompany = useUpdateCompany();
   // Solo ADMIN. Es el caso "un empleado se equivocó": el vendedor carga mal la empresa y quien
   // manda la borra. El backend lo exige igual, esconder el botón no alcanza como control.
@@ -168,6 +176,7 @@ export function CompaniesPage() {
           </table>
           </div>
         )}
+        <Pagination page={page} total={data?.total ?? 0} onChange={setPage} etiqueta="empresas" />
       </Card>
     </div>
   );

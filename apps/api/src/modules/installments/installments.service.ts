@@ -106,6 +106,32 @@ export const InstallmentsService = {
     return cuotas.map((cuota) => toDTO(cuota, hoy));
   },
 
+  /** La página y el total de lo que hay detrás del filtro, de la misma consulta. */
+  async listPaged(
+    actor: Actor,
+    filters: { dealId?: string; companyId?: string; status?: 'pending' | 'overdue' | 'paid' },
+    page: { take: number; skip: number }
+  ): Promise<{ items: InstallmentDTO[]; total: number }> {
+    const hoy = hoyPelado();
+    const where = {
+      AND: [
+        { tenantId: actor.tenantId, deal: { ...ownerFilter(actor) } },
+        {
+          ...(filters.dealId ? { dealId: filters.dealId } : {}),
+          ...(filters.companyId ? { deal: { companyId: filters.companyId, ...ownerFilter(actor) } } : {}),
+          ...(filters.status === 'paid' ? { paidAt: { not: null } } : {}),
+          ...(filters.status === 'pending' ? { paidAt: null } : {}),
+          ...(filters.status === 'overdue' ? { paidAt: null, dueDate: { lt: hoy } } : {}),
+        },
+      ],
+    };
+    const [cuotas, total] = await prisma.$transaction([
+      prisma.installment.findMany({ where, include: INCLUDE, orderBy: [{ dueDate: 'asc' }, { position: 'asc' }], ...page }),
+      prisma.installment.count({ where }),
+    ]);
+    return { items: cuotas.map((cuota) => toDTO(cuota, hoy)), total };
+  },
+
   /**
    * Lo que falta cobrar, por moneda.
    *

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LeadDTO, Line, BillingType } from '@roult/shared';
 import { apiClient } from '../lib/api.js';
+import { usePagedQuery, firstPage, type Page } from './usePagedQuery.js';
 
 const LEADS_KEY = ['leads'];
 
@@ -76,4 +77,9 @@ export function useConvertLead() {
       }
     },
   });
+}
+
+/** La misma lista, pero de a una página y con el total. */
+export function useLeadsPaged(filters: LeadFilters = {}, page: Page = firstPage) {
+  return usePagedQuery<LeadDTO>(LEADS_KEY, '/leads', filters, page);
 }

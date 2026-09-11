@@ -6,12 +6,37 @@ const withCompanyName = { include: { company: { select: { name: true } } } } as 
 // La visibilidad de un contacto la decide el dueño de su empresa, no el contacto en sí.
 const withCompanyOwner = { include: { company: { select: { name: true, assignedUserId: true } } } } as const;
 
+/** El contacto no tiene dueño propio: hereda el de su empresa, que es de quien depende. */
+function buildWhere(tenantId: string, owner: { assignedUserId?: string }, companyId?: string) {
+  return {
+    tenantId,
+    ...(companyId ? { companyId } : {}),
+    ...(owner.assignedUserId ? { company: { assignedUserId: owner.assignedUserId } } : {}),
+  };
+}
+
 export const ContactsRepository = {
-  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}) {
+  /** La página y el total, de la misma consulta. */
+  async findPageByTenant(
+    tenantId: string,
+    owner: { assignedUserId?: string } = {},
+    page: { take: number; skip: number } = { take: 50, skip: 0 },
+    companyId?: string
+  ) {
+    const where = buildWhere(tenantId, owner, companyId);
+    const [items, total] = await prisma.$transaction([
+      prisma.contact.findMany({ where, orderBy: { createdAt: 'desc' }, ...withCompanyName, ...page }),
+      prisma.contact.count({ where }),
+    ]);
+    return { items, total };
+  },
+
+  findManyByTenant(tenantId: string, owner: { assignedUserId?: string } = {}, page?: { take: number; skip: number }) {
     return prisma.contact.findMany({
-      where: { tenantId, ...(owner.assignedUserId ? { company: { assignedUserId: owner.assignedUserId } } : {}) },
+      where: buildWhere(tenantId, owner),
       orderBy: { createdAt: 'desc' },
       ...withCompanyName,
+      ...(page ?? {}),
     });
   },
 
