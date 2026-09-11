@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +13,19 @@ import { useSession } from '../../hooks/useAuth.js';
 type FormValues = z.infer<typeof createTaskSchema>;
 
 export function CreateTaskDialog() {
-  const [open, setOpen] = useState(false);
+  // Se abre solo cuando se llega desde el botón de carga rápida del teléfono: ahí el toque de
+  // "Lead nuevo" ya expresó la intención, pedir otro toque más sería cobrarlo dos veces.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [open, setOpen] = useState(searchParams.get('nuevo') === '1');
+
+  // El parámetro se borra apenas se leyó: es una instrucción de una sola vez. Si quedara en la
+  // URL, cerrar el diálogo y volver atrás lo abriría de nuevo, para siempre.
+  useEffect(() => {
+    if (searchParams.get('nuevo')) {
+      searchParams.delete('nuevo');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
   const {
     register,
     handleSubmit,

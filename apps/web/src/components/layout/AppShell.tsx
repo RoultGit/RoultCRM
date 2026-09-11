@@ -6,6 +6,7 @@ import { cn } from '../../lib/cn.js';
 import { useSession, useLogout } from '../../hooks/useAuth.js';
 import { GlobalSearch } from './GlobalSearch.js';
 import { ChangePasswordDialog } from '../ChangePasswordDialog.js';
+import { QuickAdd } from '../quick/QuickAdd.js';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -148,9 +149,13 @@ export function AppShell() {
             </button>
           </div>
         </header>
-        <div className="p-4 sm:p-6">
+        {/* pb-24 en el teléfono: sin eso el botón flotante tapa la última fila de cada lista. */}
+        <div className="p-4 pb-24 sm:p-6 lg:pb-6">
           <Outlet />
         </div>
+
+        {/* Cargar algo desde la calle, sin abrir la computadora. Solo en pantallas chicas. */}
+        <QuickAdd />
 
         {/* forced: con una contraseña provisoria el diálogo no se puede cerrar. Si se pudiera
             esquivar, la contraseña que se pasó por WhatsApp quedaría viva y nada de esto serviría. */}
