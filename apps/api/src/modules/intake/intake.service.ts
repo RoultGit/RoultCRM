@@ -95,6 +95,18 @@ export const IntakeService = {
       source: input.source ?? 'Web',
       notes: input.notes,
     });
+
+    // Un lead que entra por el formulario también es un cambio del sistema, y tiene que pasar por
+    // el mismo lugar que el resto: es lo que hace que las automatizaciones lo vean. Sin esto, el
+    // reparto automático no corría justo en el caso donde más falta hace, que es el lead que entra
+    // de madrugada y que nadie está mirando.
+    //
+    // El autor es la clave, no una persona: nadie apretó un botón. El userId de AuditLog es texto
+    // suelto sin clave foránea, así que el sello queda legible en el registro.
+    await recordAudit(
+      { tenantId: key.tenantId, userId: `api-key:${key.id}`, role: 'ADMIN' } as Actor,
+      { action: 'CREATE', entityType: 'LEAD', entityId: lead.id }
+    );
     return leadToDTO(lead);
   },
 };

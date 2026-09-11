@@ -45,6 +45,7 @@ describe('automatizaciones', () => {
     for (const id of [tenantId, otroTenantId]) {
       await prisma.automationRun.deleteMany({ where: { tenantId: id } });
       await prisma.automation.deleteMany({ where: { tenantId: id } });
+      await prisma.apiKey.deleteMany({ where: { tenantId: id } });
       await prisma.task.deleteMany({ where: { tenantId: id } });
       await prisma.deal.deleteMany({ where: { tenantId: id } });
       await prisma.lead.deleteMany({ where: { tenantId: id } });
@@ -200,6 +201,27 @@ describe('automatizaciones', () => {
       await crearLead({ assignedUserId: anaId });
       const nuevo = await prisma.lead.findFirstOrThrow({ where: { tenantId, businessName: 'Panadería' } });
       expect(nuevo.assignedUserId).toBe(anaId);
+    });
+
+    it('también reparte el lead que entra por el formulario de la web', async () => {
+      // Este es el caso donde más falta hace y el que se había quedado afuera: el lead entra de
+      // madrugada por el formulario, nadie lo está mirando, y sin esto quedaba sin dueño hasta que
+      // alguien lo viera. Falló porque la captación por clave no pasaba por recordAudit, que es de
+      // donde el motor se entera de todo.
+      await prender('LEAD_AUTO_ASSIGN');
+      const rawKey = (
+        await request(app).post('/intake/keys').set('Authorization', `Bearer ${adminToken}`).send({ name: 'Sitio' })
+      ).body.key;
+
+      const res = await request(app)
+        .post('/intake/leads')
+        .set('X-API-Key', rawKey)
+        .send({ businessName: 'Del formulario', contactName: 'Quien sea', line: 'WEB' });
+      expect(res.status).toBe(201);
+
+      const lead = await prisma.lead.findFirstOrThrow({ where: { tenantId, businessName: 'Del formulario' } });
+      expect(lead.assignedUserId).toBeTruthy();
+      await prisma.apiKey.deleteMany({ where: { tenantId } });
     });
 
     it('sin vendedores activos no falla ni asigna', async () => {

@@ -1,5 +1,6 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { prisma } from '../../lib/prisma.js';
+import { recordAudit } from '../../lib/audit.js';
 import { ForbiddenError } from '../../lib/errors.js';
 import type { Actor } from '../../lib/scope.js';
 
@@ -197,5 +198,12 @@ async function ubicarFicha(
       source: 'Correo',
     },
   });
+
+  // Igual que el lead del formulario: pasa por recordAudit para que las automatizaciones lo vean.
+  // El autor es el buzón, no una persona.
+  await recordAudit(
+    { tenantId, userId: 'email:inbound', role: 'ADMIN' } as Actor,
+    { action: 'CREATE', entityType: 'LEAD', entityId: nuevo.id }
+  );
   return { type: 'LEAD', id: nuevo.id };
 }
