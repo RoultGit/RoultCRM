@@ -67,10 +67,20 @@ export async function sendEmail(email: Email): Promise<boolean> {
   }
 }
 
-// El dominio del link sale de WEB_ORIGIN y NUNCA de una cabecera del request. Si se tomara del Host,
-// alguien podría pedir un reseteo con un Host falso y recibir la víctima un link a un dominio suyo.
+// El dominio del link sale de la configuración y NUNCA de una cabecera del request. Si se tomara del
+// Host, alguien podría pedir un reseteo con un Host falso y recibir la víctima un link a un dominio
+// suyo.
+//
+// Las dos VERCEL_* las inyecta la plataforma, no vienen del pedido, así que son tan confiables como
+// WEB_ORIGIN. Están de respaldo porque sin ellas un despliegue al que le falta la variable manda
+// links a `localhost`: el correo de "olvidé mi contraseña" llega con un link muerto y nadie se
+// entera hasta que un cliente reclama.
 export function webOrigin(): string {
-  return (process.env.WEB_ORIGIN ?? 'http://localhost:5173').split(',')[0].trim();
+  const configurado = process.env.WEB_ORIGIN?.split(',')[0].trim();
+  if (configurado) return configurado;
+  // La de producción es la estable; VERCEL_URL cambia en cada despliegue y solo sirve de último recurso.
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+  return vercel ? `https://${vercel}` : 'http://localhost:5173';
 }
 
 export function passwordResetEmail(name: string, link: string): Omit<Email, 'to'> {
