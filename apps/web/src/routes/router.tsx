@@ -20,6 +20,8 @@ import { SystemPage } from '../pages/SystemPage.js';
 import { QuotesPage } from '../pages/QuotesPage.js';
 import { ReceivablesPage } from '../pages/ReceivablesPage.js';
 import { PublicQuotePage } from '../pages/PublicQuotePage.js';
+import { PrivacyPage } from '../pages/legal/PrivacyPage.js';
+import { TermsPage } from '../pages/legal/TermsPage.js';
 import { AuditPage } from '../pages/AuditPage.js';
 import { DashboardPage } from '../pages/DashboardPage.js';
 import { ImportPage } from '../pages/ImportPage.js';
@@ -34,6 +36,10 @@ export const router = createBrowserRouter([
   // La cotización que abre el cliente: sin sesión y fuera del AppShell, porque quien la abre no
   // tiene cuenta y no tiene por qué ver nada del CRM.
   { path: '/cotizacion/:token', element: <PublicQuotePage /> },
+  // Públicas: la primera persona que las lee todavía no es cliente y está evaluando si confiarnos
+  // los datos de SUS clientes.
+  { path: '/privacidad', element: <PrivacyPage /> },
+  { path: '/terminos', element: <TermsPage /> },
   {
     path: '/',
     element: <AppShell />,

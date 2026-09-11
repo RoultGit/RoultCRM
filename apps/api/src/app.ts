@@ -28,6 +28,7 @@ import { emailRouter } from './modules/email/email.routes.js';
 import { attachmentsRouter } from './modules/attachments/attachments.routes.js';
 import { pipelineRouter } from './modules/pipeline/pipeline.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { exportRouter } from './modules/tenants/export.routes.js';
 import { AppError } from './lib/errors.js';
 import { rateLimit } from './middleware/rateLimit.js';
 import { recordError } from './lib/errorLog.js';
@@ -148,6 +149,7 @@ export function createApp(): Express {
   app.use('/attachments', attachmentsRouter);
   app.use('/pipeline', pipelineRouter);
   app.use('/system', healthRouter);
+  app.use('/export', exportRouter);
 
   const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     // body-parser tira este error fuera de la jerarquía de AppError, así que sin este caso caía en

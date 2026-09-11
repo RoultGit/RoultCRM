@@ -23,7 +23,7 @@ export function LoginPage() {
   const login = useLogin(setTenants);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-surface">
       <Card className="w-full max-w-sm p-8">
         {tenants ? (
           <>
@@ -89,6 +89,13 @@ export function LoginPage() {
         </>
         )}
       </Card>
+
+      {/* Quien evalúa el CRM quiere leer esto ANTES de cargar los datos de sus clientes. */}
+      <p className="mt-4 text-center text-xs text-gray-400">
+        <Link to="/privacidad" className="hover:text-gray-600">Privacidad</Link>
+        <span className="mx-2">·</span>
+        <Link to="/terminos" className="hover:text-gray-600">Términos</Link>
+      </p>
     </div>
   );
 }

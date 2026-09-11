@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import Papa from 'papaparse';
+import { Download } from 'lucide-react';
 import type { ImportPreviewDTO, ImportRowResult, ImportableEntity } from '@roult/shared';
 import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import { usePreviewImport, useCommitImport } from '../hooks/useImport.js';
+import { apiClient } from '../lib/api.js';
 
 const ENTITIES: { value: ImportableEntity; label: string; columns: string }[] = [
   { value: 'companies', label: 'Empresas', columns: 'name, representativeName, line, city, source, whatsapp, email, notes' },
@@ -199,6 +201,54 @@ export function ImportPage() {
           </Card>
         </>
       )}
+
+      <ExportarTodo />
     </div>
+  );
+}
+
+/**
+ * El otro sentido del mismo camino. Va acá y no en una página propia porque quien busca "mis datos"
+ * busca donde los datos entran y salen.
+ *
+ * No puede ser un <a href> pelado: el endpoint pide el token, así que baja por axios y se guarda a
+ * mano.
+ */
+function ExportarTodo() {
+  const [bajando, setBajando] = useState(false);
+  const [error, setError] = useState(false);
+
+  const descargar = async () => {
+    setBajando(true);
+    setError(false);
+    try {
+      const res = await apiClient.get('/export', { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `roultcrm-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError(true);
+    } finally {
+      setBajando(false);
+    }
+  };
+
+  return (
+    <Card className="mt-4 p-5">
+      <h2 className="text-sm font-medium text-gray-900">Descargar todos mis datos</h2>
+      <p className="mt-1 max-w-2xl text-sm text-gray-500">
+        Un archivo con todo lo que tu empresa tiene cargado: clientes, contactos, leads, ventas,
+        cotizaciones, cobranza, tareas e historial. No incluye contraseñas ni datos de ninguna otra
+        empresa. Sirve como respaldo propio y para responder pedidos de acceso a la información.
+      </p>
+      {error && <p className="mt-2 text-xs text-red-600">No se pudo generar la descarga.</p>}
+      <Button variant="outline" className="mt-3" disabled={bajando} onClick={descargar}>
+        <Download className="mr-2 h-4 w-4" />
+        {bajando ? 'Preparando…' : 'Descargar'}
+      </Button>
+    </Card>
   );
 }
