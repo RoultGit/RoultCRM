@@ -15,6 +15,7 @@ import { TenantsPage } from '../pages/TenantsPage.js';
 import { IntegrationsPage } from '../pages/IntegrationsPage.js';
 import { CustomFieldsPage } from '../pages/CustomFieldsPage.js';
 import { AutomationsPage } from '../pages/AutomationsPage.js';
+import { PipelinePage } from '../pages/PipelinePage.js';
 import { QuotesPage } from '../pages/QuotesPage.js';
 import { ReceivablesPage } from '../pages/ReceivablesPage.js';
 import { PublicQuotePage } from '../pages/PublicQuotePage.js';
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
       { path: 'tasks', element: <TasksPage /> },
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'automations', element: <AutomationsPage /> },
+      { path: 'pipeline', element: <PipelinePage /> },
       { path: 'tenants', element: <TenantsPage /> },
       {
         path: 'integrations',

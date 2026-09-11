@@ -1,5 +1,5 @@
 import { useReactTable, getCoreRowModel, flexRender, createColumnHelper } from '@tanstack/react-table';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Merge } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LINE_OPTIONS, LINE_LABEL } from '@roult/shared';
 import type { CompanyDTO } from '@roult/shared';
@@ -12,6 +12,7 @@ import { useCompaniesPaged, useUpdateCompany } from '../hooks/useCompanies.js';
 import { useSession } from '../hooks/useAuth.js';
 import { Button } from '../components/ui/button.js';
 import { DeleteCompanyDialog } from '../components/companies/DeleteCompanyDialog.js';
+import { MergeCompaniesDialog } from '../components/companies/MergeCompaniesDialog.js';
 import { AssigneeCell } from '../components/AssigneeCell.js';
 import { FilterBar, type FilterValue } from '../components/FilterBar.js';
 import { EditDialog } from '../components/EditDialog.js';
@@ -34,6 +35,7 @@ export function CompaniesPage() {
   // manda la borra. El backend lo exige igual, esconder el botón no alcanza como control.
   const isAdmin = useSession().data?.role === 'ADMIN';
   const [companyToDelete, setCompanyToDelete] = useState<CompanyDTO | null>(null);
+  const [companyToMerge, setCompanyToMerge] = useState<CompanyDTO | null>(null);
 
   const columns = [
     columnHelper.accessor('name', {
@@ -100,6 +102,18 @@ export function CompaniesPage() {
           <Button
             variant="ghost"
             size="sm"
+            className="px-2 text-gray-400 hover:bg-gray-100 hover:text-gray-900"
+            aria-label={`Fusionar ${row.original.name} con otra ficha`}
+            title="Fusionar con otra ficha del mismo cliente"
+            onClick={() => setCompanyToMerge(row.original)}
+          >
+            <Merge className="h-4 w-4" />
+          </Button>
+        )}
+        {isAdmin && (
+          <Button
+            variant="ghost"
+            size="sm"
             className="px-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
             aria-label={`Eliminar ${row.original.name}`}
             title="Eliminar empresa"
@@ -145,6 +159,7 @@ export function CompaniesPage() {
         <p className="mb-4 text-sm text-red-600">No se pudo cambiar el vendedor asignado.</p>
       )}
       <DeleteCompanyDialog company={companyToDelete} onClose={() => setCompanyToDelete(null)} />
+      <MergeCompaniesDialog company={companyToMerge} onClose={() => setCompanyToMerge(null)} />
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-6 text-sm text-gray-500">Cargando…</div>

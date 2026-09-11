@@ -18,3 +18,4 @@ export * from './automations.js';
 export * from './quotes.js';
 export * from './installments.js';
 export * from './pagination.js';
+export * from './pipeline.js';

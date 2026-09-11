@@ -649,3 +649,23 @@ model Attachment {
 
   @@index([tenantId, relatedType, relatedId])
 }
+
+// Cómo llama cada empresa a las etapas del pipeline.
+//
+// El enum DealStage NO se toca: los ocho pasos siguen siendo el esqueleto, y de ellos dependen la
+// cuenta de lo ganado, las automatizaciones y los gráficos. Lo que cambia es el nombre que ve la
+// gente y cuáles se muestran. Una inmobiliaria le dice "Separación" a Adelanto y "Escriturado" a
+// Entregado, y esconde Mantenimiento si no le sirve.
+model PipelineStage {
+  id        String    @id @default(uuid())
+  tenantId  String
+  stage     DealStage
+  label     String
+  // Esconder no borra: las ventas que ya están en esa etapa siguen ahí y se pueden sacar.
+  enabled   Boolean   @default(true)
+  position  Int
+  updatedAt DateTime  @updatedAt
+
+  @@unique([tenantId, stage])
+  @@index([tenantId])
+}

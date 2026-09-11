@@ -32,6 +32,7 @@ import { DealActivityDialog } from '../components/deals/DealActivityDialog.js';
 import { DeleteDealDialog } from '../components/deals/DeleteDealDialog.js';
 import { PlanDialog } from '../components/installments/PlanDialog.js';
 import { QuoteDialog } from '../components/quotes/QuoteDialog.js';
+import { usePipelineStages, useStageLabels } from '../hooks/usePipeline.js';
 
 // El orden del pipeline es el del spec de negocio, sección 22. PERDIDO va al final y fuera de la
 // secuencia: es una salida, no un paso.
@@ -46,16 +47,8 @@ const STAGES: DealDTO['stage'][] = [
   'PERDIDO',
 ];
 
-const STAGE_LABEL: Record<DealDTO['stage'], string> = {
-  CONTACTO: 'Contacto',
-  PROPUESTA: 'Propuesta/Maqueta',
-  NEGOCIACION: 'Negociación',
-  ADELANTO: 'Adelanto',
-  PRODUCCION: 'Producción',
-  ENTREGADO: 'Entregado',
-  MANTENIMIENTO: 'Mantenimiento',
-  PERDIDO: 'Perdido',
-};
+// Los nombres ya no están escritos acá: cada empresa le pone el suyo en Etapas, y una inmobiliaria
+// ve "Separación" donde una agencia ve "Adelanto".
 
 // La detección por defecto (rectIntersection) resuelve la columna por el rectángulo de la card, no
 // por el cursor: arrastrando 200px, el cuerpo de la card ya pisa la columna siguiente aunque el
@@ -87,6 +80,7 @@ function DealCard({
   onOpenHistory: (deal: DealDTO) => void;
   onOpenPlan: (deal: DealDTO) => void;
 }) {
+  const STAGE_LABEL = useStageLabels();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
   const assign = useAssignDeal();
   const update = useUpdateDeal();
@@ -222,6 +216,8 @@ function DealCard({
         onPointerDown={(e) => e.stopPropagation()}
         onChange={(e) => onStageChange(deal, e.target.value as DealDTO['stage'])}
       >
+        {/* Acá van todas, incluso las escondidas: si una venta quedó en una etapa que después se
+            escondió, tiene que haber forma de sacarla de ahí. */}
         {STAGES.map((stage) => (
           <option key={stage} value={stage}>
             {STAGE_LABEL[stage]}
@@ -269,6 +265,7 @@ function StageColumn({
   onOpenHistory: (deal: DealDTO) => void;
   onOpenPlan: (deal: DealDTO) => void;
 }) {
+  const STAGE_LABEL = useStageLabels();
   const { setNodeRef, isOver } = useDroppable({ id: stage });
   return (
     <div className="w-64 shrink-0">
@@ -310,6 +307,11 @@ export function DealsPage() {
   const [dealToDelete, setDealToDelete] = useState<DealDTO | null>(null);
   const [historyDeal, setHistoryDeal] = useState<DealDTO | null>(null);
   const [planDeal, setPlanDeal] = useState<DealDTO | null>(null);
+  const etapas = usePipelineStages().data ?? [];
+  const STAGE_LABEL = Object.fromEntries(etapas.map((e) => [e.stage, e.label])) as Record<DealDTO['stage'], string>;
+  // Las escondidas no se dibujan, salvo que tengan ventas adentro: esconder no puede hacer
+  // desaparecer una venta de la vista.
+  const visibles = STAGES.filter((s) => etapas.find((e) => e.stage === s)?.enabled !== false || (deals ?? []).some((d) => d.stage === s));
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
 
@@ -347,7 +349,7 @@ export function DealsPage() {
         exportPath="/deals/export"
         exportName="deals"
         fields={[
-          { key: 'stage', label: 'Etapa', options: STAGES.map((s) => ({ value: s, label: STAGE_LABEL[s] })) },
+          { key: 'stage', label: 'Etapa', options: visibles.map((s) => ({ value: s, label: STAGE_LABEL[s] })) },
           { key: 'assignedUserId', label: 'Vendedor', options: 'vendedores' },
           { key: 'line', label: 'Línea', options: LINE_OPTIONS },
           { key: 'currency', label: 'Moneda', options: [{ value: 'PEN', label: 'PEN' }, { value: 'USD', label: 'USD' }] },
@@ -362,7 +364,7 @@ export function DealsPage() {
           {/* min-w-0 en el <main> del AppShell es lo que hace que este overflow-x-auto contenga
               de verdad; sin eso el strip estira la página y se scrollea la ventana entera. */}
           <div className="flex gap-3 overflow-x-auto pb-4">
-            {STAGES.map((stage) => (
+            {visibles.map((stage) => (
               <StageColumn
                 key={stage}
                 stage={stage}

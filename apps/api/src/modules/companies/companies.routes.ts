@@ -6,6 +6,7 @@ import { paginationSchema } from '@roult/shared';
 import { pageArgs, sendPaged } from '../../lib/pagination.js';
 import { ValidationError } from '../../lib/errors.js';
 import { toCsv, UTF8_BOM } from '../../lib/csv.js';
+import { mergeCompanies, mergeCompaniesSchema } from './merge.js';
 
 export const companiesRouter = Router();
 
@@ -42,6 +43,16 @@ companiesRouter.get('/export', async (req, res, next) => {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="empresas.csv"');
     res.send(UTF8_BOM + csv);
+  } catch (err) {
+    next(err);
+  }
+});
+
+companiesRouter.post('/merge', async (req, res, next) => {
+  try {
+    const parsed = mergeCompaniesSchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError('Elegí las dos fichas a fusionar');
+    res.json(await mergeCompanies(req.user!, parsed.data));
   } catch (err) {
     next(err);
   }

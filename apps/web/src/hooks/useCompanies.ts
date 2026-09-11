@@ -81,3 +81,15 @@ export function useDeleteCompany() {
 export function useCompaniesPaged(filters: CompanyFilters = {}, page: Page = firstPage) {
   return usePagedQuery<CompanyDTO>(COMPANIES_KEY, '/companies', filters, page);
 }
+
+/** Unir dos fichas del mismo cliente en una. */
+export function useMergeCompanies() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { keepId: string; mergeId: string }) =>
+      (await apiClient.post<{ moved: Record<string, number> }>('/companies/merge', input)).data,
+    // Toca contactos, ventas, cotizaciones e historial: se invalida todo en vez de adivinar qué
+    // quedó viejo.
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+}

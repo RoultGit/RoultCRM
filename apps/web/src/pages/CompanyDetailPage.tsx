@@ -5,6 +5,7 @@ import { Card } from '../components/ui/card.js';
 import { Badge } from '../components/ui/badge.js';
 import { useCompany } from '../hooks/useCompanies.js';
 import { firstPage } from '../hooks/usePagedQuery.js';
+import { useStageLabels } from '../hooks/usePipeline.js';
 import { useContactsPaged } from '../hooks/useContacts.js';
 import { useDeals } from '../hooks/useDeals.js';
 import { useUsers } from '../hooks/useUsers.js';
@@ -19,16 +20,6 @@ import { CustomFieldsPanel } from '../components/customFields/CustomFieldsPanel.
 import { formatAmount } from '../lib/money.js';
 import { formatDate } from '../lib/date.js';
 
-const STAGE_LABEL: Record<string, string> = {
-  CONTACTO: 'Contacto',
-  PROPUESTA: 'Propuesta',
-  NEGOCIACION: 'Negociación',
-  ADELANTO: 'Adelanto',
-  PRODUCCION: 'Producción',
-  ENTREGADO: 'Entregado',
-  MANTENIMIENTO: 'Mantenimiento',
-  PERDIDO: 'Perdido',
-};
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -52,6 +43,7 @@ export function CompanyDetailPage() {
   const { data: contacts } = useContactsPaged(firstPage, id);
   const { data: deals } = useDeals({ companyId: id });
   const { data: users } = useUsers();
+  const STAGE_LABEL = useStageLabels();
   if (isLoading) return <Card className="p-6 text-sm text-gray-500">Cargando…</Card>;
   if (!company) {
     return (
